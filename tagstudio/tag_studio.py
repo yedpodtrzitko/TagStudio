@@ -14,7 +14,8 @@ import traceback
 def main():
     # appid = "cyanvoxel.tagstudio.9"
     # ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
-
+    test_string = 'test'
+    
     # Parse arguments.
     parser = argparse.ArgumentParser()
     parser.add_argument(
