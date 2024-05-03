@@ -923,7 +923,6 @@ class Library:
             if (end_time - start_time) > 0.034:
                 yield self.dir_file_count
                 start_time = time.time()
-        # print('')
 
         # Sorts the files by date modified, descending.
         if len(self.files_not_in_library) <= 100000:
