@@ -118,8 +118,9 @@ QSettings.setPath(QSettings.IniFormat, QSettings.UserScope, os.getcwd())
 class SettingItems(str, enum.Enum):
     """List of setting item names."""
 
-    START_LIBS_LIST = "start_libs_list"
+    START_SHOW_LIBS = "start_show_libs"
     LAST_LIBRARY = "last_library"
+    LIBS_LIST = "libs_list"
 
 
 class NavigationState:
@@ -378,11 +379,11 @@ class QtDriver(QObject):
         check_action = QAction("List Libraries on Start", self)
         check_action.setCheckable(True)
         check_action.setChecked(
-            self.settings.value(SettingItems.START_LIBS_LIST, False, type=bool)
+            self.settings.value(SettingItems.START_SHOW_LIBS, False, type=bool)
         )
         check_action.triggered.connect(
             lambda checked: self.settings.setValue(
-                SettingItems.START_LIBS_LIST, checked
+                SettingItems.START_SHOW_LIBS, checked
             )
         )
         edit_menu.addAction(check_action)
@@ -488,12 +489,14 @@ class QtDriver(QObject):
 
         if self.args.open:
             self.open_library(self.args.open)
-        elif self.settings.value(SettingItems.START_LIBS_LIST, type=bool):
-            self.settings.beginGroup(SETTINGS_LIBS_LIST)
+        elif self.settings.value(SettingItems.START_SHOW_LIBS, type=bool):
+            self.settings.beginGroup(SettingItems.LIBS_LIST)
             lib_items = {x: self.settings.value(x) for x in self.settings.allKeys()}
             if lib_items:
                 self.settings.endGroup()
                 self.list_libraries_panel(lib_items)
+            else:
+                self.init_library_window()
         elif lib := self.settings.value(SettingItems.LAST_LIBRARY):
             self.splash.showMessage(
                 f'Opening Library "{lib}"...',
@@ -1363,7 +1366,7 @@ class QtDriver(QObject):
                 )
 
     def update_libs_list(self, library_path: str):
-        self.settings.beginGroup(SETTINGS_LIBS_LIST)
+        self.settings.beginGroup(SettingItems.LIBS_LIST)
         path_hash = sha1(library_path.encode("utf-8")).hexdigest()
         self.settings.setValue(path_hash, library_path)
         self.settings.endGroup()
