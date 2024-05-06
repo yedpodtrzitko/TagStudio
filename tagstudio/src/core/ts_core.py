@@ -17,6 +17,7 @@ TS_FOLDER_NAME: str = ".TagStudio"
 BACKUP_FOLDER_NAME: str = "backups"
 COLLAGE_FOLDER_NAME: str = "collages"
 LIBRARY_FILENAME: str = "ts_library.json"
+SETTINGS_LIBS_LIST: str = "libraries"
 
 # TODO: Turn this whitelist into a user-configurable blacklist.
 IMAGE_TYPES: list[str] = [

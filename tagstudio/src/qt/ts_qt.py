@@ -14,13 +14,14 @@ import os
 import sys
 import time
 from datetime import datetime as dt
+from hashlib import sha1
 from pathlib import Path
 from queue import Empty, Queue
 from typing import Optional
 
 from PIL import Image
 from PySide6 import QtCore
-from PySide6.QtCore import QObject, QThread, Signal, Qt, QThreadPool, QTimer, QSettings
+from PySide6.QtCore import QObject, QThread, Signal, Qt, QThreadPool, QSettings
 from PySide6.QtGui import (
     QGuiApplication,
     QPixmap,
@@ -41,6 +42,8 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QSplashScreen,
     QMenu,
+    QLabel,
+    QVBoxLayout,
 )
 from humanfriendly import format_timespan
 
@@ -68,6 +71,7 @@ from src.core.ts_core import (
     TS_FOLDER_NAME,
     VERSION_BRANCH,
     VERSION,
+    SETTINGS_LIBS_LIST,
 )
 from src.core.utils.web import strip_web_protocol
 from src.qt.flowlayout import FlowLayout
@@ -171,9 +175,6 @@ class QtDriver(QObject):
         self.lib = self.core.lib
         self.args = args
 
-        # self.main_window = None
-        # self.main_window = Ui_MainWindow()
-
         self.branch: str = (" (" + VERSION_BRANCH + ")") if VERSION_BRANCH else ""
         self.base_title: str = f"TagStudio {VERSION}{self.branch}"
         # self.title_text: str = self.base_title
@@ -189,6 +190,9 @@ class QtDriver(QObject):
         self.settings = QSettings(
             QSettings.IniFormat, QSettings.UserScope, "tagstudio", "TagStudio"
         )
+
+        # flag for whether the library window has been initialized already
+        self._lib_window_init = False
 
         max_threads = os.cpu_count()
         for i in range(max_threads):
@@ -236,9 +240,6 @@ class QtDriver(QObject):
 
         # Handle OS signals
         self.setup_signals()
-        timer = QTimer()
-        timer.start(500)
-        timer.timeout.connect(lambda: None)
 
         # self.main_window = loader.load(home_path)
         self.main_window = Ui_MainWindow()
@@ -456,6 +457,69 @@ class QtDriver(QObject):
         self.collation_thumb_size = math.ceil(self.thumb_size * 2)
         # self.filtered_items: list[tuple[SearchItemType, int]] = []
 
+        if self.args.open:
+            self.open_library(self.args.open)
+        else:
+            self.settings.beginGroup(SETTINGS_LIBS_LIST)
+            lib_items = {x: self.settings.value(x) for x in self.settings.allKeys()}
+            if lib_items:
+                self.settings.endGroup()
+                self.list_libraries(lib_items)
+            elif self.settings.value("last_library"):
+                lib = self.settings.value("last_library")
+                self.splash.showMessage(
+                    f'Opening Library "{lib}"...',
+                    int(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignHCenter),
+                    QColor("#9782ff"),
+                )
+                self.open_library(lib)
+
+        app.exec_()
+
+        self.shutdown()
+
+    def list_libraries(self, libraries: dict[str, str]):
+        layout = QVBoxLayout()
+
+        label = QLabel("Select a library")
+        label.setFixedHeight(50)
+        label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(label)
+
+        for lib_key, lib_path in libraries.items():
+            button = QPushButton(text=lib_path)
+            button.setObjectName(lib_key)
+
+            def open_library_button_clicked(path):
+                return lambda: self.open_library(path)
+
+            button.clicked.connect(open_library_button_clicked(lib_path))
+            button.setStyleSheet(
+                "background-color: #ffffff; color: #000000; text-align: left; padding-left: 30px;"
+            )
+            button.setFixedHeight(50)
+            layout.addWidget(button)
+
+        # add empty label to fill remaining space
+        spacer = QLabel()
+        layout.addWidget(spacer)
+
+        flow_container: QWidget = QWidget()
+        flow_container.setObjectName("flowContainer")
+        flow_container.setLayout(layout)
+
+        sa: QScrollArea = self.main_window.scrollArea
+        sa.setWidget(flow_container)
+
+        self.main_window.show()
+        self.main_window.activateWindow()
+        self.splash.finish(self.main_window)
+
+    def init_library_window(self):
+        if self._lib_window_init:
+            return
+
+        self._lib_window_init = True
         self._init_thumb_grid()
 
         # TODO: Put this into its own method that copies the font file(s) into memory
@@ -509,26 +573,6 @@ class QtDriver(QObject):
         self.preview_panel.update_widgets()
 
         # Check if a library should be opened on startup, args should override last_library
-        # TODO: check for behavior (open last, open default, start empty)
-        if (
-            self.args.open
-            or self.settings.contains("last_library")
-            and os.path.isdir(self.settings.value("last_library"))
-        ):
-            if self.args.open:
-                lib = self.args.open
-            elif self.settings.value("last_library"):
-                lib = self.settings.value("last_library")
-            self.splash.showMessage(
-                f'Opening Library "{lib}"...',
-                int(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignHCenter),
-                QColor("#9782ff"),
-            )
-            self.open_library(lib)
-
-        app.exec_()
-
-        self.shutdown()
 
     def callback_library_needed_check(self, func):
         """Check if loaded library has valid path before executing the button function"""
@@ -699,7 +743,7 @@ class QtDriver(QObject):
         iterator.value.connect(lambda x: pw.update_progress(x + 1))
         iterator.value.connect(
             lambda x: pw.update_label(
-                f'Scanning Directories for New Files...\n{x+1} File{"s" if x+1 != 1 else ""} Searched, {len(self.lib.files_not_in_library)} New Files Found'
+                f'Scanning Directories for New Files...\n{x + 1} File{"s" if x + 1 != 1 else ""} Searched, {len(self.lib.files_not_in_library)} New Files Found'
             )
         )
         r = CustomRunnable(lambda: iterator.run())
@@ -750,7 +794,7 @@ class QtDriver(QObject):
         iterator.value.connect(lambda x: pw.update_progress(x + 1))
         iterator.value.connect(
             lambda x: pw.update_label(
-                f"Running Configured Macros on {x+1}/{len(new_ids)} New Entries"
+                f"Running Configured Macros on {x + 1}/{len(new_ids)} New Entries"
             )
         )
         r = CustomRunnable(lambda: iterator.run())
@@ -1283,12 +1327,17 @@ class QtDriver(QObject):
                 self.main_window.statusbar.showMessage(
                     f"{len(all_items)} Results ({format_timespan(end_time - start_time)})"
                 )
-            # logging.info(f'Done Filtering! ({(end_time - start_time):.3f}) seconds')
 
-            # self.update_thumbs()
+    def update_libs_list(self, library_path: str):
+        self.settings.beginGroup(SETTINGS_LIBS_LIST)
+        path_hash = sha1(library_path.encode("utf-8")).hexdigest()
+        self.settings.setValue(path_hash, library_path)
+        self.settings.endGroup()
 
-    def open_library(self, path):
+    def open_library(self, path: str):
         """Opens a TagStudio library."""
+        self.init_library_window()
+
         if self.lib.library_dir:
             self.save_library()
             self.lib.clear_internal_vars()
@@ -1312,6 +1361,8 @@ class QtDriver(QObject):
             )
             print(f"Library Creation Return Code: {self.lib.create_library(path)}")
             self.add_new_files_callback()
+
+        self.update_libs_list(path)
 
         title_text = f"{self.base_title} - Library '{self.lib.library_dir}'"
         self.main_window.setWindowTitle(title_text)
