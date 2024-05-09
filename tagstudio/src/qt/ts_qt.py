@@ -8,6 +8,7 @@
 """A Qt driver for TagStudio."""
 
 import ctypes
+import enum
 import logging
 import math
 import os
@@ -17,7 +18,7 @@ import webbrowser
 from datetime import datetime as dt
 from hashlib import sha1
 from pathlib import Path
-from queue import Empty, Queue
+from queue import Queue
 from typing import Optional
 
 from PIL import Image
@@ -112,6 +113,13 @@ logging.basicConfig(format="%(message)s", level=logging.INFO)
 
 # Keep settings in ini format in the current working directory.
 QSettings.setPath(QSettings.IniFormat, QSettings.UserScope, os.getcwd())
+
+
+class SettingItems(str, enum.Enum):
+    """List of setting item names."""
+
+    START_LIBS_LIST = "start_libs_list"
+    LAST_LIBRARY = "last_library"
 
 
 class NavigationState:
@@ -367,6 +375,18 @@ class QtDriver(QObject):
         tag_database_action.triggered.connect(lambda: self.show_tag_database())
         edit_menu.addAction(tag_database_action)
 
+        check_action = QAction("List Libraries on Start", self)
+        check_action.setCheckable(True)
+        check_action.setChecked(
+            self.settings.value(SettingItems.START_LIBS_LIST, False, type=bool)
+        )
+        check_action.triggered.connect(
+            lambda checked: self.settings.setValue(
+                SettingItems.START_LIBS_LIST, checked
+            )
+        )
+        edit_menu.addAction(check_action)
+
         # Tools Menu ===========================================================
         fix_unlinked_entries_action = QAction("Fix &Unlinked Entries", menu_bar)
         fue_modal = FixUnlinkedEntriesModal(self.lib, self)
@@ -468,26 +488,27 @@ class QtDriver(QObject):
 
         if self.args.open:
             self.open_library(self.args.open)
-        else:
+        elif self.settings.value(SettingItems.START_LIBS_LIST, type=bool):
             self.settings.beginGroup(SETTINGS_LIBS_LIST)
             lib_items = {x: self.settings.value(x) for x in self.settings.allKeys()}
             if lib_items:
                 self.settings.endGroup()
-                self.list_libraries(lib_items)
-            elif self.settings.value("last_library"):
-                lib = self.settings.value("last_library")
-                self.splash.showMessage(
-                    f'Opening Library "{lib}"...',
-                    int(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignHCenter),
-                    QColor("#9782ff"),
-                )
-                self.open_library(lib)
+                self.list_libraries_panel(lib_items)
+        elif lib := self.settings.value(SettingItems.LAST_LIBRARY):
+            self.splash.showMessage(
+                f'Opening Library "{lib}"...',
+                int(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignHCenter),
+                QColor("#9782ff"),
+            )
+            self.open_library(lib)
+        else:
+            self.init_library_window()
 
         app.exec_()
 
         self.shutdown()
 
-    def list_libraries(self, libraries: dict[str, str]):
+    def list_libraries_panel(self, libraries: dict[str, str]):
         layout = QVBoxLayout()
 
         label = QLabel("Select a library")
@@ -595,7 +616,7 @@ class QtDriver(QObject):
         """Save Library on Application Exit"""
         if self.lib.library_dir:
             self.save_library()
-            self.settings.setValue("last_library", self.lib.library_dir)
+            self.settings.setValue(SettingItems.LAST_LIBRARY, self.lib.library_dir)
             self.settings.sync()
         logging.info("[SHUTDOWN] Ending Thumbnail Threads...")
         for _ in self.thumb_threads:
@@ -644,7 +665,7 @@ class QtDriver(QObject):
             self.main_window.statusbar.showMessage(f"Closing & Saving Library...")
             start_time = time.time()
             self.save_library(show_status=False)
-            self.settings.setValue("last_library", self.lib.library_dir)
+            self.settings.setValue(SettingItems.LAST_LIBRARY, self.lib.library_dir)
             self.settings.sync()
 
             self.lib.clear_internal_vars()
