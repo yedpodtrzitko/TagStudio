@@ -113,8 +113,8 @@ class VideoPlayer(QGraphicsView):
         self.scene().addWidget(self.play_pause)
         self.play_pause.resize(100, 100)
         self.play_pause.move(
-            self.width() / 2 - self.play_pause.size().width() / 2,
-            self.height() / 2 - self.play_pause.size().height() / 2,
+            int(self.width() / 2 - self.play_pause.size().width() / 2),
+            int(self.height() / 2 - self.play_pause.size().height() / 2),
         )
         self.play_pause.hide()
 
@@ -125,8 +125,8 @@ class VideoPlayer(QGraphicsView):
         self.scene().addWidget(self.mute_button)
         self.mute_button.resize(40, 40)
         self.mute_button.move(
-            self.width() - self.mute_button.size().width() / 2,
-            self.height() - self.mute_button.size().height() / 2,
+            int(self.width() - self.mute_button.size().width() / 2),
+            int(self.height() - self.mute_button.size().height() / 2),
         )
         self.mute_button.hide()
         # self.fullscreen_button = QSvgWidget('./tagstudio/resources/pause.svg', self)
@@ -142,7 +142,7 @@ class VideoPlayer(QGraphicsView):
         autoplay_action = QAction("Autoplay", self)
         autoplay_action.setCheckable(True)
         autoplay_action.setChecked(
-            self.driver.settings.value("autoplay_videos", True, bool)
+            bool(self.driver.settings.value("autoplay_videos", True, bool))
         )
         autoplay_action.triggered.connect(lambda: self.toggleAutoplay())
         self.addAction(autoplay_action)
@@ -201,19 +201,13 @@ class VideoPlayer(QGraphicsView):
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
         # This chunk of code is for the video controls.
         if (
-            obj == self.play_pause
-            and event.type() == QEvent.Type.MouseButtonPress
-            and event.button() == Qt.MouseButton.LeftButton
+            event.type() == QEvent.Type.MouseButtonPress
+            and event.button() == Qt.MouseButton.LeftButton  # type: ignore
         ):
-            if self.player.hasVideo():
+            if obj == self.play_pause and self.player.hasVideo():
                 self.pauseToggle()
 
-        if (
-            obj == self.mute_button
-            and event.type() == QEvent.Type.MouseButtonPress
-            and event.button() == Qt.MouseButton.LeftButton
-        ):
-            if self.player.hasAudio():
+            if obj == self.mute_button and self.player.hasAudio():
                 self.muteToggle()
 
         if (
@@ -343,14 +337,14 @@ class VideoPlayer(QGraphicsView):
                 int(self.contentsRect().size().height()),
             )
         )
-        mask = mask.getchannel("A").toqpixmap()
-        self.setMask(QRegion(QBitmap(mask)))
+        pixmap = mask.getchannel("A").toqpixmap()
+        self.setMask(QRegion(QBitmap(pixmap)))
 
     def keepControlsInPlace(self) -> None:
         # Keeps the video controls in the places they should be.
         self.play_pause.move(
-            self.width() / 2 - self.play_pause.size().width() / 2,
-            self.height() / 2 - self.play_pause.size().height() / 2,
+            int(self.width() / 2 - self.play_pause.size().width() / 2),
+            int(self.height() / 2 - self.play_pause.size().height() / 2),
         )
         self.mute_button.move(
             self.width() - self.mute_button.size().width() - 10,
@@ -361,7 +355,7 @@ class VideoPlayer(QGraphicsView):
     def resizeEvent(self, event: QResizeEvent) -> None:
         # Keeps the video preview in the center of the screen.
         self.centerOn(self.video_preview)
-        self.resizeVideo(self.video_preview.size())
+        self.resizeVideo(typing.cast(QSize, self.video_preview.size()))
         return
         # return super().resizeEvent(event)\
 
