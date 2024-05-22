@@ -38,7 +38,7 @@ class AddFieldModal(QWidget):
         self.title_widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.list_widget = QListWidget()
-        self.list_widget.setSelectionMode(QListWidget.ExtendedSelection)
+        self.list_widget.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
 
         items = []
         for df in self.lib.default_fields:

@@ -88,7 +88,7 @@ class ThumbRenderer(QObject):
     def render(
         self,
         timestamp: float,
-        filepath,
+        filepath: str | Path,
         base_size: tuple[int, int],
         pixel_ratio: float,
         is_loading=False,
@@ -99,7 +99,7 @@ class ThumbRenderer(QObject):
         image: Image.Image = None
         pixmap: QPixmap = None
         final: Image.Image = None
-        extension: str = None
+        filepath = Path(filepath)
         resampling_method = Image.Resampling.BILINEAR
         if ThumbRenderer.font_pixel_ratio != pixel_ratio:
             ThumbRenderer.font_pixel_ratio = pixel_ratio
@@ -119,11 +119,9 @@ class ThumbRenderer(QObject):
             if update_on_ratio_change:
                 self.updated_ratio.emit(1)
         elif filepath:
-            extension = os.path.splitext(filepath)[1][1:].lower()
-
             try:
                 # Images =======================================================
-                if extension in IMAGE_TYPES:
+                if filepath.suffix in IMAGE_TYPES:
                     try:
                         image = Image.open(filepath)
                         if image.mode != "RGB" and image.mode != "RGBA":
@@ -139,7 +137,7 @@ class ThumbRenderer(QObject):
                             f"[ThumbRenderer]{WARNING} Couldn't Render thumbnail for {filepath} (because of {e})"
                         )
 
-                elif extension in RAW_IMAGE_TYPES:
+                elif filepath.suffix in RAW_IMAGE_TYPES:
                     try:
                         with rawpy.imread(filepath) as raw:
                             rgb = raw.postprocess()
@@ -159,8 +157,8 @@ class ThumbRenderer(QObject):
                         )
 
                 # Videos =======================================================
-                elif extension in VIDEO_TYPES:
-                    video = cv2.VideoCapture(filepath)
+                elif filepath.suffix in VIDEO_TYPES:
+                    video = cv2.VideoCapture(str(filepath))
                     video.set(
                         cv2.CAP_PROP_POS_FRAMES,
                         (video.get(cv2.CAP_PROP_FRAME_COUNT) // 2),
@@ -176,7 +174,7 @@ class ThumbRenderer(QObject):
                     image = Image.fromarray(frame)
 
                 # Plain Text ===================================================
-                elif extension in PLAINTEXT_TYPES:
+                elif filepath.suffix in PLAINTEXT_TYPES:
                     with open(filepath, "r", encoding="utf-8") as text_file:
                         text = text_file.read(256)
                     bg = Image.new("RGB", (256, 256), color="#1e1e1e")
@@ -230,7 +228,6 @@ class ThumbRenderer(QObject):
                     < max(base_size[0], base_size[1])
                     else Image.Resampling.BILINEAR
                 )
-
                 image = image.resize((new_x, new_y), resample=resampling_method)
                 if gradient:
                     mask: Image.Image = ThumbRenderer.thumb_mask_512.resize(
@@ -275,12 +272,12 @@ class ThumbRenderer(QObject):
                 final = ThumbRenderer.thumb_broken_512.resize(
                     (adj_size, adj_size), resample=resampling_method
                 )
-
             qim = ImageQt.ImageQt(final)
             if image:
                 image.close()
             pixmap = QPixmap.fromImage(qim)
             pixmap.setDevicePixelRatio(pixel_ratio)
+
         if pixmap:
             self.updated.emit(
                 timestamp,
@@ -289,8 +286,8 @@ class ThumbRenderer(QObject):
                     math.ceil(adj_size / pixel_ratio),
                     math.ceil(final.size[1] / pixel_ratio),
                 ),
-                extension,
+                filepath.suffix,
             )
 
         else:
-            self.updated.emit(timestamp, QPixmap(), QSize(*base_size), extension)
+            self.updated.emit(timestamp, QPixmap(), QSize(*base_size), filepath.suffix)

@@ -265,7 +265,7 @@ class PreviewPanel(QWidget):
     def add_sidebar_buttons(self, parent_layout: QHBoxLayout):
         sidebar = QVBoxLayout()
         sidebar.setContentsMargins(0, 0, 0, 0)
-        sidebar.setAlignment(Qt.AlignTop)  # type: ignore
+        sidebar.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         sidebar_preview = QPushButton("🖼️")
         sidebar_preview.setFixedWidth(32)
@@ -328,7 +328,7 @@ class PreviewPanel(QWidget):
         clear_layout(layout)
 
         label = QLabel("Recent Libraries")
-        label.setAlignment(Qt.AlignCenter)  # type: ignore
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         row_layout = QHBoxLayout()
         row_layout.addWidget(label)
