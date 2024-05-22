@@ -6,6 +6,7 @@
 
 import json
 import os
+from enum import Enum
 
 from src.core.library import Entry, Library
 from src.core.constants import TS_FOLDER_NAME, TEXT_FIELDS
