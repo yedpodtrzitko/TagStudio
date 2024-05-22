@@ -40,8 +40,6 @@ from src.qt.widgets.text import TextWidget
 from src.qt.widgets.panel import PanelModal
 from src.qt.widgets.text_box_edit import EditTextBox
 from src.qt.widgets.text_line_edit import EditTextLine
-from src.qt.widgets.item_thumb import ItemThumb
-
 
 # Only import for type checking/autocompletion, will not be imported at runtime.
 if typing.TYPE_CHECKING:
@@ -77,6 +75,10 @@ class PreviewPanel(QWidget):
         self.image_ratio: float = 1.0
 
         self.image_container = QWidget()
+        self.image_container.setSizePolicy(
+            QSizePolicy.Policy.Preferred,
+            QSizePolicy.Policy.Maximum,  # dont expand vertically
+        )
 
         self.open_file_action = QAction("Open file", self)
         self.open_explorer_action = QAction("Open file in explorer", self)
@@ -168,8 +170,8 @@ class PreviewPanel(QWidget):
 
         self.info_section = QWidget()
         self.info_section.setSizePolicy(
-            QSizePolicy.Preferred,  # type: ignore
-            QSizePolicy.Minimum,  # type: ignore
+            QSizePolicy.Policy.Preferred,
+            QSizePolicy.Policy.Preferred,
         )
 
         info_layout = QVBoxLayout(self.info_section)
@@ -188,8 +190,8 @@ class PreviewPanel(QWidget):
         self.libs_flow_container.setObjectName("librariesList")
         self.libs_flow_container.setLayout(self.libs_layout)
         self.libs_flow_container.setSizePolicy(
-            QSizePolicy.Preferred,  # type: ignore
-            QSizePolicy.Maximum,  # type: ignore
+            QSizePolicy.Policy.Preferred,
+            QSizePolicy.Policy.Maximum,  # dont expand vertically
         )
 
         # set initial visibility based on settings
@@ -197,6 +199,17 @@ class PreviewPanel(QWidget):
             SettingItems.WINDOW_SHOW_LIBS, True, type=bool
         ):
             self.toggle_libs()
+
+        self.fields_widget = AddFieldModal(library)
+        self.fields_widget.add_callback(
+            lambda items: (self.add_field_to_selected(items), self.update_widgets())
+        )
+        self.fields_widget.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Expanding,
+        )
+        # hide by default
+        self.fields_widget.setVisible(False)
 
         self.splitter = splitter = QSplitter()
         splitter.setOrientation(Qt.Orientation.Vertical)
@@ -211,9 +224,9 @@ class PreviewPanel(QWidget):
         )
 
         splitter.addWidget(self.image_container)
+        splitter.addWidget(self.fields_widget)
         splitter.addWidget(self.info_section)
         splitter.addWidget(self.libs_flow_container)
-        splitter.setStretchFactor(1, 2)
 
         self.afb_container = QWidget()
         self.afb_layout = QVBoxLayout(self.afb_container)
@@ -225,8 +238,7 @@ class PreviewPanel(QWidget):
         self.add_field_button.setMaximumSize(96, 28)
         self.add_field_button.setText("Add Field")
         self.afb_layout.addWidget(self.add_field_button)
-        self.afm = AddFieldModal(self.lib)
-        self.place_add_field_button()
+
         self.update_image_size(
             (self.image_container.size().width(), self.image_container.size().height())
         )
@@ -236,6 +248,9 @@ class PreviewPanel(QWidget):
         root_layout.addWidget(splitter)
 
         self.add_sidebar_buttons(self.driver.main_window.horizontalLayout)
+
+    def toggle_fields(self):
+        self.fields_widget.setVisible(not self.fields_widget.isVisible())
 
     def toggle_thumbnail(self):
         # TODO - skip rendering when hidden
@@ -256,6 +271,11 @@ class PreviewPanel(QWidget):
         sidebar_preview.setFixedWidth(32)
         sidebar_preview.pressed.connect(self.toggle_thumbnail)
         sidebar.addWidget(sidebar_preview)
+
+        sidebar_fields = QPushButton("🟰")
+        sidebar_fields.setFixedWidth(32)
+        sidebar_fields.pressed.connect(self.toggle_fields)
+        sidebar.addWidget(sidebar_fields)
 
         sidebar_props = QPushButton("⚙️️")
         sidebar_props.setFixedWidth(32)
@@ -431,33 +451,14 @@ class PreviewPanel(QWidget):
         # logging.info(f'  Icon Size: {self.preview_img.icon().actualSize().toTuple()}')
         # logging.info(f'Button Size: {self.preview_img.size().toTuple()}')
 
-    def place_add_field_button(self):
-        self.scroll_layout.addWidget(self.afb_container)
-        self.scroll_layout.setAlignment(
-            self.afb_container, Qt.AlignmentFlag.AlignHCenter
-        )
-
-        try:
-            self.afm.done.disconnect()
-            self.add_field_button.clicked.disconnect()
-        except RuntimeError:
-            pass
-
-        # self.afm.done.connect(lambda f: (self.lib.add_field_to_entry(self.selected[0][1], f), self.update_widgets()))
-        self.afm.done.connect(
-            lambda f: (self.add_field_to_selected(f), self.update_widgets())
-        )
-        self.add_field_button.clicked.connect(self.afm.show)
-
     def add_field_to_selected(self, field_list: list[QModelIndex]):
         """Adds list of entry fields to one or more selected items."""
-        added: set[int] = set()
         for item_type, item_id in self.selected:
+            if item_type != ItemType.ENTRY:
+                continue
+
             for field_item in field_list:
-                field_id = field_item.row()
-                if item_type == ItemType.ENTRY and item_id not in added:
-                    self.lib.add_field_to_entry(item_id, field_id)
-                    added.add(item_id)
+                self.lib.add_field_to_entry(item_id, field_item.row())
 
     # def update_widgets(self, item: Union[Entry, Collation, Tag]):
     def update_widgets(self):
@@ -774,9 +775,7 @@ class PreviewPanel(QWidget):
     def write_container(self, index, field, mixed=False):
         """Updates/Creates data for a FieldContainer."""
         # logging.info(f'[ENTRY PANEL] WRITE CONTAINER')
-        # Remove 'Add Field' button from scroll_layout, to be re-added later.
-        self.scroll_layout.takeAt(self.scroll_layout.count() - 1).widget()
-        container: FieldContainer = None
+
         if len(self.containers) < (index + 1):
             container = FieldContainer()
             self.containers.append(container)
@@ -1004,7 +1003,6 @@ class PreviewPanel(QWidget):
             )
         container.edit_button.setHidden(True)
         container.setHidden(False)
-        self.place_add_field_button()
 
     def remove_field(self, field: dict):
         """Removes a field from all selected Entries, given a field object."""
