@@ -46,6 +46,8 @@ INFO = f"[INFO]"
 
 logging.basicConfig(format="%(message)s", level=logging.INFO)
 
+ROOT_DIR = Path(__file__).parents[3]
+
 
 class ItemThumb(FlowWidget):
     """
@@ -55,16 +57,12 @@ class ItemThumb(FlowWidget):
     update_cutoff: float = time.time()
 
     collation_icon_128: Image.Image = Image.open(
-        os.path.normpath(
-            f"{Path(__file__).parents[3]}/resources/qt/images/collation_icon_128.png"
-        )
+        str(ROOT_DIR / "resources/qt/images/collation_icon_128.png")
     )
     collation_icon_128.load()
 
     tag_group_icon_128: Image.Image = Image.open(
-        os.path.normpath(
-            f"{Path(__file__).parents[3]}/resources/qt/images/tag_group_icon_128.png"
-        )
+        str(ROOT_DIR / "resources/qt/images/tag_group_icon_128.png")
     )
     tag_group_icon_128.load()
 
@@ -196,7 +194,7 @@ class ItemThumb(FlowWidget):
         # self.bg_button.setMaximumSize(*thumb_size)
 
         self.thumb_button.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
-        self.opener = FileOpenerHelper("")
+        self.opener = FileOpenerHelper()
         open_file_action = QAction("Open file", self)
         open_file_action.triggered.connect(self.opener.open_file)
         open_explorer_action = QAction("Open file in explorer", self)
@@ -420,9 +418,7 @@ class ItemThumb(FlowWidget):
         if id == -1:
             return
         entry = self.lib.get_entry(self.item_id)
-        filepath = os.path.normpath(
-            f"{self.lib.library_dir}/{entry.path}/{entry.filename}"
-        )
+        filepath = self.lib.library_dir / entry.path / entry.filename
         self.opener.set_filepath(filepath)
 
     def assign_favorite(self, value: bool):

@@ -7,6 +7,7 @@ import os
 import time
 import typing
 from datetime import datetime as dt
+from pathlib import Path
 
 import cv2
 import rawpy
@@ -461,7 +462,7 @@ class PreviewPanel(QWidget):
                 self.lib.add_field_to_entry(item_id, field_item.row())
 
     # def update_widgets(self, item: Union[Entry, Collation, Tag]):
-    def update_widgets(self):
+    def update_widgets(self) -> typing.NoReturn:  # type: ignore
         """
         Renders the panel's widgets with the newest data from the Library.
         """
@@ -477,7 +478,7 @@ class PreviewPanel(QWidget):
         if not self.driver.selected:
             if self.selected or not self.initialized:
                 self.file_label.setText(f"No Items Selected")
-                self.file_label.setFilePath("")
+                self.file_label.setFilePath()
                 self.file_label.setCursor(Qt.CursorShape.ArrowCursor)
 
                 self.dimensions_label.setText("")
@@ -512,12 +513,11 @@ class PreviewPanel(QWidget):
                 item: Entry = self.lib.get_entry(self.driver.selected[0][1])
                 # If a new selection is made, update the thumbnail and filepath.
                 if not self.selected or self.selected != self.driver.selected:
-                    filepath = os.path.normpath(
-                        f"{self.lib.library_dir}/{item.path}/{item.filename}"
-                    )
+                    filepath: Path = self.lib.library_dir / item.path / item.filename
+
                     self.file_label.setFilePath(filepath)
-                    window_title = filepath
-                    ratio: float = self.devicePixelRatio()
+                    window_title = str(filepath)
+                    ratio = self.devicePixelRatio()
                     self.thumb_renderer.render(
                         time.time(),
                         filepath,
@@ -525,7 +525,7 @@ class PreviewPanel(QWidget):
                         ratio,
                         update_on_ratio_change=True,
                     )
-                    self.file_label.setText("\u200b".join(filepath))
+                    self.file_label.setText("\u200b".join(str(filepath)))
                     self.file_label.setCursor(Qt.CursorShape.PointingHandCursor)
 
                     self.preview_img.setContextMenuPolicy(
@@ -552,7 +552,7 @@ class PreviewPanel(QWidget):
                                     "L", (rgb.shape[1], rgb.shape[0]), color="black"
                                 )
                         elif extension in VIDEO_TYPES:
-                            video = cv2.VideoCapture(filepath)
+                            video = cv2.VideoCapture(str(filepath))
                             video.set(cv2.CAP_PROP_POS_FRAMES, 0)
                             success, frame = video.read()
                             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -615,7 +615,7 @@ class PreviewPanel(QWidget):
             if self.selected != self.driver.selected:
                 self.file_label.setText(f"{len(self.driver.selected)} Items Selected")
                 self.file_label.setCursor(Qt.CursorShape.ArrowCursor)
-                self.file_label.setFilePath("")
+                self.file_label.setFilePath()
                 self.dimensions_label.setText("")
 
                 self.preview_img.setContextMenuPolicy(
@@ -623,7 +623,7 @@ class PreviewPanel(QWidget):
                 )
                 self.preview_img.setCursor(Qt.CursorShape.ArrowCursor)
 
-                ratio: float = self.devicePixelRatio()
+                ratio = self.devicePixelRatio()
                 self.thumb_renderer.render(
                     time.time(),
                     "",
@@ -956,7 +956,7 @@ class PreviewPanel(QWidget):
                     title = f"{self.lib.get_field_attr(field, 'name')} (Date)"
                     inner_container = TextWidget(title, date.strftime("%D - %r"))
                     container.set_inner_widget(inner_container)
-                except:
+                except Exception:
                     container.set_title(self.lib.get_field_attr(field, "name"))
                     # container.set_editable(False)
                     container.set_inline(False)

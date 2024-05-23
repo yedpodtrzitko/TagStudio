@@ -224,9 +224,12 @@ class QtDriver(QObject):
             self.thumb_threads.append(thread)
             thread.start()
 
-    def open_library_from_dialog(self):
+    def open_library_from_dialog(self) -> None:
         dir = QFileDialog.getExistingDirectory(
-            None, "Open/Create Library", "/", QFileDialog.ShowDirsOnly
+            None,
+            "Open/Create Library",
+            "/",
+            QFileDialog.ShowDirsOnly,  # type: ignore
         )
         if dir not in (None, ""):
             self.open_library(dir)
@@ -460,11 +463,11 @@ class QtDriver(QObject):
         show_libs_list_action = QAction("Show Recent Libraries", menu_bar)
         show_libs_list_action.setCheckable(True)
         show_libs_list_action.setChecked(
-            self.settings.value(SettingItems.WINDOW_SHOW_LIBS, True, type=bool)  # type: ignore
+            self.settings.value(SettingItems.WINDOW_SHOW_LIBS, True, type=bool)
         )
         show_libs_list_action.triggered.connect(
             lambda checked: (
-                self.settings.setValue(SettingItems.WINDOW_SHOW_LIBS, checked),  # type: ignore
+                self.settings.setValue(SettingItems.WINDOW_SHOW_LIBS, checked),
                 self.toggle_libs_list(checked),
             )
         )
@@ -499,7 +502,7 @@ class QtDriver(QObject):
         )
 
         self.thumb_size = 128
-        self.max_results = 500
+        self.max_results: int = 500
         self.item_thumbs: list[ItemThumb] = []
         self.thumb_renderers: list[ThumbRenderer] = []
         self.collation_thumb_size = math.ceil(self.thumb_size * 2)
@@ -636,7 +639,7 @@ class QtDriver(QObject):
                     QFileDialog.ShowDirsOnly,
                 )
                 if dir not in (None, ""):
-                    self.lib.library_dir = dir
+                    self.lib.library_dir = Path(dir)
         if show_status:
             end_time = time.time()
             self.main_window.statusbar.showMessage(
@@ -1193,7 +1196,6 @@ class QtDriver(QObject):
 
         for i, item_thumb in enumerate(self.item_thumbs, start=0):
             if i < len(self.nav_frames[self.cur_frame_idx].contents):
-                filepath = ""
                 if self.nav_frames[self.cur_frame_idx].contents[i][0] == ItemType.ENTRY:
                     entry = self.lib.get_entry(
                         self.nav_frames[self.cur_frame_idx].contents[i][1]
@@ -1211,14 +1213,14 @@ class QtDriver(QObject):
                             lambda checked=False, entry=entry: self.select_item(
                                 ItemType.ENTRY,
                                 entry.id,
-                                append=True
-                                if QGuiApplication.keyboardModifiers()
-                                == Qt.KeyboardModifier.ControlModifier
-                                else False,
-                                bridge=True
-                                if QGuiApplication.keyboardModifiers()
-                                == Qt.KeyboardModifier.ShiftModifier
-                                else False,
+                                append=(
+                                    QGuiApplication.keyboardModifiers()
+                                    == Qt.KeyboardModifier.ControlModifier
+                                ),
+                                bridge=(
+                                    QGuiApplication.keyboardModifiers()
+                                    == Qt.KeyboardModifier.ShiftModifier
+                                ),
                             )
                         )
                     )
@@ -1308,7 +1310,7 @@ class QtDriver(QObject):
             # 73601 Entries at 500 size should be 246
             all_items = self.lib.search_library(query)
             frames: list[list[tuple[ItemType, int]]] = []
-            frame_count = math.ceil(len(all_items) / self.max_results)
+            frame_count = len(all_items) // self.max_results
             for i in range(0, frame_count):
                 frames.append(
                     all_items[
@@ -1380,8 +1382,9 @@ class QtDriver(QObject):
         self.settings.endGroup()
         self.settings.sync()
 
-    def open_library(self, path):
+    def open_library(self, path: Path | str):
         """Opens a TagStudio library."""
+        path = Path(path)
         if self.lib.library_dir:
             self.save_library()
             self.lib.clear_internal_vars()
@@ -1403,7 +1406,8 @@ class QtDriver(QObject):
             logging.info(
                 f"{ERROR} No existing TagStudio library found at '{path}'. Creating one."
             )
-            print(f"Library Creation Return Code: {self.lib.create_library(path)}")
+            create_rc = self.lib.create_library(path)
+            print(f"Library Creation Return Code: {create_rc}")
             self.add_new_files_callback()
 
         self.update_libs_list(path)

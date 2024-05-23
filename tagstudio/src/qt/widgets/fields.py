@@ -14,27 +14,23 @@ from PySide6.QtCore import Qt, QEvent
 from PySide6.QtGui import QPixmap, QEnterEvent
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
 
+ROOT_DIR = Path(__file__).parents[3]
+
 
 class FieldContainer(QWidget):
     # TODO: reference a resources folder rather than path.parents[3]?
     clipboard_icon_128: Image.Image = Image.open(
-        os.path.normpath(
-            f"{Path(__file__).parents[3]}/resources/qt/images/clipboard_icon_128.png"
-        )
+        str(ROOT_DIR / "resources/qt/images/clipboard_icon_128.png")
     ).resize((math.floor(24 * 1.25), math.floor(24 * 1.25)))
     clipboard_icon_128.load()
 
     edit_icon_128: Image.Image = Image.open(
-        os.path.normpath(
-            f"{Path(__file__).parents[3]}/resources/qt/images/edit_icon_128.png"
-        )
+        str(ROOT_DIR / "resources/qt/images/edit_icon_128.png")
     ).resize((math.floor(24 * 1.25), math.floor(24 * 1.25)))
     edit_icon_128.load()
 
     trash_icon_128: Image.Image = Image.open(
-        os.path.normpath(
-            f"{Path(__file__).parents[3]}/resources/qt/images/trash_icon_128.png"
-        )
+        str(ROOT_DIR / "resources/qt/images/trash_icon_128.png")
     ).resize((math.floor(24 * 1.25), math.floor(24 * 1.25)))
     trash_icon_128.load()
 

@@ -52,10 +52,8 @@ class CollageIconRenderer(QObject):
         keep_aspect,
     ):
         entry = self.lib.get_entry(entry_id)
-        filepath = os.path.normpath(
-            f"{self.lib.library_dir}/{entry.path}/{entry.filename}"
-        )
-        file_type = os.path.splitext(filepath)[1].lower()[1:]
+        filepath = self.lib.library_dir / entry.path / entry.filename
+        file_type = filepath.suffix.lower()
         color: str = ""
 
         try:
@@ -98,9 +96,7 @@ class CollageIconRenderer(QObject):
                 if file_type in IMAGE_TYPES:
                     try:
                         with Image.open(
-                            os.path.normpath(
-                                f"{self.lib.library_dir}/{entry.path}/{entry.filename}"
-                            )
+                            str(self.lib.library_dir / entry.path / entry.filename)
                         ) as pic:
                             if keep_aspect:
                                 pic.thumbnail(size)
@@ -116,7 +112,7 @@ class CollageIconRenderer(QObject):
                     except DecompressionBombError as e:
                         logging.info(f"[ERROR] One of the images was too big ({e})")
                 elif file_type in VIDEO_TYPES:
-                    video = cv2.VideoCapture(filepath)
+                    video = cv2.VideoCapture(str(filepath))
                     video.set(
                         cv2.CAP_PROP_POS_FRAMES,
                         (video.get(cv2.CAP_PROP_FRAME_COUNT) // 2),
@@ -162,7 +158,7 @@ class CollageIconRenderer(QObject):
             logging.info("\n")
             logging.info(f"{INFO} Collage operation cancelled.")
             clear_scr = False
-        except:
+        except Exception:
             logging.info(f"{ERROR} {entry.path}{os.sep}{entry.filename}")
             traceback.print_exc()
             logging.info("Continuing...")

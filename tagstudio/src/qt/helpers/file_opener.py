@@ -8,6 +8,7 @@ import subprocess
 import shutil
 import sys
 import traceback
+from pathlib import Path
 
 from PySide6.QtWidgets import QLabel
 from PySide6.QtCore import Qt
@@ -19,7 +20,7 @@ INFO = f"[INFO]"
 logging.basicConfig(format="%(message)s", level=logging.INFO)
 
 
-def open_file(path: str, file_manager: bool = False):
+def open_file(path: Path, file_manager: bool = False):
     """Open a file in the default application or file explorer.
 
     Args:
@@ -28,9 +29,10 @@ def open_file(path: str, file_manager: bool = False):
                     Defaults to False.
     """
     logging.info(f"Opening file: {path}")
-    if not os.path.exists(path):
+    if not path.exists():
         logging.error(f"File not found: {path}")
         return
+
     try:
         if sys.platform == "win32":
             normpath = os.path.normpath(path)
@@ -59,7 +61,7 @@ def open_file(path: str, file_manager: bool = False):
         else:
             if sys.platform == "darwin":
                 command_name = "open"
-                command_args = [path]
+                command_args = [str(path)]
                 if file_manager:
                     # will reveal in Finder
                     command_args.append("-R")
@@ -78,18 +80,18 @@ def open_file(path: str, file_manager: bool = False):
                     ]
                 else:
                     command_name = "xdg-open"
-                    command_args = [path]
+                    command_args = [str(path)]
             command = shutil.which(command_name)
             if command is not None:
                 subprocess.Popen([command] + command_args, close_fds=True)
             else:
                 logging.info(f"Could not find {command_name} on system PATH")
-    except:
+    except Exception:
         traceback.print_exc()
 
 
 class FileOpenerHelper:
-    def __init__(self, filepath: str):
+    def __init__(self, filepath: Path | None = None):
         """Initialize the FileOpenerHelper.
 
         Args:
@@ -97,7 +99,7 @@ class FileOpenerHelper:
         """
         self.filepath = filepath
 
-    def set_filepath(self, filepath: str):
+    def set_filepath(self, filepath: Path):
         """Set the filepath to open.
 
         Args:
@@ -115,7 +117,9 @@ class FileOpenerHelper:
 
 
 class FileOpenerLabel(QLabel):
-    def __init__(self, text, parent=None):
+    filepath: Path
+
+    def __init__(self, text: str, parent=None):
         """Initialize the FileOpenerLabel.
 
         Args:
@@ -124,11 +128,11 @@ class FileOpenerLabel(QLabel):
         """
         super().__init__(text, parent)
 
-    def setFilePath(self, filepath):
+    def setFilePath(self, filepath: Path | None = None):
         """Set the filepath to open.
 
         Args:
-                filepath (str): The path to the file to open.
+                filepath (Path | None): The path to the file to open.
         """
         self.filepath = filepath
 
@@ -143,8 +147,7 @@ class FileOpenerLabel(QLabel):
         super().mousePressEvent(event)
 
         if event.button() == Qt.LeftButton:
-            opener = FileOpenerHelper(self.filepath)
-            opener.open_explorer()
+            open_file(self.filepath, True)
         elif event.button() == Qt.RightButton:
             # Show context menu
             pass
