@@ -4,9 +4,8 @@
 
 """PySide6 port of the widgets/layouts/flowlayout example from Qt v6.x"""
 
-from PySide6.QtCore import Qt, QMargins, QPoint, QRect, QSize
+from PySide6.QtCore import QMargins, QPoint, QRect, QSize, Qt
 from PySide6.QtWidgets import QLayout, QSizePolicy, QWidget
-
 
 # class Window(QWidget):
 #     def __init__(self):

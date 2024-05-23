@@ -3,9 +3,8 @@
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
 
-from PySide6.QtCore import Signal, Qt
-from PySide6.QtWidgets import QVBoxLayout, QPushButton, QTableWidget, QTableWidgetItem
-
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout
 from src.core.library import Library
 from src.qt.widgets.panel import PanelWidget
 

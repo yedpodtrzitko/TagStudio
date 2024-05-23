@@ -14,21 +14,22 @@ import os
 # import subprocess
 import sys
 import time
-from PIL import Image, ImageChops, UnidentifiedImageError
-from PIL.Image import DecompressionBombError
-
-# import pillow_avif
-from pathlib import Path
 import traceback
-import cv2
 
 # import climage
 # import click
 from datetime import datetime as dt
-from src.core.ts_core import *
-from src.core.utils.web import *
-from src.core.utils.fs import *
+
+# import pillow_avif
+from pathlib import Path
+
+import cv2
+from PIL import Image, ImageChops, UnidentifiedImageError
+from PIL.Image import DecompressionBombError
 from src.core.library import *
+from src.core.ts_core import *
+from src.core.utils.fs import *
+from src.core.utils.web import *
 from src.qt.helpers.file_opener import open_file
 
 WHITE_FG = "\033[37m"

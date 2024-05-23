@@ -2,7 +2,7 @@
 # Licensed under the GPL-3.0 License.
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
-from PIL import Image, ImageEnhance, ImageChops
+from PIL import Image, ImageChops, ImageEnhance
 
 
 def four_corner_gradient_background(image: Image.Image, adj_size, mask, hl):

@@ -10,26 +10,26 @@ from pathlib import Path
 
 import cv2
 import rawpy
-from pillow_heif import register_heif_opener, register_avif_opener
 from PIL import (
     Image,
-    UnidentifiedImageError,
-    ImageQt,
     ImageDraw,
+    ImageFile,
     ImageFont,
     ImageOps,
-    ImageFile,
+    ImageQt,
+    UnidentifiedImageError,
 )
 from PIL.Image import DecompressionBombError
-from PySide6.QtCore import QObject, Signal, QSize
+from pillow_heif import register_avif_opener, register_heif_opener
+from PySide6.QtCore import QObject, QSize, Signal
 from PySide6.QtGui import QPixmap
-from src.qt.helpers.gradient import four_corner_gradient_background
 from src.core.constants import (
-    PLAINTEXT_TYPES,
-    VIDEO_TYPES,
     IMAGE_TYPES,
+    PLAINTEXT_TYPES,
     RAW_IMAGE_TYPES,
+    VIDEO_TYPES,
 )
+from src.qt.helpers.gradient import four_corner_gradient_background
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 

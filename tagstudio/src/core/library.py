@@ -15,17 +15,9 @@ import typing
 import xml.etree.ElementTree as ET
 from enum import Enum
 from pathlib import Path
-from typing import cast, Generator
-
-from typing_extensions import Self
+from typing import Generator, cast
 
 import ujson
-from pathlib import Path
-
-from src.core.enums import FieldID
-from src.core.json_typing import JsonCollation, JsonEntry, JsonLibary, JsonTag
-from src.core.utils.str import strip_punctuation
-from src.core.utils.web import strip_web_protocol
 from src.core.constants import (
     BACKUP_FOLDER_NAME,
     COLLAGE_FOLDER_NAME,
@@ -33,6 +25,11 @@ from src.core.constants import (
     TS_FOLDER_NAME,
     VERSION,
 )
+from src.core.enums import FieldID
+from src.core.json_typing import JsonCollation, JsonEntry, JsonLibary, JsonTag
+from src.core.utils.str import strip_punctuation
+from src.core.utils.web import strip_web_protocol
+from typing_extensions import Self
 
 TYPE = ["file", "meta", "alt", "mask"]
 

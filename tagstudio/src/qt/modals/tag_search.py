@@ -6,22 +6,20 @@
 import logging
 import math
 
-from PySide6.QtCore import Signal, Qt, QSize
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QPushButton,
-    QLineEdit,
-    QScrollArea,
     QFrame,
+    QHBoxLayout,
+    QLineEdit,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
 )
-
 from src.core.library import Library
 from src.core.palette import ColorType, get_tag_color
 from src.qt.widgets.panel import PanelWidget
 from src.qt.widgets.tag import TagWidget
-
 
 ERROR = f"[ERROR]"
 WARNING = f"[WARNING]"

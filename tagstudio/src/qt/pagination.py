@@ -5,17 +5,16 @@
 """A pagination widget created for TagStudio."""
 # I never want to see this code again.
 
-from PySide6.QtCore import QObject, Signal, QSize
+from PySide6.QtCore import QObject, QSize, Signal
 from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import (
-    QWidget,
     QHBoxLayout,
-    QPushButton,
     QLabel,
     QLineEdit,
+    QPushButton,
     QSizePolicy,
+    QWidget,
 )
-
 
 # class NumberEdit(QLineEdit):
 # 	def __init__(self, parent=None) -> None:

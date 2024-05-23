@@ -5,8 +5,8 @@
 
 from PySide6 import QtCore
 from PySide6.QtCore import QEvent
-from PySide6.QtGui import QEnterEvent, QPainter, QColor, QPen, QPainterPath, QPaintEvent
-from PySide6.QtWidgets import QWidget, QPushButton
+from PySide6.QtGui import QColor, QEnterEvent, QPainter, QPainterPath, QPaintEvent, QPen
+from PySide6.QtWidgets import QPushButton, QWidget
 
 
 class ThumbButton(QPushButton):

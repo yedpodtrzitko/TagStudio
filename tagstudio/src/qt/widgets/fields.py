@@ -5,14 +5,14 @@
 
 import math
 import os
-from types import FunctionType, MethodType
 from pathlib import Path
-from typing import Optional, cast, Callable, Any
+from types import FunctionType, MethodType
+from typing import Any, Callable, Optional, cast
 
 from PIL import Image, ImageQt
-from PySide6.QtCore import Qt, QEvent
-from PySide6.QtGui import QPixmap, QEnterEvent
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
+from PySide6.QtCore import QEvent, Qt
+from PySide6.QtGui import QEnterEvent, QPixmap
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 ROOT_DIR = Path(__file__).parents[3]
 

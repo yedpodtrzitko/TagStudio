@@ -11,21 +11,19 @@ import cv2
 from PIL import Image, ImageChops, UnidentifiedImageError
 from PIL.Image import DecompressionBombError
 from PySide6.QtCore import (
-    QObject,
-    QThread,
-    Signal,
-    QRunnable,
-    Qt,
-    QThreadPool,
-    QSize,
     QEvent,
-    QTimer,
+    QObject,
+    QRunnable,
     QSettings,
+    QSize,
+    Qt,
+    QThread,
+    QThreadPool,
+    QTimer,
+    Signal,
 )
-
+from src.core.constants import DOC_TYPES, IMAGE_TYPES, VIDEO_TYPES
 from src.core.library import Library
-from src.core.constants import DOC_TYPES, VIDEO_TYPES, IMAGE_TYPES
-
 
 ERROR = f"[ERROR]"
 WARNING = f"[WARNING]"

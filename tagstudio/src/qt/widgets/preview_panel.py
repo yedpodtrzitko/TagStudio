@@ -11,36 +11,35 @@ from pathlib import Path
 
 import cv2
 import rawpy
+from humanfriendly import format_size
 from PIL import Image, UnidentifiedImageError
 from PIL.Image import DecompressionBombError
-from PySide6.QtCore import Signal, Qt, QSize, QModelIndex
-from PySide6.QtGui import QResizeEvent, QAction
+from PySide6.QtCore import QModelIndex, QSize, Qt, Signal
+from PySide6.QtGui import QAction, QResizeEvent
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
+    QFrame,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QPushButton,
     QScrollArea,
-    QFrame,
-    QSplitter,
     QSizePolicy,
-    QMessageBox,
+    QSplitter,
+    QVBoxLayout,
+    QWidget,
 )
-from humanfriendly import format_size
-
+from src.core.constants import IMAGE_TYPES, RAW_IMAGE_TYPES, VIDEO_TYPES
 from src.core.enums import SettingItems, Theme
 from src.core.library import Entry, ItemType, Library
-from src.core.constants import VIDEO_TYPES, IMAGE_TYPES, RAW_IMAGE_TYPES
-from src.qt.helpers.file_opener import FileOpenerLabel, FileOpenerHelper, open_file
+from src.qt.helpers.file_opener import FileOpenerHelper, FileOpenerLabel, open_file
 from src.qt.modals.add_field import AddFieldModal
-from src.qt.widgets.thumb_renderer import ThumbRenderer
 from src.qt.widgets.fields import FieldContainer
+from src.qt.widgets.panel import PanelModal
 from src.qt.widgets.tag_box import TagBoxWidget
 from src.qt.widgets.text import TextWidget
-from src.qt.widgets.panel import PanelModal
 from src.qt.widgets.text_box_edit import EditTextBox
 from src.qt.widgets.text_line_edit import EditTextLine
+from src.qt.widgets.thumb_renderer import ThumbRenderer
 
 # Only import for type checking/autocompletion, will not be imported at runtime.
 if typing.TYPE_CHECKING:
