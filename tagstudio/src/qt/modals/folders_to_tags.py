@@ -9,15 +9,14 @@ import typing
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QPushButton,
     QScrollArea,
-    QFrame,
+    QVBoxLayout,
+    QWidget,
 )
-
 from src.core.enums import FieldID
 from src.core.library import Library, Tag
 from src.core.palette import ColorType, get_tag_color

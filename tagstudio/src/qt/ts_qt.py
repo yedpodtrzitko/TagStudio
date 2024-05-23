@@ -19,89 +19,88 @@ from datetime import datetime as dt
 from pathlib import Path
 from queue import Queue
 from typing import Optional
+
+# this import has side-effect of import PySide resources
+import src.qt.resources_rc  # pylint: disable=unused-import
+from humanfriendly import format_timespan
 from PIL import Image
 from PySide6 import QtCore
-from PySide6.QtCore import QObject, QThread, Signal, Qt, QThreadPool, QTimer, QSettings
+from PySide6.QtCore import QObject, QSettings, Qt, QThread, QThreadPool, QTimer, Signal
 from PySide6.QtGui import (
-    QGuiApplication,
-    QPixmap,
-    QMouseEvent,
-    QColor,
     QAction,
+    QColor,
     QFontDatabase,
+    QGuiApplication,
     QIcon,
+    QMouseEvent,
+    QPixmap,
 )
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
     QApplication,
-    QWidget,
-    QHBoxLayout,
-    QPushButton,
-    QLineEdit,
-    QScrollArea,
     QFileDialog,
-    QSplashScreen,
+    QHBoxLayout,
+    QLineEdit,
     QMenu,
     QMenuBar,
+    QPushButton,
+    QScrollArea,
+    QSplashScreen,
+    QWidget,
 )
-from humanfriendly import format_timespan
-
+from src.core.constants import (
+    ALL_FILE_TYPES,
+    ARCHIVE_TYPES,
+    AUDIO_TYPES,
+    BACKUP_FOLDER_NAME,
+    BOX_FIELDS,
+    COLLAGE_FOLDER_NAME,
+    DATE_FIELDS,
+    DOC_TYPES,
+    IMAGE_TYPES,
+    LIBRARY_FILENAME,
+    PLAINTEXT_TYPES,
+    PRESENTATION_TYPES,
+    PROGRAM_TYPES,
+    SHORTCUT_TYPES,
+    SPREADSHEET_TYPES,
+    TAG_ARCHIVED,
+    TAG_COLORS,
+    TAG_FAVORITE,
+    TEXT_FIELDS,
+    TS_FOLDER_NAME,
+    VERSION,
+    VERSION_BRANCH,
+    VIDEO_TYPES,
+)
 from src.core.enums import SettingItems
 from src.core.library import ItemType
 from src.core.ts_core import TagStudioCore
-from src.core.constants import (
-    PLAINTEXT_TYPES,
-    TAG_COLORS,
-    DATE_FIELDS,
-    TEXT_FIELDS,
-    BOX_FIELDS,
-    ALL_FILE_TYPES,
-    SHORTCUT_TYPES,
-    PROGRAM_TYPES,
-    ARCHIVE_TYPES,
-    PRESENTATION_TYPES,
-    SPREADSHEET_TYPES,
-    DOC_TYPES,
-    AUDIO_TYPES,
-    VIDEO_TYPES,
-    IMAGE_TYPES,
-    LIBRARY_FILENAME,
-    COLLAGE_FOLDER_NAME,
-    BACKUP_FOLDER_NAME,
-    TS_FOLDER_NAME,
-    VERSION_BRANCH,
-    VERSION,
-    TAG_FAVORITE,
-    TAG_ARCHIVED,
-)
 from src.core.utils.web import strip_web_protocol
 from src.qt.flowlayout import FlowLayout
-from src.qt.main_window import Ui_MainWindow
-from src.qt.helpers.function_iterator import FunctionIterator
 from src.qt.helpers.custom_runnable import CustomRunnable
-from src.qt.widgets.collage_icon import CollageIconRenderer
-from src.qt.widgets.panel import PanelModal
-from src.qt.widgets.thumb_renderer import ThumbRenderer
-from src.qt.widgets.progress import ProgressWidget
-from src.qt.widgets.preview_panel import PreviewPanel
-from src.qt.widgets.item_thumb import ItemThumb
+from src.qt.helpers.function_iterator import FunctionIterator
+from src.qt.main_window import Ui_MainWindow
 from src.qt.modals.build_tag import BuildTagPanel
-from src.qt.modals.tag_database import TagDatabasePanel
 from src.qt.modals.file_extension import FileExtensionModal
-from src.qt.modals.fix_unlinked import FixUnlinkedEntriesModal
 from src.qt.modals.fix_dupes import FixDupeFilesModal
+from src.qt.modals.fix_unlinked import FixUnlinkedEntriesModal
 from src.qt.modals.folders_to_tags import FoldersToTagsModal
-
-# this import has side-effect of import PySide resources
-import src.qt.resources_rc  # pylint: disable=unused-import
+from src.qt.modals.tag_database import TagDatabasePanel
+from src.qt.widgets.collage_icon import CollageIconRenderer
+from src.qt.widgets.item_thumb import ItemThumb
+from src.qt.widgets.panel import PanelModal
+from src.qt.widgets.preview_panel import PreviewPanel
+from src.qt.widgets.progress import ProgressWidget
+from src.qt.widgets.thumb_renderer import ThumbRenderer
 
 # SIGQUIT is not defined on Windows
 if sys.platform == "win32":
-    from signal import signal, SIGINT, SIGTERM
+    from signal import SIGINT, SIGTERM, signal
 
     SIGQUIT = SIGTERM
 else:
-    from signal import signal, SIGINT, SIGTERM, SIGQUIT
+    from signal import SIGINT, SIGQUIT, SIGTERM, signal
 
 ERROR = f"[ERROR]"
 WARNING = f"[WARNING]"
