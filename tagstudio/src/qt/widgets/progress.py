@@ -6,7 +6,7 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QProgressDialog
+from PySide6.QtWidgets import QProgressDialog, QVBoxLayout, QWidget
 
 
 class ProgressWidget(QWidget):

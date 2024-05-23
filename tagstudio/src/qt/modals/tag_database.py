@@ -2,20 +2,19 @@
 # Licensed under the GPL-3.0 License.
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
-from PySide6.QtCore import Signal, Qt, QSize
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
+    QFrame,
     QHBoxLayout,
     QLineEdit,
     QScrollArea,
-    QFrame,
+    QVBoxLayout,
+    QWidget,
 )
-
 from src.core.library import Library
-from src.qt.widgets.panel import PanelWidget, PanelModal
-from src.qt.widgets.tag import TagWidget
 from src.qt.modals.build_tag import BuildTagPanel
+from src.qt.widgets.panel import PanelModal, PanelWidget
+from src.qt.widgets.tag import TagWidget
 
 
 class TagDatabasePanel(PanelWidget):

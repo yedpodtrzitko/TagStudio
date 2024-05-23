@@ -5,26 +5,24 @@
 
 import logging
 
-from PySide6.QtCore import Signal, Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QLabel,
-    QPushButton,
-    QLineEdit,
-    QScrollArea,
-    QFrame,
-    QTextEdit,
     QComboBox,
+    QFrame,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QScrollArea,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
 )
-
+from src.core.constants import TAG_COLORS
 from src.core.library import Library, Tag
 from src.core.palette import ColorType, get_tag_color
-from src.core.constants import TAG_COLORS
-from src.qt.widgets.panel import PanelWidget, PanelModal
-from src.qt.widgets.tag import TagWidget
 from src.qt.modals.tag_search import TagSearchPanel
-
+from src.qt.widgets.panel import PanelModal, PanelWidget
+from src.qt.widgets.tag import TagWidget
 
 ERROR = f"[ERROR]"
 WARNING = f"[WARNING]"

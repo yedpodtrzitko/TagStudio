@@ -4,14 +4,14 @@
 
 import logging
 import os
-import subprocess
 import shutil
+import subprocess
 import sys
 import traceback
 from pathlib import Path
 
-from PySide6.QtWidgets import QLabel
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QLabel
 
 ERROR = f"[ERROR]"
 WARNING = f"[WARNING]"

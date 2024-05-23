@@ -7,17 +7,16 @@ import logging
 import math
 import typing
 
-from PySide6.QtCore import Signal, Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QPushButton
-
-from src.core.constants import TAG_FAVORITE, TAG_ARCHIVED
+from src.core.constants import TAG_ARCHIVED, TAG_FAVORITE
 from src.core.library import Library, Tag
 from src.qt.flowlayout import FlowLayout
-from src.qt.widgets.fields import FieldWidget
-from src.qt.widgets.tag import TagWidget
-from src.qt.widgets.panel import PanelModal
 from src.qt.modals.build_tag import BuildTagPanel
 from src.qt.modals.tag_search import TagSearchPanel
+from src.qt.widgets.fields import FieldWidget
+from src.qt.widgets.panel import PanelModal
+from src.qt.widgets.tag import TagWidget
 
 # Only import for type checking/autocompletion, will not be imported at runtime.
 if typing.TYPE_CHECKING:

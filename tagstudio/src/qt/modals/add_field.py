@@ -5,14 +5,13 @@ from typing import Callable
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
     QHBoxLayout,
     QLabel,
-    QPushButton,
     QListWidget,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
 )
-
 from src.core.library import Library
 
 

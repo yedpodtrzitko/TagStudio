@@ -9,8 +9,8 @@ import os
 from enum import Enum
 from pathlib import Path
 
+from src.core.constants import TEXT_FIELDS, TS_FOLDER_NAME
 from src.core.library import Entry, Library
-from src.core.constants import TS_FOLDER_NAME, TEXT_FIELDS
 
 
 class TagStudioCore:
