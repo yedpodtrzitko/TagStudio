@@ -90,7 +90,7 @@ class Entry:
         return self.__str__()
 
     def __eq__(self, __value: object) -> bool:
-        __value = cast(Self, object)
+        __value = cast(Self, __value)
         return (
             int(self.id) == int(__value.id)
             and self.filename == __value.filename
