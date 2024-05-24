@@ -186,7 +186,7 @@ class Entry(Base):
     def __init__(
         self,
         path: Path,
-        fields: list[Field] = [],
+        fields: list[Field] = None,
     ) -> None:
         self.path = path
         self.type = None
@@ -197,7 +197,7 @@ class Entry(Base):
             )
         )
 
-        for field in fields:
+        for field in fields or []:
             if isinstance(field, TextField):
                 self.text_fields.append(field)
             elif isinstance(field, DatetimeField):

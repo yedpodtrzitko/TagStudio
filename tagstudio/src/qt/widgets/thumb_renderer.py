@@ -41,36 +41,38 @@ logging.basicConfig(format="%(message)s", level=logging.INFO)
 register_heif_opener()
 register_avif_opener()
 
+ROOT_DIR = Path(__file__).parents[3]
+
 
 class ThumbRenderer(QObject):
     # finished = Signal()
-    updated = Signal(float, QPixmap, QSize, str)
+    updated = Signal(float, QPixmap, QSize, Path)
     updated_ratio = Signal(float)
     # updatedImage = Signal(QPixmap)
     # updatedSize = Signal(QSize)
 
     thumb_mask_512: Image.Image = Image.open(
-        Path(__file__).parents[3] / "resources/qt/images/thumb_mask_512.png"
+        ROOT_DIR / "resources/qt/images/thumb_mask_512.png"
     )
     thumb_mask_512.load()
 
     thumb_mask_hl_512: Image.Image = Image.open(
-        Path(__file__).parents[3] / "resources/qt/images/thumb_mask_hl_512.png"
+        ROOT_DIR / "resources/qt/images/thumb_mask_hl_512.png"
     )
     thumb_mask_hl_512.load()
 
     thumb_loading_512: Image.Image = Image.open(
-        Path(__file__).parents[3] / "resources/qt/images/thumb_loading_512.png"
+        ROOT_DIR / "resources/qt/images/thumb_loading_512.png"
     )
     thumb_loading_512.load()
 
     thumb_broken_512: Image.Image = Image.open(
-        Path(__file__).parents[3] / "resources/qt/images/thumb_broken_512.png"
+        ROOT_DIR / "resources/qt/images/thumb_broken_512.png"
     )
     thumb_broken_512.load()
 
     thumb_file_default_512: Image.Image = Image.open(
-        Path(__file__).parents[3] / "resources/qt/images/thumb_file_default_512.png"
+        ROOT_DIR / "resources/qt/images/thumb_file_default_512.png"
     )
     thumb_file_default_512.load()
 
@@ -81,14 +83,14 @@ class ThumbRenderer(QObject):
     # TODO: Make dynamic font sized given different pixel ratios
     font_pixel_ratio: float = 1
     ext_font = ImageFont.truetype(
-        Path(__file__).parents[3] / "resources/qt/fonts/Oxanium-Bold.ttf",
+        ROOT_DIR / "resources/qt/fonts/Oxanium-Bold.ttf",
         math.floor(12 * font_pixel_ratio),
     )
 
     def render(
         self,
         timestamp: float,
-        filepath: str | Path,
+        filepath: Path | None,
         base_size: tuple[int, int],
         pixel_ratio: float,
         is_loading=False,
@@ -99,12 +101,12 @@ class ThumbRenderer(QObject):
         image: Image.Image = None
         pixmap: QPixmap = None
         final: Image.Image = None
-        filepath = Path(filepath)
+
         resampling_method = Image.Resampling.BILINEAR
         if ThumbRenderer.font_pixel_ratio != pixel_ratio:
             ThumbRenderer.font_pixel_ratio = pixel_ratio
             ThumbRenderer.ext_font = ImageFont.truetype(
-                Path(__file__).parents[3] / "resources/qt/fonts/Oxanium-Bold.ttf",
+                ROOT_DIR / "resources/qt/fonts/Oxanium-Bold.ttf",
                 math.floor(12 * ThumbRenderer.font_pixel_ratio),
             )
 
@@ -120,10 +122,9 @@ class ThumbRenderer(QObject):
                 self.updated_ratio.emit(1)
         elif filepath:
             try:
-                # Images =======================================================
                 if filepath.suffix in IMAGE_TYPES:
                     try:
-                        image = Image.open(filepath)
+                        image = Image.open(str(filepath))
                         if image.mode != "RGB" and image.mode != "RGBA":
                             image = image.convert(mode="RGBA")
                         if image.mode == "RGBA":
@@ -286,8 +287,8 @@ class ThumbRenderer(QObject):
                     math.ceil(adj_size / pixel_ratio),
                     math.ceil(final.size[1] / pixel_ratio),
                 ),
-                filepath.suffix,
+                filepath,
             )
 
         else:
-            self.updated.emit(timestamp, QPixmap(), QSize(*base_size), filepath.suffix)
+            self.updated.emit(timestamp, QPixmap(), QSize(*base_size), filepath)

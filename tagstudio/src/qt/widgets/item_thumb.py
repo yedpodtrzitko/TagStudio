@@ -47,8 +47,7 @@ ERROR = f"[ERROR]"
 WARNING = f"[WARNING]"
 INFO = f"[INFO]"
 
-
-logging.basicConfig(format="%(message)s", level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 ROOT_DIR = Path(__file__).parents[3]
 
@@ -185,10 +184,10 @@ class ItemThumb(FlowWidget):
         self.thumb_button = ThumbButton(self, thumb_size)
         self.renderer = ThumbRenderer()
         self.renderer.updated.connect(
-            lambda ts, i, s, ext: (
+            lambda ts, i, s, path: (
                 self.update_thumb(ts, image=i),
                 self.update_size(ts, size=s),
-                self.set_extension(ext),  # type: ignore
+                self.set_extension(path),  # type: ignore
             )
         )
         self.thumb_button.setFlat(True)
@@ -356,22 +355,18 @@ class ItemThumb(FlowWidget):
             self.ext_badge.setHidden(True)
             self.count_badge.setHidden(False)
             self.item_type_badge.setHidden(False)
-        # logging.info(f'Set Mode To: {self.mode}')
+        self.search_result = search_result
 
-    # def update_(self, thumb: QPixmap, size:QSize, ext:str, badges:list[QPixmap]) -> None:
-    # 	"""Updates the ItemThumb's visuals."""
-    # 	if thumb:
-    # 		pass
-
-    def set_extension(self, ext: str) -> None:
-        if ext and ext not in IMAGE_TYPES or ext in ["gif", "apng"]:
+    def set_extension(self, path: Path) -> None:
+        ext = path.suffix.lower()
+        if ext and ext not in IMAGE_TYPES or ext.lstrip(".") in ["gif", "apng"]:
             self.ext_badge.setHidden(False)
             self.ext_badge.setText(ext.upper())
             if ext in VIDEO_TYPES + AUDIO_TYPES:
                 self.count_badge.setHidden(False)
         else:
-            # if self.mode == ItemType.ENTRY:
-            if isinstance(self.search_result, EntrySearchResult):
+            # if self.is_entry_search:
+            if self.is_entry_search:
                 self.ext_badge.setHidden(True)
                 self.count_badge.setHidden(True)
 
@@ -380,16 +375,16 @@ class ItemThumb(FlowWidget):
             self.count_badge.setHidden(False)
             self.count_badge.setText(count)
         else:
-            # if self.mode == ItemType.ENTRY:
-            if isinstance(self.search_result, EntrySearchResult):
+            # if self.is_entry_search:
+            if self.is_entry_search:
                 self.ext_badge.setHidden(True)
                 self.count_badge.setHidden(True)
 
-    def update_thumb(self, timestamp: float, image: QPixmap = None):
+    def update_thumb(self, timestamp: float, image: QPixmap | None = None):
         """Updates attributes of a thumbnail element."""
         # logging.info(f'[GUI] Updating Thumbnail for element {id(element)}: {id(image) if image else None}')
         if timestamp > ItemThumb.update_cutoff:
-            self.thumb_button.setIcon(image if image else QPixmap())
+            self.thumb_button.setIcon(image or QPixmap())
             # element.repaint()
 
     def update_size(self, timestamp: float, size: QSize):
@@ -411,16 +406,25 @@ class ItemThumb(FlowWidget):
         if clickable:
             self.thumb_button.clicked.connect(clickable)
 
+    @property
+    def is_entry_search(self):
+        return isinstance(self.search_result, EntrySearchResult)
+        # return self.mode == ItemType.ENTRY
+
     def update_badges(self):
-        if self.mode == ItemType.ENTRY:
-            # logging.info(f'[UPDATE BADGES] ENTRY: {self.lib.get_entry(self.item_id)}')
-            # logging.info(f'[UPDATE BADGES] ARCH: {self.lib.get_entry(self.item_id).has_tag(self.lib, 0)}, FAV: {self.lib.get_entry(self.item_id).has_tag(self.lib, 1)}')
-            self.assign_archived(
-                self.lib.get_entry(self.item_id).has_tag(self.lib, TAG_ARCHIVED)
+        if self.is_entry_search:
+            if self.search_result is None:
+                raise ValueError
+
+            archived, favorited = self.lib.entry_archived_favorited_status(
+                entry=self.search_result.id
             )
-            self.assign_favorite(
-                self.lib.get_entry(self.item_id).has_tag(self.lib, TAG_FAVORITE)
-            )
+
+            self.search_result.archived = archived
+            self.search_result.favorited = favorited
+
+            self.assign_archived(self.search_result.archived)
+            self.assign_favorite(self.search_result.favorited)
 
     def set_item_id(self, id: int):
         """
@@ -429,9 +433,11 @@ class ItemThumb(FlowWidget):
         self.item_id = id
         if id == -1:
             return
-        entry = self.lib.get_entry(self.item_id)
-        filepath = self.lib.library_dir / entry.path
-        self.opener.set_filepath(filepath)
+
+        # TODO
+        # entry = self.lib.get_entry(self.item_id)
+        # filepath = self.lib.library_dir / entry.path
+        self.opener.set_filepath(self.search_result.path)
 
     def assign_favorite(self, value: bool):
         # Switching mode to None to bypass mode-specific operations when the
@@ -456,7 +462,7 @@ class ItemThumb(FlowWidget):
         self.search_result = cached_search_result
 
     def show_check_badges(self, show: bool):
-        if isinstance(self.search_result, EntrySearchResult):
+        if self.is_entry_search:
             self.favorite_badge.setHidden(
                 True if (not show and not self.isFavorite) else False
             )
@@ -473,12 +479,12 @@ class ItemThumb(FlowWidget):
         return super().leaveEvent(event)
 
     def on_archived_check(self, toggle_value: bool):
-        if self.mode == ItemType.ENTRY:
+        if self.is_entry_search:
             self.isArchived = toggle_value
             self.toggle_item_tag(toggle_value, TAG_ARCHIVED)
 
     def on_favorite_check(self, toggle_value: bool):
-        if self.mode == ItemType.ENTRY:
+        if self.is_entry_search:
             self.isFavorite = toggle_value
             self.toggle_item_tag(toggle_value, TAG_FAVORITE)
 

@@ -49,7 +49,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 from src.backend import ItemType
-from src.backend.alchemy.enums import EntrySearchResult
+from src.backend.alchemy.enums import EntrySearchResult, Frames, SearchResult
 from src.core.constants import (
     ALL_FILE_TYPES,
     ARCHIVE_TYPES,
@@ -1090,8 +1090,31 @@ class QtDriver(QObject):
         sa.setWidgetResizable(True)
         sa.setWidget(self.flow_container)
 
+    def select_result(self, search_result: SearchResult, append: bool, bridge: bool):
+        if append:
+            if search_result not in self.selected:
+                self.selected.append(search_result)
+                for item_thumb in self.item_thumbs:
+                    if item_thumb.search_result == search_result:
+                        item_thumb.thumb_button.set_selected(True)
+                self.selected.remove(search_result)
+                for item_thumb in self.item_thumbs:
+                    if item_thumb.search_result == search_result:
+                        item_thumb.thumb_button.set_selected(False)
+        elif bridge and self.selected:
+            logging.info(f"Last Selected: {self.selected[-1]}")
+            contents = self.nav_frames[self.cur_frame_idx].contents
+            last_index = contents.index(self.selected[-1])
+            current_index = contents.index(search_result)
+
+            index_range = contents[
+                min(last_index, current_index) : max(last_index, current_index) + 1
+            ]
+
+            if last_index < current_index:
+                list(index_range).reverse()
+
     def select_item(self, type: ItemType, id: int, append: bool, bridge: bool):
-        """Selects one or more items in the Thumbnail Grid."""
         if append:
             # self.selected.append((thumb_index, page_index))
             if ((type, id)) not in self.selected:
@@ -1191,10 +1214,18 @@ class QtDriver(QObject):
                 item_thumb.ignore_size = False
                 # logging.info(f'[UPDATE] Set Mode To: {item.mode}')
                 # Set thumbnails to loading (will always finish if rendering)
+
                 self.thumb_job_queue.put(
                     (
                         item_thumb.renderer.render,
-                        (sys.float_info.max, "", base_size, ratio, True, True),
+                        (
+                            sys.float_info.max,
+                            search_result.path,
+                            base_size,
+                            ratio,
+                            True,
+                            True,
+                        ),
                     )
                 )
                 # # Restore Selected Borders
@@ -1225,7 +1256,7 @@ class QtDriver(QObject):
 
                 item_thumb.set_item_id(search_result.id)
                 item_thumb.search_result = search_result
-                item_thumb.opener.set_filepath(str(filepath))
+                item_thumb.opener.set_filepath(filepath)
 
                 item_thumb.assign_archived(search_result.archived)
                 item_thumb.assign_favorite(search_result.favorited)
@@ -1236,7 +1267,7 @@ class QtDriver(QObject):
                 item_thumb.update_clickable(
                     clickable=(
                         lambda checked=False,
-                        search_result=search_result: self.select_item(
+                        search_result=search_result: self.select_result(
                             search_result=search_result,
                             append=True
                             if QGuiApplication.keyboardModifiers()
@@ -1261,9 +1292,8 @@ class QtDriver(QObject):
                     else collation.e_ids_and_pages[0][0]
                 )
                 cover_e = self.lib.get_entry(cover_id)
-                filepath = os.path.normpath(
-                    f"{self.lib.root_path}/{cover_e.path}/{cover_e.filename}"
-                )
+                filepath = self.lib.library_dir / cover_e.path
+
                 item_thumb.set_count(str(len(collation.e_ids_and_pages)))
                 item_thumb.update_clickable(
                     clickable=(
@@ -1307,9 +1337,10 @@ class QtDriver(QObject):
             # self.filtered_items = self.lib.search_library(query)
             # 73601 Entries at 500 size should be 246
             all_items = self.lib.search_library(query)
-            frames: list[tuple[tuple[ItemType, int], ...]] = list(
-                batched(all_items, self.max_results)
-            )
+            frames: Frames = []
+            for item_batch in batched(all_items, self.max_results):
+                frames.append(list(item_batch))
+
             for i, f in enumerate(frames):
                 logging.info(f"Query:{query}, Frame: {i},  Length: {len(f)}")
             self.frame_dict[query] = frames

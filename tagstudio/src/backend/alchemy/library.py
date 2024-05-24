@@ -4,19 +4,25 @@ import time
 from pathlib import Path
 from typing import Iterator, Literal
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from ...core.constants import BACKUP_FOLDER_NAME, COLLAGE_FOLDER_NAME, TS_FOLDER_NAME
 from ...core.json_typing import JsonTag
 from .db import make_engine, make_tables
 from .enums import EntrySearchResult, SearchResult, TagColor, TagInfo
-from .fields import Field, TagBoxField, TagBoxTypes
+from .fields import (
+    DEFAULT_FIELDS,
+    DatetimeField,
+    Field,
+    TagBoxField,
+    TagBoxTypes,
+    TextField,
+)
 from .models import Entry, Tag, TagAlias
 from .queries import path_in_db
 
 LIBRARY_FILENAME: str = "ts_library.sqlite"
-
 
 logger = logging.getLogger(__name__)
 
@@ -222,7 +228,7 @@ class Library:
                 if suffix not in self.ignored_extensions:
                     self.dir_file_count += 1
 
-                    relative_path = path.relative_to(self.root_path)
+                    relative_path = path.relative_to(self.library_dir)
                     if not path_in_db(path=relative_path, engine=self.engine):
                         self.add_entry_to_library(entry=Entry(path=relative_path))
 
@@ -236,11 +242,11 @@ class Library:
         """Tracks the number of Entries that point to an invalid file path."""
         self.missing_files.clear()
 
-        if self.root_path is None:
+        if self.library_dir is None:
             raise ValueError("No library path set.")
 
         for i, entry in enumerate(self.entries):
-            full_path = self.root_path / entry.path
+            full_path = self.library_dir / entry.path
             if not full_path.exists() or not full_path.is_file():
                 self.missing_files.append(str(full_path))
             yield i
@@ -327,6 +333,20 @@ class Library:
             id = entry.id
         return id
 
+    def add_new_files_as_entries(self) -> list[int]:
+        """Adds files from the `files_not_in_library` list to the Library as Entries. Returns list of added indices."""
+        new_ids: list[int] = []
+        for file in self.files_not_in_library:
+            path = Path(file)
+            # print(os.path.split(file))
+            entry = Entry(
+                path=path.parent,
+            )
+            self.add_entry_to_library(entry)
+            new_ids.append(entry.id)
+        # self._map_filenames_to_entry_ids()
+        return new_ids
+
     def get_entry(self, entry_id: int) -> Entry:
         """Returns an Entry object given an Entry ID."""
         with Session(self.engine) as session, session.begin():
@@ -398,7 +418,6 @@ class Library:
                         .join(TagBoxField.tags)
                         .where(or_(Tag.name == tag_value, Tag.shorthand == tag_value))
                     )
-                    print("statement", statement)
                 else:
                     statement = statement.where(Entry.path.like(f"%{query}%"))
 
@@ -432,7 +451,7 @@ class Library:
     def get_all_child_tag_ids(self, tag_id: int) -> list[int]:
         """Recursively traverse a Tag's subtags and return a list of all children tags."""
 
-        all_subtags: set[int] = set([tag_id])
+        all_subtags: set[int] = {tag_id}
 
         with Session(self.engine) as session, session.begin():
             tag = session.scalar(select(Tag).where(Tag.id == tag_id))
@@ -721,3 +740,9 @@ class Library:
             entry_ = session.scalars(select(Entry).where(Entry.id == entry)).one()
 
             return (entry_.archived, entry_.favorited)
+
+    def save_library_backup_to_disk(self, *args, **kwargs):
+        logger.error("to be implemented")
+
+    def get_field_attr(self, *args, **kwargs):
+        return None

@@ -37,4 +37,5 @@ def make_tables(engine: Engine) -> None:
 
 
 def drop_tables(engine: Engine) -> None:
+    logger.info("dropping db tables")
     Base.metadata.drop_all(engine)

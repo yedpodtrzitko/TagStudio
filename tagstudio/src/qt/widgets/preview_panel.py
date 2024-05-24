@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 from src.backend import Entry, ItemType, Library
+from src.backend.alchemy.enums import EntrySearchResult
 from src.core.constants import IMAGE_TYPES, RAW_IMAGE_TYPES, VIDEO_TYPES
 from src.core.enums import SettingItems, Theme
 from src.qt.helpers.file_opener import FileOpenerHelper, FileOpenerLabel, open_file
@@ -487,9 +488,10 @@ class PreviewPanel(QWidget):
                 self.preview_img.setCursor(Qt.CursorShape.ArrowCursor)
 
                 ratio: float = self.devicePixelRatio()
+                print("isloading")
                 self.thumb_renderer.render(
                     time.time(),
-                    "",
+                    None,
                     (512, 512),
                     ratio,
                     True,
@@ -1027,19 +1029,12 @@ class PreviewPanel(QWidget):
 
     def update_field(self, field: dict, content):
         """Removes a field from all selected Entries, given a field object."""
-        field = dict(field)
-        for item_pair in self.selected:
-            if item_pair[0] == ItemType.ENTRY:
-                entry = self.lib.get_entry(item_pair[1])
-                try:
-                    logging.info(field)
-                    index = entry.fields.index(field)
-                    self.lib.update_entry_field(entry.id, index, content, "replace")
-                except ValueError:
-                    logging.info(
-                        f"[PREVIEW PANEL][ERROR] Tried to update field from Entry ({entry.id}) that never had it"
-                    )
-                    pass
+        selected_entry_ids = [
+            selected.id
+            for selected in self.selected
+            if isinstance(selected, EntrySearchResult)
+        ]
+        self.lib.remove_field(field=field, entry_ids=selected_entry_ids)
 
     def remove_message_box(self, prompt: str, callback: typing.Callable) -> None:
         remove_mb = QMessageBox()

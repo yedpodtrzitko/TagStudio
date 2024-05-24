@@ -128,3 +128,5 @@ class TagGroupSearchResult:
 
 
 SearchResult = EntrySearchResult | CollationSearchResult | TagGroupSearchResult
+Frame = list[SearchResult]
+Frames = list[Frame]
