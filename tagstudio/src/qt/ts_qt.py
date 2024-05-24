@@ -16,6 +16,7 @@ import time
 import typing
 import webbrowser
 from datetime import datetime as dt
+from itertools import batched
 from pathlib import Path
 from queue import Queue
 from typing import Optional
@@ -167,6 +168,8 @@ class QtDriver(QObject):
     SIGTERM = Signal()
 
     preview_panel: PreviewPanel
+    sort_fields_action: QAction
+    autofill_action: QAction
 
     def __init__(self, core: TagStudioCore, args):
         super().__init__()
@@ -778,7 +781,7 @@ class QtDriver(QObject):
     # 	for i in self.lib.refresh_dir():
     # 		pb.setLabelText(f'Scanning Directories for New Files...\n{i} File{"s" if i != 1 else ""} Searched, {len(self.lib.files_not_in_library)} New Files Found')
 
-    def add_new_files_runnable(self):
+    def add_new_files_runnable(self) -> None:
         """
         Threaded method that adds any known new files to the library and
         initiates running default macros on them.
@@ -818,7 +821,7 @@ class QtDriver(QObject):
             )
         )
         r = CustomRunnable(lambda: iterator.run())
-        r.done.connect(lambda: (pw.hide(), pw.deleteLater(), self.filter_items("")))
+        r.done.connect(lambda: (pw.hide(), pw.deleteLater(), self.filter_items("")))  # type: ignore
         QThreadPool.globalInstance().start(r)
 
     def new_file_macros_runnable(self, new_ids):
@@ -1140,7 +1143,7 @@ class QtDriver(QObject):
         self.set_macro_menu_viability()
         self.preview_panel.update_widgets()
 
-    def set_macro_menu_viability(self):
+    def set_macro_menu_viability(self) -> None:
         if len([x[1] for x in self.selected if x[0] == ItemType.ENTRY]) == 0:
             self.autofill_action.setDisabled(True)
             self.sort_fields_action.setDisabled(True)
@@ -1308,16 +1311,9 @@ class QtDriver(QObject):
             # self.filtered_items = self.lib.search_library(query)
             # 73601 Entries at 500 size should be 246
             all_items = self.lib.search_library(query)
-            frames: list[list[tuple[ItemType, int]]] = []
-            frame_count = len(all_items) // self.max_results
-            for i in range(0, frame_count):
-                frames.append(
-                    all_items[
-                        min(len(all_items) - 1, (i) * self.max_results) : min(
-                            len(all_items), (i + 1) * self.max_results
-                        )
-                    ]
-                )
+            frames: list[tuple[tuple[ItemType, int], ...]] = list(
+                batched(all_items, self.max_results)
+            )
             for i, f in enumerate(frames):
                 logging.info(f"Query:{query}, Frame: {i},  Length: {len(f)}")
             self.frame_dict[query] = frames

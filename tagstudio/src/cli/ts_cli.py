@@ -26,9 +26,9 @@ from pathlib import Path
 import cv2
 from PIL import Image, ImageChops, UnidentifiedImageError
 from PIL.Image import DecompressionBombError
+from src.core.constants import IMAGE_TYPES, VIDEO_TYPES
 from src.core.library import *
 from src.core.ts_core import *
-from src.core.utils.fs import *
 from src.core.utils.web import *
 from src.qt.helpers.file_opener import open_file
 
@@ -628,7 +628,7 @@ class CliDriver:
         # thumb_width = math.floor(os.get_terminal_size()[1]*0.5)
 
         # if entry:
-        file_type = os.path.splitext(filepath)[1].lower()[1:]
+        file_type = filepath.suffix.lower()
         if file_type in (IMAGE_TYPES + VIDEO_TYPES):
             # TODO: Make the image-grabbing part try to get thumbnails.
 

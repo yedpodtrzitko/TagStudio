@@ -649,7 +649,7 @@ class Library:
                             e = Entry(
                                 id=int(id),
                                 filename=filename,
-                                path=e_path,
+                                path=Path(e_path),
                                 fields=fields,
                             )
                             self.entries.append(e)
@@ -660,7 +660,7 @@ class Library:
                         )
 
                     # Parse Collations ---------------------------------------------------
-                    if "collations" in json_dump.keys():
+                    if "collations" in json_dump:
                         start_time = time.time()
                         for collation in json_dump["collations"]:
                             # Step 1: Create a Collation object and append it to
@@ -728,7 +728,7 @@ class Library:
     # 	"""Closes the open TagStudio Library."""
     # 	self.clear_internal_vars()
 
-    def to_json(self):
+    def to_json(self) -> JsonLibary:
         """
         Creates a JSON serialized string from the Library object.
         Used in saving the library to disk.
@@ -969,12 +969,12 @@ class Library:
                 if matched:
                     self.dupe_entries.append((p, matched))
                     sys.stdout.write(
-                        f"\r[LIBRARY] Entry [{p}/{len(self.entries)-1}]: Has Duplicate(s): {matched}"
+                        f"\r[LIBRARY] Entry [{p}/{len(self.entries) - 1}]: Has Duplicate(s): {matched}"
                     )
                     sys.stdout.flush()
                 else:
                     sys.stdout.write(
-                        f"\r[LIBRARY] Entry [{p}/{len(self.entries)-1}]: Has No Duplicates"
+                        f"\r[LIBRARY] Entry [{p}/{len(self.entries) - 1}]: Has No Duplicates"
                     )
                     sys.stdout.flush()
                 checked.add(p)

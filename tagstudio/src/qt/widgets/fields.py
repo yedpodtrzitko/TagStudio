@@ -42,8 +42,8 @@ class FieldContainer(QWidget):
         self.title: str = title
         self.inline: bool = inline
         # self.editable:bool = editable
-        self.copy_callback: FunctionType = None
-        self.edit_callback: FunctionType = None
+        self.copy_callback: Callable = None
+        self.edit_callback: Callable = None
         self.remove_callback: Callable = None
         button_size = 24
         # self.setStyleSheet('border-style:solid;border-color:#1e1a33;border-radius:8px;border-width:2px;')
@@ -134,7 +134,7 @@ class FieldContainer(QWidget):
         self.copy_callback = callback
         self.copy_button.clicked.connect(callback)
 
-    def set_edit_callback(self, callback: Optional[MethodType]):
+    def set_edit_callback(self, callback: Callable):
         try:
             self.edit_button.clicked.disconnect()
         except RuntimeError:

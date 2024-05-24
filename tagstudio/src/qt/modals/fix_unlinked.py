@@ -130,7 +130,7 @@ class FixUnlinkedEntriesModal(QWidget):
 
         self.set_missing_count(self.count)
 
-    def refresh_missing_files(self):
+    def refresh_missing_files(self) -> None:
         logging.info(f"Start RMF: {QThread.currentThread()}")
         # pb = QProgressDialog(f'Scanning Library for Unlinked Entries...', None, 0,len(self.lib.entries))
         # pb.setFixedSize(432, 112)
@@ -154,8 +154,8 @@ class FixUnlinkedEntriesModal(QWidget):
         QThreadPool.globalInstance().start(r)
         r.done.connect(
             lambda: (
-                pw.hide(),
-                pw.deleteLater(),
+                pw.hide(),  # type: ignore
+                pw.deleteLater(),  # type: ignore
                 self.set_missing_count(len(self.lib.missing_files)),
                 self.delete_modal.refresh_list(),
             )

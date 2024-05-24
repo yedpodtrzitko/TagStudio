@@ -48,7 +48,7 @@ class CollageIconRenderer(QObject):
         data_tint_mode,
         data_only_mode,
         keep_aspect,
-    ):
+    ) -> None:
         entry = self.lib.get_entry(entry_id)
         filepath = self.lib.library_dir / entry.path / entry.filename
         file_type = filepath.suffix.lower()
@@ -138,11 +138,10 @@ class CollageIconRenderer(QObject):
             logging.info(
                 f"\n{ERROR} Couldn't read {entry.path}{os.sep}{entry.filename}"
             )
-            with Image.open(
-                os.path.normpath(
-                    f"{Path(__file__).parents[2]}/resources/qt/images/thumb_broken_512.png"
-                )
-            ) as pic:
+            icon_path = (
+                Path(__file__).parents[2] / "resources/qt/images/thumb_broken_512.png"
+            )
+            with Image.open(str(icon_path)) as pic:
                 pic.thumbnail(size)
                 if data_tint_mode and color:
                     pic = pic.convert(mode="RGB")

@@ -539,7 +539,7 @@ class PreviewPanel(QWidget):
                     )
 
                     # TODO: Do this somewhere else, this is just here temporarily.
-                    extension = os.path.splitext(filepath)[1][1:].lower()
+                    extension = filepath.suffix.lower()
                     try:
                         image = None
                         if extension in IMAGE_TYPES:
@@ -771,7 +771,7 @@ class PreviewPanel(QWidget):
         self.tags_updated.connect(slot)
 
     # def write_container(self, item:Union[Entry, Collation, Tag], index, field):
-    def write_container(self, index, field, mixed=False):
+    def write_container(self, index, field, mixed=False) -> None:
         """Updates/Creates data for a FieldContainer."""
         # logging.info(f'[ENTRY PANEL] WRITE CONTAINER')
 
@@ -794,7 +794,7 @@ class PreviewPanel(QWidget):
                     self.selected[0][1]
                 )  # TODO TODO TODO: TEMPORARY
                 if type(container.get_inner_widget()) == TagBoxWidget:
-                    inner_container: TagBoxWidget = container.get_inner_widget()
+                    inner_container: typing.Any = container.get_inner_widget()
                     inner_container.set_item(item)
                     inner_container.set_tags(self.lib.get_field_attr(field, "content"))
                     try:
@@ -816,8 +816,8 @@ class PreviewPanel(QWidget):
                 inner_container.field = field
                 inner_container.updated.connect(
                     lambda: (
-                        self.write_container(index, field),
-                        self.tags_updated.emit(),
+                        self.write_container(index, field),  # type: ignore
+                        self.tags_updated.emit(),  # type: ignore
                     )
                 )
                 # if type(item) == Entry:
