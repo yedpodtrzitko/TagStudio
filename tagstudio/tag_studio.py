@@ -7,7 +7,7 @@
 import argparse
 import traceback
 
-from src.cli.ts_cli import CliDriver  # type: ignore
+# from src.cli.ts_cli import CliDriver  # type: ignore
 from src.core.ts_core import TagStudioCore
 from src.qt.ts_qt import QtDriver
 
@@ -70,8 +70,8 @@ def main():
         driver = QtDriver(core, args)
         ui_name = "Qt"
     elif args.ui and args.ui == "cli":
-        driver = CliDriver(core, args)
-        ui_name = "CLI"
+        raise NotImplementedError
+        # driver = CliDriver(core, args)
     else:
         driver = QtDriver(core, args)
         ui_name = "Qt"

@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from src.core.library import Library
+from src.backend import DEFAULT_FIELDS, Library
 
 
 class AddFieldModal(QWidget):
@@ -40,8 +40,10 @@ class AddFieldModal(QWidget):
         self.list_widget.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
 
         items = []
-        for df in self.lib.default_fields:
-            items.append(f'{df["name"]} ({df["type"].replace("_", " ").title()})')
+        for default_field in DEFAULT_FIELDS:
+            items.append(
+                f'{default_field.name} ({default_field.type_.value.replace("_", " ").title()})'
+            )
 
         self.list_widget.addItems(items)
 

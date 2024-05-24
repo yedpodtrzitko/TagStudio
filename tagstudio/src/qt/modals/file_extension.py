@@ -5,7 +5,7 @@
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout
-from src.core.library import Library
+from src.backend import Library
 from src.qt.widgets.panel import PanelWidget
 
 

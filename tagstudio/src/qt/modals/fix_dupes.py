@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from src.core.library import Library
+from src.backend import Library
 from src.qt.modals.mirror_entities import MirrorEntriesModal
 
 # Only import for type checking/autocompletion, will not be imported at runtime.

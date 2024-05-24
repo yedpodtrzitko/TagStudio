@@ -26,8 +26,8 @@ from pathlib import Path
 import cv2
 from PIL import Image, ImageChops, UnidentifiedImageError
 from PIL.Image import DecompressionBombError
+from src.backend import *
 from src.core.constants import IMAGE_TYPES, VIDEO_TYPES
-from src.core.library import *
 from src.core.ts_core import *
 from src.core.utils.web import *
 from src.qt.helpers.file_opener import open_file
@@ -616,7 +616,7 @@ class CliDriver:
         """
         entry = None if index < 0 else self.lib.entries[index]
         if entry:
-            filepath = self.lib.library_dir / entry.path / entry.filename
+            filepath = self.lib.library_dir / entry.path
         external_preview_path: Path = None
         if self.args.external_preview:
             external_preview_path = (
@@ -1060,7 +1060,7 @@ class CliDriver:
                     if i < len(self.lib.entries) and run:
                         # entry: Entry = self.lib.get_entry_from_index(i)
                         entry = self.lib.entries[i]
-                        filepath = self.lib.library_dir / entry.path / entry.filename
+                        filepath = self.lib.library_dir / entry.path
                         color: str = ""
 
                         if data_tint_mode or data_only_mode:

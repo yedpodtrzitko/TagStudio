@@ -5,12 +5,10 @@
 """The core classes and methods of TagStudio."""
 
 import json
-import os
-from enum import Enum
 from pathlib import Path
 
+from src.backend import Entry, Library
 from src.core.constants import TEXT_FIELDS, TS_FOLDER_NAME
-from src.core.library import Entry, Library
 
 
 class TagStudioCore:

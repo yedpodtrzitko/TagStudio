@@ -12,7 +12,7 @@ from PIL import Image
 from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtGui import QAction, QEnterEvent
 from PySide6.QtWidgets import QHBoxLayout, QPushButton, QVBoxLayout, QWidget
-from src.core.library import Library, Tag
+from src.backend import Library, Tag
 from src.core.palette import ColorType, get_tag_color
 
 ERROR = f"[ERROR]"

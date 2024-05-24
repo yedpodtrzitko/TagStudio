@@ -28,9 +28,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from src.backend import Entry, ItemType, Library
 from src.core.constants import IMAGE_TYPES, RAW_IMAGE_TYPES, VIDEO_TYPES
 from src.core.enums import SettingItems, Theme
-from src.core.library import Entry, ItemType, Library
 from src.qt.helpers.file_opener import FileOpenerHelper, FileOpenerLabel, open_file
 from src.qt.modals.add_field import AddFieldModal
 from src.qt.widgets.fields import FieldContainer

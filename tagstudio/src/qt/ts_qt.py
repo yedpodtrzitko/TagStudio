@@ -19,7 +19,6 @@ from datetime import datetime as dt
 from itertools import batched
 from pathlib import Path
 from queue import Queue
-from typing import Optional
 
 # this import has side-effect of import PySide resources
 import src.qt.resources_rc  # pylint: disable=unused-import
@@ -49,6 +48,8 @@ from PySide6.QtWidgets import (
     QSplashScreen,
     QWidget,
 )
+from src.backend import ItemType
+from src.backend.alchemy.enums import EntrySearchResult
 from src.core.constants import (
     ALL_FILE_TYPES,
     ARCHIVE_TYPES,
@@ -59,7 +60,6 @@ from src.core.constants import (
     DATE_FIELDS,
     DOC_TYPES,
     IMAGE_TYPES,
-    LIBRARY_FILENAME,
     PLAINTEXT_TYPES,
     PRESENTATION_TYPES,
     PROGRAM_TYPES,
@@ -75,7 +75,6 @@ from src.core.constants import (
     VIDEO_TYPES,
 )
 from src.core.enums import SettingItems
-from src.core.library import ItemType
 from src.core.ts_core import TagStudioCore
 from src.core.utils.web import strip_web_protocol
 from src.qt.flowlayout import FlowLayout
@@ -1187,7 +1186,8 @@ class QtDriver(QObject):
             if i < len(self.nav_frames[self.cur_frame_idx].contents):
                 # Set new item type modes
                 # logging.info(f'[UPDATE] Setting Mode To: {self.nav_stack[self.cur_page_idx].contents[i][0]}')
-                item_thumb.set_mode(self.nav_frames[self.cur_frame_idx].contents[i][0])
+                search_result = self.nav_frames[self.cur_frame_idx].contents[i]
+                item_thumb.set_search_result(search_result)
                 item_thumb.ignore_size = False
                 # logging.info(f'[UPDATE] Set Mode To: {item.mode}')
                 # Set thumbnails to loading (will always finish if rendering)
@@ -1204,7 +1204,8 @@ class QtDriver(QObject):
                 # 	item_thumb.thumb_button.set_selected(False)
             else:
                 item_thumb.ignore_size = True
-                item_thumb.set_mode(None)
+                # item_thumb.set_mode(None)
+                item_thumb.set_search_result(None)
                 item_thumb.set_item_id(-1)
                 item_thumb.thumb_button.set_selected(False)
 
@@ -1213,93 +1214,71 @@ class QtDriver(QObject):
         self.flow_container.layout().update()
         self.main_window.update()
 
-        for i, item_thumb in enumerate(self.item_thumbs, start=0):
-            if i < len(self.nav_frames[self.cur_frame_idx].contents):
-                if self.nav_frames[self.cur_frame_idx].contents[i][0] == ItemType.ENTRY:
-                    entry = self.lib.get_entry(
-                        self.nav_frames[self.cur_frame_idx].contents[i][1]
-                    )
-                    filepath = self.lib.library_dir / entry.path / entry.filename
+        limited_thumbs = self.item_thumbs[
+            : len(self.nav_frames[self.cur_frame_idx].contents)
+        ]
+        for i, item_thumb in enumerate(limited_thumbs):
+            search_result = self.nav_frames[self.cur_frame_idx].contents[i]
 
-                    item_thumb.set_item_id(entry.id)
-                    item_thumb.assign_archived(entry.has_tag(self.lib, TAG_ARCHIVED))
-                    item_thumb.assign_favorite(entry.has_tag(self.lib, TAG_FAVORITE))
-                    # ctrl_down = True if QGuiApplication.keyboardModifiers() else False
-                    # TODO: Change how this works. The click function
-                    # for collations a few lines down should NOT be allowed during modifier keys.
-                    item_thumb.update_clickable(
-                        clickable=(
-                            lambda checked=False, entry=entry: self.select_item(
-                                ItemType.ENTRY,
-                                entry.id,
-                                append=(
-                                    QGuiApplication.keyboardModifiers()
-                                    == Qt.KeyboardModifier.ControlModifier
-                                ),
-                                bridge=(
-                                    QGuiApplication.keyboardModifiers()
-                                    == Qt.KeyboardModifier.ShiftModifier
-                                ),
-                            )
+            if isinstance(search_result, EntrySearchResult):
+                filepath = self.lib.library_dir / search_result.path
+
+                item_thumb.set_item_id(search_result.id)
+                item_thumb.search_result = search_result
+                item_thumb.opener.set_filepath(str(filepath))
+
+                item_thumb.assign_archived(search_result.archived)
+                item_thumb.assign_favorite(search_result.favorited)
+
+                # TODO: Change how this works. The click function
+                # for collations a few lines down should NOT be allowed during modifier keys.
+
+                item_thumb.update_clickable(
+                    clickable=(
+                        lambda checked=False,
+                        search_result=search_result: self.select_item(
+                            search_result=search_result,
+                            append=True
+                            if QGuiApplication.keyboardModifiers()
+                            == Qt.KeyboardModifier.ControlModifier
+                            else False,
+                            bridge=True
+                            if QGuiApplication.keyboardModifiers()
+                            == Qt.KeyboardModifier.ShiftModifier
+                            else False,
                         )
-                    )
-                    # item_thumb.update_clickable(clickable=(
-                    # 	lambda checked=False, filepath=filepath, entry=entry,
-                    # 		   item_t=item_thumb, i=i, page=self.cur_frame_idx: (
-                    # 		self.preview_panel.update_widgets(entry),
-                    # 		self.select_item(ItemType.ENTRY, entry.id,
-                    # 	append=True if QGuiApplication.keyboardModifiers() == Qt.KeyboardModifier.ControlModifier else False,
-                    # 	bridge=True if QGuiApplication.keyboardModifiers() == Qt.KeyboardModifier.ShiftModifier else False))))
-                    # item.dumpObjectTree()
-                elif (
-                    self.nav_frames[self.cur_frame_idx].contents[i][0]
-                    == ItemType.COLLATION
-                ):
-                    collation = self.lib.get_collation(
-                        self.nav_frames[self.cur_frame_idx].contents[i][1]
-                    )
-                    cover_id = (
-                        collation.cover_id
-                        if collation.cover_id >= 0
-                        else collation.e_ids_and_pages[0][0]
-                    )
-                    cover_e = self.lib.get_entry(cover_id)
-                    filepath = self.lib.library_dir / cover_e.path / cover_e.filename
-                    item_thumb.set_count(str(len(collation.e_ids_and_pages)))
-                    item_thumb.update_clickable(
-                        clickable=(
-                            lambda checked=False,
-                            filepath=filepath,
-                            entry=cover_e,
-                            collation=collation: (
-                                self.expand_collation(collation.e_ids_and_pages)
-                            )
-                        )
-                    )
-                # item.setHidden(False)
-
-                # Restore Selected Borders
-                if (item_thumb.mode, item_thumb.item_id) in self.selected:
-                    item_thumb.thumb_button.set_selected(True)
-                else:
-                    item_thumb.thumb_button.set_selected(False)
-
-                self.thumb_job_queue.put(
-                    (
-                        item_thumb.renderer.render,
-                        (time.time(), filepath, base_size, ratio, False, True),
                     )
                 )
-            else:
-                # item.setHidden(True)
-                pass
-                # update_widget_clickable(widget=item.bg_button, clickable=())
-                # self.thumb_job_queue.put(
-                # 	(item.renderer.render, ('', base_size, ratio, False)))
 
-        # end_time = time.time()
-        # logging.info(
-        # 	f'[MAIN] Elements thumbs updated in {(end_time - start_time):.3f} seconds')
+            else:
+                # TODO
+                collation = self.lib.get_collation(
+                    self.nav_frames[self.cur_frame_idx].contents[i][1]
+                )
+                cover_id = (
+                    collation.cover_id
+                    if collation.cover_id >= 0
+                    else collation.e_ids_and_pages[0][0]
+                )
+                cover_e = self.lib.get_entry(cover_id)
+                filepath = os.path.normpath(
+                    f"{self.lib.root_path}/{cover_e.path}/{cover_e.filename}"
+                )
+                item_thumb.set_count(str(len(collation.e_ids_and_pages)))
+                item_thumb.update_clickable(
+                    clickable=(
+                        lambda checked=False,
+                        filepath=filepath,
+                        entry=cover_e,
+                        collation=collation: (
+                            self.expand_collation(collation.e_ids_and_pages)
+                        )
+                    )
+                )
+
+            # Restore Selected Borders
+            if search_result in self.selected:
+                item_thumb.thumb_button.set_selected(True)
 
     def update_badges(self):
         for i, item_thumb in enumerate(self.item_thumbs, start=0):

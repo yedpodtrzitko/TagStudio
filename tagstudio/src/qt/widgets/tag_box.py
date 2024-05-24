@@ -9,8 +9,8 @@ import typing
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QPushButton
+from src.backend import Library, Tag
 from src.core.constants import TAG_ARCHIVED, TAG_FAVORITE
-from src.core.library import Library, Tag
 from src.qt.flowlayout import FlowLayout
 from src.qt.modals.build_tag import BuildTagPanel
 from src.qt.modals.tag_search import TagSearchPanel

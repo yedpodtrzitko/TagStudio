@@ -17,8 +17,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from src.backend import Library, Tag
 from src.core.constants import TAG_COLORS
-from src.core.library import Library, Tag
 from src.core.palette import ColorType, get_tag_color
 from src.qt.modals.tag_search import TagSearchPanel
 from src.qt.widgets.panel import PanelModal, PanelWidget
@@ -34,9 +34,9 @@ logging.basicConfig(format="%(message)s", level=logging.INFO)
 class BuildTagPanel(PanelWidget):
     on_edit = Signal(Tag)
 
-    def __init__(self, library, tag_id: int = -1):
+    def __init__(self, library: Library, tag_id: int = -1):
         super().__init__()
-        self.lib: Library = library
+        self.lib = library
         # self.callback = callback
         # self.tag_id = tag_id
         self.tag = None

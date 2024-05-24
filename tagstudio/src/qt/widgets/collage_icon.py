@@ -22,8 +22,8 @@ from PySide6.QtCore import (
     QTimer,
     Signal,
 )
+from src.backend import Library
 from src.core.constants import DOC_TYPES, IMAGE_TYPES, VIDEO_TYPES
-from src.core.library import Library
 
 ERROR = f"[ERROR]"
 WARNING = f"[WARNING]"
@@ -50,7 +50,7 @@ class CollageIconRenderer(QObject):
         keep_aspect,
     ) -> None:
         entry = self.lib.get_entry(entry_id)
-        filepath = self.lib.library_dir / entry.path / entry.filename
+        filepath = self.lib.library_dir / entry.path
         file_type = filepath.suffix.lower()
         color: str = ""
 

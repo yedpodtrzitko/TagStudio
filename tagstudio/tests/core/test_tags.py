@@ -1,4 +1,4 @@
-from src.core.library import Tag
+from src.backend import Tag
 
 
 def test_construction():

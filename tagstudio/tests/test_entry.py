@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from src.core.library import Entry
+from src.backend import Entry
 
 
 def test_entries_different():

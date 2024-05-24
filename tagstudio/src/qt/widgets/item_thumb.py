@@ -21,6 +21,12 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from src.backend import Entry, ItemType, Library
+from src.backend.alchemy.enums import (
+    CollationSearchResult,
+    EntrySearchResult,
+    SearchResult,
+)
 from src.core.constants import (
     AUDIO_TYPES,
     IMAGE_TYPES,
@@ -29,7 +35,6 @@ from src.core.constants import (
     VIDEO_TYPES,
 )
 from src.core.enums import FieldID
-from src.core.library import Entry, ItemType, Library
 from src.qt.flowlayout import FlowWidget
 from src.qt.helpers.file_opener import FileOpenerHelper
 from src.qt.widgets.thumb_button import ThumbButton
@@ -91,7 +96,8 @@ class ItemThumb(FlowWidget):
 
     def __init__(
         self,
-        mode: Optional[ItemType],
+        # mode: Optional[ItemType],
+        search_result: Optional[SearchResult],
         library: Library,
         panel: "PreviewPanel",
         thumb_size: tuple[int, int],
@@ -100,7 +106,8 @@ class ItemThumb(FlowWidget):
         super().__init__()
         self.lib = library
         self.panel = panel
-        self.mode = mode
+        self.search_result = search_result
+        # self.mode = mode
         self.item_id: int = -1
         self.isFavorite: bool = False
         self.isArchived: bool = False
@@ -310,17 +317,20 @@ class ItemThumb(FlowWidget):
         # root_layout.addWidget(self.archive_badge, 0, 2)
         # self.dumpObjectTree()
 
-        self.set_mode(mode)
+        # self.set_mode(mode)
+        self.set_search_result(search_result=search_result)
 
-    def set_mode(self, mode: Optional[ItemType]) -> None:
-        if mode is None:
+    def set_search_result(self, search_result: SearchResult | None) -> None:
+        # if mode is None:
+        if search_result is None:
             self.unsetCursor()
             self.thumb_button.setHidden(True)
             # self.check_badges.setHidden(True)
             # self.ext_badge.setHidden(True)
             # self.item_type_badge.setHidden(True)
             pass
-        elif mode == ItemType.ENTRY and self.mode != ItemType.ENTRY:
+            # elif mode == ItemType.ENTRY and self.mode != ItemType.ENTRY:
+        elif isinstance(search_result, EntrySearchResult):
             self.setCursor(Qt.CursorShape.PointingHandCursor)
             self.thumb_button.setHidden(False)
             self.cb_container.setHidden(False)
@@ -329,7 +339,8 @@ class ItemThumb(FlowWidget):
             self.count_badge.setStyleSheet(ItemThumb.small_text_style)
             self.count_badge.setHidden(True)
             self.ext_badge.setHidden(True)
-        elif mode == ItemType.COLLATION and self.mode != ItemType.COLLATION:
+            # elif mode == ItemType.COLLATION and self.mode != ItemType.COLLATION:
+        elif isinstance(search_result, CollationSearchResult):
             self.setCursor(Qt.CursorShape.PointingHandCursor)
             self.thumb_button.setHidden(False)
             self.cb_container.setHidden(True)
@@ -337,14 +348,14 @@ class ItemThumb(FlowWidget):
             self.count_badge.setStyleSheet(ItemThumb.med_text_style)
             self.count_badge.setHidden(False)
             self.item_type_badge.setHidden(False)
-        elif mode == ItemType.TAG_GROUP and self.mode != ItemType.TAG_GROUP:
+            # elif mode == ItemType.TAG_GROUP and self.mode != ItemType.TAG_GROUP:
+        else:
             self.setCursor(Qt.CursorShape.PointingHandCursor)
             self.thumb_button.setHidden(False)
             # self.cb_container.setHidden(True)
             self.ext_badge.setHidden(True)
             self.count_badge.setHidden(False)
             self.item_type_badge.setHidden(False)
-        self.mode = mode
         # logging.info(f'Set Mode To: {self.mode}')
 
     # def update_(self, thumb: QPixmap, size:QSize, ext:str, badges:list[QPixmap]) -> None:
@@ -359,7 +370,8 @@ class ItemThumb(FlowWidget):
             if ext in VIDEO_TYPES + AUDIO_TYPES:
                 self.count_badge.setHidden(False)
         else:
-            if self.mode == ItemType.ENTRY:
+            # if self.mode == ItemType.ENTRY:
+            if isinstance(self.search_result, EntrySearchResult):
                 self.ext_badge.setHidden(True)
                 self.count_badge.setHidden(True)
 
@@ -368,7 +380,8 @@ class ItemThumb(FlowWidget):
             self.count_badge.setHidden(False)
             self.count_badge.setText(count)
         else:
-            if self.mode == ItemType.ENTRY:
+            # if self.mode == ItemType.ENTRY:
+            if isinstance(self.search_result, EntrySearchResult):
                 self.ext_badge.setHidden(True)
                 self.count_badge.setHidden(True)
 
@@ -417,33 +430,33 @@ class ItemThumb(FlowWidget):
         if id == -1:
             return
         entry = self.lib.get_entry(self.item_id)
-        filepath = self.lib.library_dir / entry.path / entry.filename
+        filepath = self.lib.library_dir / entry.path
         self.opener.set_filepath(filepath)
 
     def assign_favorite(self, value: bool):
         # Switching mode to None to bypass mode-specific operations when the
         # checkbox's state changes.
-        mode = self.mode
-        self.mode = None
         self.isFavorite = value
+        cached_search_result = self.search_result
+        self.search_result = None
         self.favorite_badge.setChecked(value)
         if not self.thumb_button.underMouse():
             self.favorite_badge.setHidden(not self.isFavorite)
-        self.mode = mode
+        self.search_result = cached_search_result
 
     def assign_archived(self, value: bool):
         # Switching mode to None to bypass mode-specific operations when the
         # checkbox's state changes.
-        mode = self.mode
-        self.mode = None
+        cached_search_result = self.search_result
+        self.search_result = None
         self.isArchived = value
         self.archived_badge.setChecked(value)
         if not self.thumb_button.underMouse():
             self.archived_badge.setHidden(not self.isArchived)
-        self.mode = mode
+        self.search_result = cached_search_result
 
     def show_check_badges(self, show: bool):
-        if self.mode != ItemType.TAG_GROUP:
+        if isinstance(self.search_result, EntrySearchResult):
             self.favorite_badge.setHidden(
                 True if (not show and not self.isFavorite) else False
             )

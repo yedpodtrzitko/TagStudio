@@ -17,8 +17,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from src.backend import Library, Tag
 from src.core.enums import FieldID
-from src.core.library import Library, Tag
 from src.core.palette import ColorType, get_tag_color
 from src.qt.flowlayout import FlowLayout
 
