@@ -6,4 +6,8 @@ strict_optional = false
 disable_error_code = ["union-attr", "annotation-unchecked", "import-untyped"]
 explicit_package_bases = true
 warn_unused_ignores = true
-# check_untyped_defs = true
+check_untyped_defs = true
+exclude = [
+    "home_ui.py",
+    "main_window.py", # this doesnt work?
+]

@@ -116,10 +116,10 @@ class MirrorEntriesModal(QWidget):
         QThreadPool.globalInstance().start(r)
         r.done.connect(
             lambda: (
-                pw.hide(),
-                pw.deleteLater(),
+                pw.hide(),  # type: ignore
+                pw.deleteLater(),  # type: ignore
                 self.driver.preview_panel.update_widgets(),
-                self.done.emit(),
+                self.done.emit(),  # type: ignore
             )
         )
 

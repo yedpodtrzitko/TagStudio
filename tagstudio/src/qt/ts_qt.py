@@ -81,7 +81,7 @@ from src.core.utils.web import strip_web_protocol
 from src.qt.flowlayout import FlowLayout
 from src.qt.helpers.custom_runnable import CustomRunnable
 from src.qt.helpers.function_iterator import FunctionIterator
-from src.qt.main_window import Ui_MainWindow
+from src.qt.main_window import Ui_MainWindow  # type: ignore
 from src.qt.modals.build_tag import BuildTagPanel
 from src.qt.modals.file_extension import FileExtensionModal
 from src.qt.modals.fix_dupes import FixDupeFilesModal
@@ -115,7 +115,7 @@ class NavigationState:
 
     def __init__(
         self,
-        contents,
+        contents: tuple,
         scrollbar_pos: int,
         page_index: int,
         page_count: int,
@@ -272,7 +272,7 @@ class QtDriver(QObject):
         # self.main_window = loader.load(home_path)
         self.main_window = Ui_MainWindow()
         self.main_window.setWindowTitle(self.base_title)
-        self.main_window.mousePressEvent = self.mouse_navigation  # type: ignore
+        self.main_window.mousePressEvent = self.mouse_navigation
         # self.main_window.setStyleSheet(
         # 	f'QScrollBar::{{background:red;}}'
         # 	)
@@ -503,7 +503,7 @@ class QtDriver(QObject):
             str(Path(__file__).parents[2] / "resources/qt/fonts/Oxanium-Bold.ttf")
         )
 
-        self.thumb_size = 128
+        self.thumb_size: int = 128
         self.max_results: int = 500
         self.item_thumbs: list[ItemThumb] = []
         self.thumb_renderers: list[ThumbRenderer] = []
@@ -564,7 +564,7 @@ class QtDriver(QObject):
                         i, self.nav_frames[self.cur_frame_idx].search_text
                     )
                 ),
-                logging.info(f"emitted {i}"),
+                logging.info(f"emitted {i}"),  # type: ignore
             )
         )
 
@@ -638,7 +638,7 @@ class QtDriver(QObject):
                     None,
                     "Library Location not found, please select location to save Library",
                     "/",
-                    QFileDialog.ShowDirsOnly,
+                    QFileDialog.ShowDirsOnly,  # type: ignore
                 )
                 if dir not in (None, ""):
                     self.lib.library_dir = Path(dir)
@@ -690,7 +690,7 @@ class QtDriver(QObject):
         # self.edit_modal.widget.update_display_name.connect(lambda t: self.edit_modal.title_widget.setText(t))
         panel: BuildTagPanel = self.modal.widget
         self.modal.saved.connect(
-            lambda: (self.lib.add_tag_to_library(panel.build_tag()), self.modal.hide())
+            lambda: (self.lib.add_tag_to_library(panel.build_tag()), self.modal.hide())  # type: ignore
         )
         # panel.tag_updated.connect(lambda tag: self.lib.update_tag(tag))
         self.modal.show()
@@ -773,7 +773,7 @@ class QtDriver(QObject):
         # r.done.connect(lambda: (pw.hide(), pw.deleteLater(), self.filter_items('')))
         # vvv This one runs the macros when adding new files to the library.
         r.done.connect(
-            lambda: (pw.hide(), pw.deleteLater(), self.add_new_files_runnable())
+            lambda: (pw.hide(), pw.deleteLater(), self.add_new_files_runnable())  # type: ignore
         )
         QThreadPool.globalInstance().start(r)
 
@@ -904,7 +904,7 @@ class QtDriver(QObject):
 
     def nav_forward(
         self,
-        frame_content: Optional[list[tuple[ItemType, int]]] = None,
+        frame_content: tuple[tuple[ItemType, int], ...] | None = None,
         page_index: int = 0,
         page_count: int = 0,
     ):
@@ -1006,7 +1006,7 @@ class QtDriver(QObject):
 
     def refresh_frame(
         self,
-        frame_content: list[tuple[ItemType, int]],
+        frame_content: tuple[tuple[ItemType, int]],
         page_index: int = 0,
         page_count: int = 0,
     ):
@@ -1099,12 +1099,12 @@ class QtDriver(QObject):
             current_index = self.nav_frames[self.cur_frame_idx].contents.index(
                 (type, id)
             )
-            index_range: list = contents[
+            index_range = contents[
                 min(last_index, current_index) : max(last_index, current_index) + 1
             ]
             # Preserve bridge direction for correct appending order.
             if last_index < current_index:
-                index_range.reverse()
+                list(index_range).reverse()
 
             # logging.info(f'Current Frame Contents: {len(self.nav_frames[self.cur_frame_idx].contents)}')
             # logging.info(f'Last Selected Index: {last_index}')
@@ -1289,10 +1289,10 @@ class QtDriver(QObject):
             item_thumb.update_badges()
 
     def expand_collation(self, collation_entries: list[tuple[int, int]]):
-        self.nav_forward([(ItemType.ENTRY, x[0]) for x in collation_entries])
+        self.nav_forward(tuple((ItemType.ENTRY, x[0]) for x in collation_entries))
         # self.update_thumbs()
 
-    def get_frame_contents(self, index=0, query: str = ""):
+    def get_frame_contents(self, index=0, query: str = "") -> tuple:
         return (
             [] if not self.frame_dict[query] else self.frame_dict[query][index],
             index,

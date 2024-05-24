@@ -11,7 +11,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWi
 from src.core.library import Library
 from src.qt.helpers.custom_runnable import CustomRunnable
 from src.qt.helpers.function_iterator import FunctionIterator
-from src.qt.modals.delete_unlinked import DeleteUnlinkedEntriesModal
+from src.qt.modals.delete_unlinked import DeleteUnlinkedEntriesModal  # type: ignore
 from src.qt.modals.relink_unlinked import RelinkUnlinkedEntries
 from src.qt.widgets.progress import ProgressWidget
 

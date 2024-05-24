@@ -1,3 +1,4 @@
+# type: ignore
 # -*- coding: utf-8 -*-
 
 ################################################################################
@@ -160,7 +161,7 @@ class Ui_MainWindow(QMainWindow):
 		# MainWindow.setMenuBar(self.menubar)
 		self.statusbar = QStatusBar(MainWindow)
 		self.statusbar.setObjectName(u"statusbar")
-		sizePolicy1 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+		sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
 		sizePolicy1.setHorizontalStretch(0)
 		sizePolicy1.setVerticalStretch(0)
 		sizePolicy1.setHeightForWidth(
