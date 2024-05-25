@@ -189,8 +189,7 @@ class QtDriver(QObject):
         self.thumb_job_queue: Queue = Queue()
         self.thumb_threads: list[Consumer] = []
         self.thumb_cutoff: float = time.time()
-        # self.selected: list[tuple[int,int]] = [] # (Thumb Index, Page Index)
-        self.selected: list[tuple[ItemType, int]] = []  # (Item Type, Item ID)
+        self.selected: list[SearchResult] = []
 
         self.SIGTERM.connect(self.handleSIGTERM)
 
@@ -692,7 +691,7 @@ class QtDriver(QObject):
         fn = self.lib.save_library_backup_to_disk()
         end_time = time.time()
         self.main_window.statusbar.showMessage(
-            f'Library Backup Saved at: "{ self.lib.library_dir / TS_FOLDER_NAME / BACKUP_FOLDER_NAME / fn}" ({format_timespan(end_time - start_time)})'
+            f'Library Backup Saved at: "{self.lib.library_dir / TS_FOLDER_NAME / BACKUP_FOLDER_NAME / fn}" ({format_timespan(end_time - start_time)})'
         )
 
     def add_tag_action_callback(self):
@@ -1114,81 +1113,75 @@ class QtDriver(QObject):
             if last_index < current_index:
                 list(index_range).reverse()
 
-    def select_item(self, type: ItemType, id: int, append: bool, bridge: bool):
+    def select_item(self, search_result: SearchResult, append: bool, bridge: bool):
+        """Selects one or more items in the Thumbnail Grid."""
         if append:
-            # self.selected.append((thumb_index, page_index))
-            if ((type, id)) not in self.selected:
-                self.selected.append((type, id))
-                for it in self.item_thumbs:
-                    if it.mode == type and it.item_id == id:
-                        it.thumb_button.set_selected(True)
+            if search_result not in self.selected:
+                self.selected.append(search_result)
+                for item_thumb in self.item_thumbs:
+                    if item_thumb.search_result == search_result:
+                        item_thumb.thumb_button.set_selected(True)
             else:
-                self.selected.remove((type, id))
-                for it in self.item_thumbs:
-                    if it.mode == type and it.item_id == id:
-                        it.thumb_button.set_selected(False)
-            # self.item_thumbs[thumb_index].thumb_button.set_selected(True)
+                self.selected.remove(search_result)
+                for item_thumb in self.item_thumbs:
+                    if item_thumb.search_result == search_result:
+                        item_thumb.thumb_button.set_selected(False)
 
         elif bridge and self.selected:
             logging.info(f"Last Selected: {self.selected[-1]}")
             contents = self.nav_frames[self.cur_frame_idx].contents
-            last_index = self.nav_frames[self.cur_frame_idx].contents.index(
-                self.selected[-1]
-            )
-            current_index = self.nav_frames[self.cur_frame_idx].contents.index(
-                (type, id)
-            )
+
+            last_index = contents.index(self.selected[-1])
+            current_index = contents.index(search_result)
+
             index_range = contents[
                 min(last_index, current_index) : max(last_index, current_index) + 1
             ]
-            # Preserve bridge direction for correct appending order.
+
             if last_index < current_index:
-                list(index_range).reverse()
+                list(index_range.reverse())
 
-            # logging.info(f'Current Frame Contents: {len(self.nav_frames[self.cur_frame_idx].contents)}')
-            # logging.info(f'Last Selected Index: {last_index}')
-            # logging.info(f'Current Selected Index: {current_index}')
-            # logging.info(f'Index Range: {index_range}')
+            for search_result in index_range:
+                if search_result not in self.selected:
+                    self.selected.append(search_result)
 
-            for c_type, c_id in index_range:
-                for it in self.item_thumbs:
-                    if it.mode == c_type and it.item_id == c_id:
-                        it.thumb_button.set_selected(True)
-                        if ((c_type, c_id)) not in self.selected:
-                            self.selected.append((c_type, c_id))
-        else:
-            # for i in self.selected:
-            # 	if i[1] == self.cur_frame_idx:
-            # 		self.item_thumbs[i[0]].thumb_button.set_selected(False)
-            self.selected.clear()
-            # self.selected.append((thumb_index, page_index))
-            self.selected.append((type, id))
-            # self.item_thumbs[thumb_index].thumb_button.set_selected(True)
-            for it in self.item_thumbs:
-                if it.mode == type and it.item_id == id:
-                    it.thumb_button.set_selected(True)
+            for item_thumb in self.item_thumbs:
+                if item_thumb.search_result in self.selected:
+                    item_thumb.thumb_button.set_selected(True)
                 else:
-                    it.thumb_button.set_selected(False)
+                    item_thumb.thumb_button.set_selected(False)
+        else:
+            self.selected.clear()
+            self.selected.append(search_result)
+            for item_thumb in self.item_thumbs:
+                if item_thumb.search_result == search_result:
+                    item_thumb.thumb_button.set_selected(True)
+                else:
+                    item_thumb.thumb_button.set_selected(False)
 
         # NOTE: By using the preview panel's "set_tags_updated_slot" method,
         # only the last of multiple identical item selections are connected.
         # If attaching the slot to multiple duplicate selections is needed,
         # just bypass the method and manually disconnect and connect the slots.
         if len(self.selected) == 1:
-            for it in self.item_thumbs:
-                if it.mode == type and it.item_id == id:
-                    self.preview_panel.set_tags_updated_slot(it.update_badges)
+            for item_thumb in self.item_thumbs:
+                if item_thumb.search_result == search_result:
+                    self.preview_panel.set_tags_updated_slot(item_thumb.update_badges)
+                    break
 
         self.set_macro_menu_viability()
         self.preview_panel.update_widgets()
 
     def set_macro_menu_viability(self) -> None:
-        if len([x[1] for x in self.selected if x[0] == ItemType.ENTRY]) == 0:
-            self.autofill_action.setDisabled(True)
-            self.sort_fields_action.setDisabled(True)
-        else:
-            self.autofill_action.setDisabled(False)
-            self.sort_fields_action.setDisabled(False)
+        entries_selected = [
+            selected.id
+            for selected in self.selected
+            if isinstance(selected, EntrySearchResult)
+        ]
+
+        no_result = len(entries_selected) == 0
+        self.autofill_action.setDisabled(no_result)
+        self.sort_fields_action.setDisabled(no_result)
 
     def update_thumbs(self):
         """Updates search thumbnails."""
@@ -1223,7 +1216,7 @@ class QtDriver(QObject):
                             search_result.path,
                             base_size,
                             ratio,
-                            True,
+                            False,
                             True,
                         ),
                     )
@@ -1254,7 +1247,7 @@ class QtDriver(QObject):
             if isinstance(search_result, EntrySearchResult):
                 filepath = self.lib.library_dir / search_result.path
 
-                item_thumb.set_item_id(search_result.id)
+                # item_thumb.set_item_id(search_result.id)
                 item_thumb.search_result = search_result
                 item_thumb.opener.set_filepath(filepath)
 

@@ -535,6 +535,9 @@ class Library:
 
             entry_object.path = Path(path)
 
+    def add_generic_data_to_entry(self):
+        raise NotImplementedError
+
     def remove_tag_from_field(self, tag: Tag, field: TagBoxField) -> None:
         with Session(self.engine) as session, session.begin():
             field_ = session.scalars(

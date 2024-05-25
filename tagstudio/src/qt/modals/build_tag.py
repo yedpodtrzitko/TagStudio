@@ -34,7 +34,7 @@ logging.basicConfig(format="%(message)s", level=logging.INFO)
 class BuildTagPanel(PanelWidget):
     on_edit = Signal(Tag)
 
-    def __init__(self, library: Library, tag_id: int = -1):
+    def __init__(self, library: Library, tag: Tag = None):
         super().__init__()
         self.lib = library
         # self.callback = callback

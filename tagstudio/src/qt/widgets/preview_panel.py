@@ -627,7 +627,7 @@ class PreviewPanel(QWidget):
                 ratio = self.devicePixelRatio()
                 self.thumb_renderer.render(
                     time.time(),
-                    "",
+                    None,
                     (512, 512),
                     ratio,
                     True,

@@ -4,7 +4,6 @@
 
 
 import logging
-import os
 import time
 import typing
 from pathlib import Path
@@ -329,7 +328,7 @@ class ItemThumb(FlowWidget):
             # self.item_type_badge.setHidden(True)
             pass
             # elif mode == ItemType.ENTRY and self.mode != ItemType.ENTRY:
-        elif isinstance(search_result, EntrySearchResult):
+        elif self.has_search_result:
             self.setCursor(Qt.CursorShape.PointingHandCursor)
             self.thumb_button.setHidden(False)
             self.cb_container.setHidden(False)
@@ -358,27 +357,24 @@ class ItemThumb(FlowWidget):
         self.search_result = search_result
 
     def set_extension(self, path: Path) -> None:
-        ext = path.suffix.lower()
-        if ext and ext not in IMAGE_TYPES or ext.lstrip(".") in ["gif", "apng"]:
-            self.ext_badge.setHidden(False)
-            self.ext_badge.setText(ext.upper())
-            if ext in VIDEO_TYPES + AUDIO_TYPES:
-                self.count_badge.setHidden(False)
-        else:
-            # if self.is_entry_search:
-            if self.is_entry_search:
-                self.ext_badge.setHidden(True)
-                self.count_badge.setHidden(True)
+        if path:
+            ext = path.suffix.lower()
+            if ext not in IMAGE_TYPES or ext in [".gif", ".apng"]:
+                self.ext_badge.setHidden(False)
+                self.ext_badge.setText(ext.upper())
+                if ext in VIDEO_TYPES + AUDIO_TYPES:
+                    self.count_badge.setHidden(False)
+        elif self.has_search_result:
+            self.ext_badge.setHidden(True)
+            self.count_badge.setHidden(True)
 
     def set_count(self, count: str) -> None:
         if count:
             self.count_badge.setHidden(False)
             self.count_badge.setText(count)
-        else:
-            # if self.is_entry_search:
-            if self.is_entry_search:
-                self.ext_badge.setHidden(True)
-                self.count_badge.setHidden(True)
+        elif self.has_search_result:
+            self.ext_badge.setHidden(True)
+            self.count_badge.setHidden(True)
 
     def update_thumb(self, timestamp: float, image: QPixmap | None = None):
         """Updates attributes of a thumbnail element."""
@@ -407,24 +403,26 @@ class ItemThumb(FlowWidget):
             self.thumb_button.clicked.connect(clickable)
 
     @property
-    def is_entry_search(self):
+    def has_search_result(self):
         return isinstance(self.search_result, EntrySearchResult)
         # return self.mode == ItemType.ENTRY
 
     def update_badges(self):
-        if self.is_entry_search:
-            if self.search_result is None:
-                raise ValueError
+        if self.search_result is None:
+            raise ValueError
 
-            archived, favorited = self.lib.entry_archived_favorited_status(
-                entry=self.search_result.id
-            )
+        if not self.has_search_result:
+            return
 
-            self.search_result.archived = archived
-            self.search_result.favorited = favorited
+        archived, favorited = self.lib.entry_archived_favorited_status(
+            entry=self.search_result.id
+        )
 
-            self.assign_archived(self.search_result.archived)
-            self.assign_favorite(self.search_result.favorited)
+        self.search_result.archived = archived
+        self.search_result.favorited = favorited
+
+        self.assign_archived(self.search_result.archived)
+        self.assign_favorite(self.search_result.favorited)
 
     def set_item_id(self, id: int):
         """
@@ -462,7 +460,7 @@ class ItemThumb(FlowWidget):
         self.search_result = cached_search_result
 
     def show_check_badges(self, show: bool):
-        if self.is_entry_search:
+        if self.has_search_result:
             self.favorite_badge.setHidden(
                 True if (not show and not self.isFavorite) else False
             )
@@ -479,34 +477,35 @@ class ItemThumb(FlowWidget):
         return super().leaveEvent(event)
 
     def on_archived_check(self, toggle_value: bool):
-        if self.is_entry_search:
+        if self.has_search_result:
             self.isArchived = toggle_value
             self.toggle_item_tag(toggle_value, TAG_ARCHIVED)
 
     def on_favorite_check(self, toggle_value: bool):
-        if self.is_entry_search:
+        if self.has_search_result:
             self.isFavorite = toggle_value
             self.toggle_item_tag(toggle_value, TAG_FAVORITE)
 
     def toggle_item_tag(self, toggle_value: bool, tag_id: int):
-        def toggle_tag(entry: Entry):
+        def toggle_tag(entry: SearchResult):
             if toggle_value:
-                self.favorite_badge.setHidden(False)
-                entry.add_tag(
-                    self.panel.driver.lib,
-                    tag_id,
-                    field_id=FieldID.META_TAGS,
-                    field_index=-1,
+                # self.favorite_badge.setHidden(False)
+                self.lib.add_tag_to_entry_meta_tags(
+                    tag_id=tag_id,
+                    entry_id=search_result.id,
                 )
             else:
-                entry.remove_tag(self.panel.driver.lib, tag_id)
+                self.lib.remove_tag_from_entry_meta_tags(
+                    tag=tag_id,
+                    entry_id=search_result.id,
+                )
 
         # Is the badge a part of the selection?
-        if (ItemType.ENTRY, self.item_id) in self.panel.driver.selected:
+        # if (ItemType.ENTRY, self.item_id) in self.panel.driver.selected:
+        if self.search_result in self.panel.driver.selected:
             # Yes, add chosen tag to all selected.
-            for _, item_id in self.panel.driver.selected:
-                entry = self.lib.get_entry(item_id)
-                toggle_tag(entry)
+            for search_result in self.panel.driver.selected:
+                toggle_tag(search_result)
         else:
             # No, add tag to the entry this badge is on.
             entry = self.lib.get_entry(self.item_id)

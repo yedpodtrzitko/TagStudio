@@ -83,7 +83,7 @@ class ThumbRenderer(QObject):
     # TODO: Make dynamic font sized given different pixel ratios
     font_pixel_ratio: float = 1
     ext_font = ImageFont.truetype(
-        ROOT_DIR / "resources/qt/fonts/Oxanium-Bold.ttf",
+        str(ROOT_DIR / "resources/qt/fonts/Oxanium-Bold.ttf"),
         math.floor(12 * font_pixel_ratio),
     )
 
@@ -106,7 +106,7 @@ class ThumbRenderer(QObject):
         if ThumbRenderer.font_pixel_ratio != pixel_ratio:
             ThumbRenderer.font_pixel_ratio = pixel_ratio
             ThumbRenderer.ext_font = ImageFont.truetype(
-                ROOT_DIR / "resources/qt/fonts/Oxanium-Bold.ttf",
+                str(ROOT_DIR / "resources/qt/fonts/Oxanium-Bold.ttf"),
                 math.floor(12 * ThumbRenderer.font_pixel_ratio),
             )
 
@@ -280,6 +280,9 @@ class ThumbRenderer(QObject):
             pixmap.setDevicePixelRatio(pixel_ratio)
 
         if pixmap:
+            if final is None:
+                raise ValueError("final is None")
+
             self.updated.emit(
                 timestamp,
                 pixmap,
@@ -289,6 +292,5 @@ class ThumbRenderer(QObject):
                 ),
                 filepath,
             )
-
         else:
             self.updated.emit(timestamp, QPixmap(), QSize(*base_size), filepath)
