@@ -1392,7 +1392,7 @@ class QtDriver(QObject):
 
         self.main_window.statusbar.showMessage(f"Opening Library {path}", 3)
         return_code = self.lib.open_library(path)
-        if return_code == 1:
+        if return_code == 1 or return_code is True:
             # if self.args.external_preview:
             # 	self.init_external_preview()
 

@@ -28,8 +28,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from sqlalchemy import select
 from src.backend import Entry, ItemType, Library
 from src.backend.alchemy.enums import EntrySearchResult
+from src.backend.alchemy.fields import Field, TagBoxField, TextField
 from src.core.constants import IMAGE_TYPES, RAW_IMAGE_TYPES, VIDEO_TYPES
 from src.core.enums import SettingItems, Theme
 from src.qt.helpers.file_opener import FileOpenerHelper, FileOpenerLabel, open_file
@@ -232,13 +234,6 @@ class PreviewPanel(QWidget):
         self.afb_container = QWidget()
         self.afb_layout = QVBoxLayout(self.afb_container)
         self.afb_layout.setContentsMargins(0, 12, 0, 0)
-
-        self.add_field_button = QPushButton()
-        self.add_field_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.add_field_button.setMinimumSize(96, 28)
-        self.add_field_button.setMaximumSize(96, 28)
-        self.add_field_button.setText("Add Field")
-        self.afb_layout.addWidget(self.add_field_button)
 
         self.update_image_size(
             (self.image_container.size().width(), self.image_container.size().height())
@@ -505,7 +500,6 @@ class PreviewPanel(QWidget):
                     c.setHidden(True)
 
             self.selected = list(self.driver.selected)
-            self.add_field_button.setHidden(True)
 
         # 1 Selected Item
         elif len(self.driver.selected) == 1:
@@ -602,8 +596,6 @@ class PreviewPanel(QWidget):
                         if i > (len(item.fields) - 1):
                             c.setHidden(True)
 
-                self.add_field_button.setHidden(False)
-
         # Multiple Selected Items
         elif len(self.driver.selected) > 1:
             if self.selected != self.driver.selected:
@@ -695,8 +687,6 @@ class PreviewPanel(QWidget):
                     if i > (len(self.common_fields) + len(self.mixed_fields) - 1):
                         c.setHidden(True)
 
-            self.add_field_button.setHidden(False)
-
         self.initialized = True
 
         # # Uninitialized or New Item:
@@ -766,237 +756,128 @@ class PreviewPanel(QWidget):
         self.tags_updated.connect(slot)
 
     # def write_container(self, item:Union[Entry, Collation, Tag], index, field):
-    def write_container(self, index, field, mixed=False) -> None:
+    def write_container(self, index: int, field: Field, mixed: bool = False):
         """Updates/Creates data for a FieldContainer."""
-        # logging.info(f'[ENTRY PANEL] WRITE CONTAINER')
 
-        if len(self.containers) < (index + 1):
-            container = FieldContainer()
-            self.containers.append(container)
-            self.scroll_layout.addWidget(container)
-        else:
-            container = self.containers[index]
-            # container.inner_layout.removeItem(container.inner_layout.itemAt(1))
-            # container.setHidden(False)
-        if self.lib.get_field_attr(field, "type") == "tag_box":
-            # logging.info(f'WRITING TAGBOX FOR ITEM {item.id}')
-            container.set_title(self.lib.get_field_attr(field, "name"))
-            # container.set_editable(False)
-            container.set_inline(False)
-            title = f"{self.lib.get_field_attr(field, 'name')} (Tag Box)"
-            if not mixed:
-                item = self.lib.get_entry(
-                    self.selected[0][1]
-                )  # TODO TODO TODO: TEMPORARY
-                if type(container.get_inner_widget()) == TagBoxWidget:
-                    inner_container: typing.Any = container.get_inner_widget()
-                    inner_container.set_item(item)
-                    inner_container.set_tags(self.lib.get_field_attr(field, "content"))
-                    try:
-                        inner_container.updated.disconnect()
-                    except RuntimeError:
-                        pass
-                    # inner_container.updated.connect(lambda f=self.filepath, i=item: self.write_container(item, index, field))
+        self.scroll_layout.takeAt(self.scroll_layout.count() - 1).widget()
+
+        with self.lib.closing_database_session() as session:
+            if len(self.containers) < (index + 1):
+                container = FieldContainer()
+                self.containers.append(container)
+                self.scroll_layout.addWidget(container)
+            else:
+                container = self.containers[index]
+
+            if isinstance(field, TagBoxField):
+                container.set_title(field.name)
+                container.set_inline(False)
+                title = f"{field.name} (Tag Box)"
+                if not mixed:
+                    item = session.scalars(
+                        select(Entry).where(Entry.id == self.selected[0].id)
+                    ).one()
+                    field = session.scalars(
+                        select(TagBoxField).where(TagBoxField.id == field.id)
+                    ).one()
+                    if type(container.get_inner_widget()) == TagBoxWidget:
+                        inner_container: TagBoxWidget = container.get_inner_widget()  # type: ignore
+                        inner_container.set_item(item)  # type: ignore
+                        inner_container.set_tags(field.tags)  # type: ignore
+                        try:
+                            inner_container.updated.disconnect()  # type: ignore
+                        except RuntimeError:
+                            pass
+                    else:
+                        inner_container = TagBoxWidget(  # type: ignore
+                            field=field,
+                            item=item,
+                            title=title,
+                            library=self.lib,
+                            tags=field.tags,
+                            driver=self.driver,
+                        )
+
+                        container.set_inner_widget(inner_container)
+
+                    inner_container.field = field
+
+                    inner_container.updated.connect(  # type: ignore
+                        lambda: (
+                            self.write_container(index, field),
+                            self.tags_updated.emit(),
+                        )
+                    )
+
+                    # NOTE: Tag Boxes have no Edit Button (But will when you can convert field types)
+                    prompt = (
+                        f'Are you sure you want to remove this "{field.name}" field?'
+                    )
+                    callback = lambda: (self.remove_field(field), self.update_widgets())
+
+                    container.set_remove_callback(
+                        lambda: self.remove_message_box(
+                            prompt=prompt, callback=callback
+                        )
+                    )
+
+                    container.set_copy_callback(None)
+                    container.set_edit_callback(None)
                 else:
-                    inner_container = TagBoxWidget(
-                        item,
-                        title,
-                        index,
-                        self.lib,
-                        self.lib.get_field_attr(field, "content"),
-                        self.driver,
-                    )
-
+                    text = "<i>Mixed Data</i>"
+                    title = f"{field.name} (Wacky Tag Box)"
+                    inner_container = TextWidget(title=title, text=text, field=field)  # type: ignore
                     container.set_inner_widget(inner_container)
-                inner_container.field = field
-                inner_container.updated.connect(
-                    lambda: (
-                        self.write_container(index, field),  # type: ignore
-                        self.tags_updated.emit(),  # type: ignore
-                    )
-                )
-                # if type(item) == Entry:
-                # NOTE: Tag Boxes have no Edit Button (But will when you can convert field types)
-                # f'Are you sure you want to remove this \"{self.lib.get_field_attr(field, "name")}\" field?'
-                # container.set_remove_callback(lambda: (self.lib.get_entry(item.id).fields.pop(index), self.update_widgets(item)))
-                prompt = f'Are you sure you want to remove this "{self.lib.get_field_attr(field, "name")}" field?'
-                callback = lambda: (self.remove_field(field), self.update_widgets())
-                container.set_remove_callback(
-                    lambda: self.remove_message_box(prompt=prompt, callback=callback)
-                )
-                container.set_copy_callback(None)
-                container.set_edit_callback(None)
-            else:
-                text = "<i>Mixed Data</i>"
-                title = f"{self.lib.get_field_attr(field, 'name')} (Wacky Tag Box)"
-                inner_container = TextWidget(title, text)
-                container.set_inner_widget(inner_container)
-                container.set_copy_callback(None)
-                container.set_edit_callback(None)
-                container.set_remove_callback(None)
+                    container.set_copy_callback(None)
+                    container.set_edit_callback(None)
+                    container.set_remove_callback(None)
 
-            self.tags_updated.emit()
-            # self.dynamic_widgets.append(inner_container)
-        elif self.lib.get_field_attr(field, "type") in "text_line":
-            # logging.info(f'WRITING TEXTLINE FOR ITEM {item.id}')
-            container.set_title(self.lib.get_field_attr(field, "name"))
-            # container.set_editable(True)
-            container.set_inline(False)
-            # Normalize line endings in any text content.
-            if not mixed:
-                text = self.lib.get_field_attr(field, "content").replace("\r", "\n")
-            else:
-                text = "<i>Mixed Data</i>"
-            title = f"{self.lib.get_field_attr(field, 'name')} (Text Line)"
-            inner_container = TextWidget(title, text)
-            container.set_inner_widget(inner_container)
-            # if type(item) == Entry:
-            if not mixed:
-                modal = PanelModal(
-                    EditTextLine(self.lib.get_field_attr(field, "content")),
-                    title=title,
-                    window_title=f'Edit {self.lib.get_field_attr(field, "name")}',
-                    save_callback=(
-                        lambda content: (
-                            self.update_field(field, content),
-                            self.update_widgets(),
-                        )
-                    ),
-                )
-                container.set_edit_callback(modal.show)
-                prompt = f'Are you sure you want to remove this "{self.lib.get_field_attr(field, "name")}" field?'
-                callback = lambda: (self.remove_field(field), self.update_widgets())
-                container.set_remove_callback(
-                    lambda: self.remove_message_box(prompt=prompt, callback=callback)
-                )
-                container.set_copy_callback(None)
-            else:
-                container.set_edit_callback(None)
-                container.set_copy_callback(None)
-                container.set_remove_callback(None)
-            # container.set_remove_callback(lambda: (self.lib.get_entry(item.id).fields.pop(index), self.update_widgets(item)))
+                self.tags_updated.emit()
+            elif isinstance(field, TextField):
+                container.set_title(field.name)
+                container.set_inline(False)
+                if not mixed:
+                    text = field.value or ""
+                    text = text.replace("\r", "\n")
+                else:
+                    text = "<i>Mixed Data</i>"
 
-        elif self.lib.get_field_attr(field, "type") in "text_box":
-            # logging.info(f'WRITING TEXTBOX FOR ITEM {item.id}')
-            container.set_title(self.lib.get_field_attr(field, "name"))
-            # container.set_editable(True)
-            container.set_inline(False)
-            # Normalize line endings in any text content.
-            if not mixed:
-                text = self.lib.get_field_attr(field, "content").replace("\r", "\n")
-            else:
-                text = "<i>Mixed Data</i>"
-            title = f"{self.lib.get_field_attr(field, 'name')} (Text Box)"
-            inner_container = TextWidget(title, text)
-            container.set_inner_widget(inner_container)
-            # if type(item) == Entry:
-            if not mixed:
-                container.set_copy_callback(None)
-                modal = PanelModal(
-                    EditTextBox(self.lib.get_field_attr(field, "content")),
-                    title=title,
-                    window_title=f'Edit {self.lib.get_field_attr(field, "name")}',
-                    save_callback=(
-                        lambda content: (
-                            self.update_field(field, content),
-                            self.update_widgets(),
-                        )
-                    ),
+                title = f"{field.name} (Text Line)"
+                inner_container: TextWidget = TextWidget(
+                    title=title, text=text, field=field
                 )
-                container.set_edit_callback(modal.show)
-                prompt = f'Are you sure you want to remove this "{self.lib.get_field_attr(field, "name")}" field?'
-                callback = lambda: (self.remove_field(field), self.update_widgets())
-                container.set_remove_callback(
-                    lambda: self.remove_message_box(prompt=prompt, callback=callback)
-                )
-            else:
-                container.set_edit_callback(None)
-                container.set_copy_callback(None)
-                container.set_remove_callback(None)
-        elif self.lib.get_field_attr(field, "type") == "collation":
-            # logging.info(f'WRITING COLLATION FOR ITEM {item.id}')
-            container.set_title(self.lib.get_field_attr(field, "name"))
-            # container.set_editable(True)
-            container.set_inline(False)
-            collation = self.lib.get_collation(
-                self.lib.get_field_attr(field, "content")
-            )
-            title = f"{self.lib.get_field_attr(field, 'name')} (Collation)"
-            text = f"{collation.title} ({len(collation.e_ids_and_pages)} Items)"
-            if len(self.selected) == 1:
-                text += f" - Page {collation.e_ids_and_pages[[x[0] for x in collation.e_ids_and_pages].index(self.selected[0][1])][1]}"
-            inner_container = TextWidget(title, text)
-            container.set_inner_widget(inner_container)
-            # if type(item) == Entry:
-            container.set_copy_callback(None)
-            # container.set_edit_callback(None)
-            # container.set_remove_callback(lambda: (self.lib.get_entry(item.id).fields.pop(index), self.update_widgets(item)))
-            prompt = f'Are you sure you want to remove this "{self.lib.get_field_attr(field, "name")}" field?'
-            callback = lambda: (self.remove_field(field), self.update_widgets())
-            container.set_remove_callback(
-                lambda: self.remove_message_box(prompt=prompt, callback=callback)
-            )
-        elif self.lib.get_field_attr(field, "type") == "datetime":
-            # logging.info(f'WRITING DATETIME FOR ITEM {item.id}')
-            if not mixed:
-                try:
-                    container.set_title(self.lib.get_field_attr(field, "name"))
-                    # container.set_editable(False)
-                    container.set_inline(False)
-                    # TODO: Localize this and/or add preferences.
-                    date = dt.strptime(
-                        self.lib.get_field_attr(field, "content"), "%Y-%m-%d %H:%M:%S"
-                    )
-                    title = f"{self.lib.get_field_attr(field, 'name')} (Date)"
-                    inner_container = TextWidget(title, date.strftime("%D - %r"))
-                    container.set_inner_widget(inner_container)
-                except Exception:
-                    container.set_title(self.lib.get_field_attr(field, "name"))
-                    # container.set_editable(False)
-                    container.set_inline(False)
-                    title = f"{self.lib.get_field_attr(field, 'name')} (Date) (Unknown Format)"
-                    inner_container = TextWidget(
-                        title, str(self.lib.get_field_attr(field, "content"))
-                    )
-                # if type(item) == Entry:
-                container.set_copy_callback(None)
-                container.set_edit_callback(None)
-                # container.set_remove_callback(lambda: (self.lib.get_entry(item.id).fields.pop(index), self.update_widgets(item)))
-                prompt = f'Are you sure you want to remove this "{self.lib.get_field_attr(field, "name")}" field?'
-                callback = lambda: (self.remove_field(field), self.update_widgets())
-                container.set_remove_callback(
-                    lambda: self.remove_message_box(prompt=prompt, callback=callback)
-                )
-            else:
-                text = "<i>Mixed Data</i>"
-                title = f"{self.lib.get_field_attr(field, 'name')} (Wacky Date)"
-                inner_container = TextWidget(title, text)
                 container.set_inner_widget(inner_container)
-                container.set_copy_callback(None)
-                container.set_edit_callback(None)
-                container.set_remove_callback(None)
-        else:
-            # logging.info(f'[ENTRY PANEL] Unknown Type: {self.lib.get_field_attr(field, "type")}')
-            container.set_title(self.lib.get_field_attr(field, "name"))
-            # container.set_editable(False)
-            container.set_inline(False)
-            title = f"{self.lib.get_field_attr(field, 'name')} (Unknown Field Type)"
-            inner_container = TextWidget(
-                title, str(self.lib.get_field_attr(field, "content"))
-            )
-            container.set_inner_widget(inner_container)
-            # if type(item) == Entry:
-            container.set_copy_callback(None)
-            container.set_edit_callback(None)
-            # container.set_remove_callback(lambda: (self.lib.get_entry(item.id).fields.pop(index), self.update_widgets(item)))
-            prompt = f'Are you sure you want to remove this "{self.lib.get_field_attr(field, "name")}" field?'
-            callback = lambda: (self.remove_field(field), self.update_widgets())
-            # callback = lambda: (self.lib.get_entry(item.id).fields.pop(index), self.update_widgets())
-            container.set_remove_callback(
-                lambda: self.remove_message_box(prompt=prompt, callback=callback)
-            )
-        container.edit_button.setHidden(True)
-        container.setHidden(False)
+
+                if not mixed:
+                    modal = PanelModal(
+                        widget=EditTextLine(field.value or ""),
+                        title=title,
+                        window_title=f"Edit {field.name}",
+                        save_callback=(
+                            lambda content: (  # type: ignore
+                                self.update_field(field, content),  # type: ignore
+                                self.update_widgets(),
+                            )
+                        ),
+                    )
+                    container.set_edit_callback(modal.show)
+                    prompt = (
+                        f'Are you sure you want to remove this "{field.name}" field?'
+                    )
+                    callback = lambda: (self.remove_field(field), self.update_widgets())
+                    container.set_remove_callback(
+                        lambda: self.remove_message_box(
+                            prompt=prompt, callback=callback
+                        )
+                    )
+                    container.set_copy_callback(None)
+                else:
+                    container.set_edit_callback(None)
+                    container.set_copy_callback(None)
+                    container.set_remove_callback(None)
+
+            container.edit_button.setHidden(True)
+            container.setHidden(False)
 
     def remove_field(self, field: dict):
         """Removes a field from all selected Entries, given a field object."""

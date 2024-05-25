@@ -110,10 +110,6 @@ class Library:
         Returns:
             bool: True if created, False if error.
         """
-
-        if isinstance(path, str):
-            path = Path(path)
-
         # If '.TagStudio' is the name, raise path by one.
         if TS_FOLDER_NAME == path.name:
             path = path.parent
@@ -125,8 +121,6 @@ class Library:
 
             connection_string = f"sqlite:///{path / TS_FOLDER_NAME / LIBRARY_FILENAME}"
             self.engine = make_engine(connection_string=connection_string)
-            make_tables(engine=self.engine)
-
             session = Session(self.engine)
             with session.begin():
                 session.add_all(get_library_defaults())
@@ -163,16 +157,13 @@ class Library:
 
         return tag_list
 
-    def open_library(self, path: str | Path) -> bool:
+    def open_library(self, path: Path) -> bool:
         """Opens an SQLite DB at path.
         Args:
-            path (str): Path for database
+            path (Path): Path for database
         Returns:
             bool: True if exists/opened, False if not.
         """
-        if isinstance(path, str):
-            path = Path(path)
-
         # If '.TagStudio' is the name, raise path by one.
         if TS_FOLDER_NAME == path.name:
             path = path.parent
@@ -180,12 +171,12 @@ class Library:
         sqlite_path = path / TS_FOLDER_NAME / LIBRARY_FILENAME
 
         if sqlite_path.exists() and sqlite_path.is_file():
-            # TODO - dry with "create_library()"
             logging.info(f"[LIBRARY] Opening Library {sqlite_path}")
             connection_string = f"sqlite:///{sqlite_path}"
             self.engine = make_engine(connection_string=connection_string)
             make_tables(engine=self.engine)
             self.library_dir = path
+            self.session = Session(self.engine)
 
             return True
         else:
@@ -347,23 +338,10 @@ class Library:
         # self._map_filenames_to_entry_ids()
         return new_ids
 
-    def get_entry(self, entry_id: int) -> Entry:
-        """Returns an Entry object given an Entry ID."""
+    def get_entry(self, entry_id: int, with_fields: bool = True) -> Entry:
+        """Return an Entry object given an Entry ID."""
         with Session(self.engine) as session, session.begin():
             entry = session.scalar(select(Entry).where(Entry.id == entry_id))
-            session.expunge(entry)
-
-        if entry is None:
-            raise ValueError(f"Entry with id {entry_id} not found.")
-
-        return entry
-
-    def get_entry_and_fields(self, entry_id: int) -> Entry:
-        """Returns an Entry object given an Entry ID."""
-        with Session(self.engine) as session, session.begin():
-            entry = session.scalars(
-                select(Entry).where(Entry.id == entry_id).limit(1)
-            ).one()
 
             _ = entry.fields
             for tag in entry.tags:
