@@ -57,7 +57,9 @@ class TagWidget(QWidget):
 
         self.bg_button = QPushButton(self)
         self.bg_button.setFlat(True)
-        self.bg_button.setText(tag.display_name(self.lib).replace("&", "&&"))
+        self.bg_button.setText(
+            self.lib.get_tag_display_name(self.tag).replace("&", "&&")
+        )
         if has_edit:
             edit_action = QAction("Edit", self)
             edit_action.triggered.connect(on_edit_callback)

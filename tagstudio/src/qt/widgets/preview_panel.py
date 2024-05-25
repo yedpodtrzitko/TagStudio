@@ -759,7 +759,7 @@ class PreviewPanel(QWidget):
     def write_container(self, index: int, field: Field, mixed: bool = False):
         """Updates/Creates data for a FieldContainer."""
 
-        self.scroll_layout.takeAt(self.scroll_layout.count() - 1).widget()
+        # item = self.scroll_layout.takeAt(self.scroll_layout.count() - 1)
 
         with self.lib.closing_database_session() as session:
             if len(self.containers) < (index + 1):

@@ -24,7 +24,7 @@ class TagDatabasePanel(PanelWidget):
         super().__init__()
         self.lib: Library = library
         # self.callback = callback
-        self.first_tag_id = -1
+        self.first_tag_id = None
         self.tag_limit = 30
         # self.selected_tag: int = 0
 
@@ -102,11 +102,9 @@ class TagDatabasePanel(PanelWidget):
             # Get tag ids to keep this behaviorally identical
             tags = [t.id for t in self.lib.tags]
 
-        first_id_set = False
+        self.first_tag_id = tags[0] if tags else None
+
         for tag_id in tags:
-            if not first_id_set:
-                self.first_tag_id = tag_id
-                first_id_set = True
             container = QWidget()
             row = QHBoxLayout(container)
             row.setContentsMargins(0, 0, 0, 0)

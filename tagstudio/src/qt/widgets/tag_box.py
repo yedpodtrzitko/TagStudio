@@ -11,6 +11,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QPushButton
 from src.backend import Entry, Library, Tag
 from src.backend.alchemy.enums import EntrySearchResult
+from src.backend.alchemy.fields import TagBoxField
 from src.core.constants import TAG_ARCHIVED, TAG_FAVORITE
 from src.qt.flowlayout import FlowLayout
 from src.qt.modals.build_tag import BuildTagPanel
@@ -29,9 +30,9 @@ class TagBoxWidget(FieldWidget):
 
     def __init__(
         self,
-        item,
-        title,
-        field_index,
+        field: TagBoxField,
+        item: Entry,
+        title: str,
         library: Library,
         tags: list[int],
         driver: "QtDriver",
@@ -41,7 +42,6 @@ class TagBoxWidget(FieldWidget):
         self.item = item
         self.lib = library
         self.driver = driver  # Used for creating tag click callbacks that search entries for that tag.
-        self.field_index = field_index
         self.tags: list[int] = tags
         self.setObjectName("tagBox")
         self.base_layout = FlowLayout()
@@ -142,11 +142,13 @@ class TagBoxWidget(FieldWidget):
         self.edit_modal.show()
 
     def add_tag_callback(self, tag_id: int):
+        if not tag_id:
+            raise ValueError(f"no tag ID specified:{tag_id}")
         for selected in self.driver.selected:
             if not isinstance(selected, EntrySearchResult):
                 raise NotImplementedError
 
-            entry = self.driver.lib.get_entry_and_fields(selected.id)
+            entry = self.driver.lib.get_entry(selected.id)
             if self.field in entry.tag_box_fields:
                 field_to_edit = entry.tag_box_fields[
                     entry.tag_box_fields.index(self.field)
@@ -169,7 +171,7 @@ class TagBoxWidget(FieldWidget):
         for selected in self.driver.selected:
             if not isinstance(selected, EntrySearchResult):
                 raise NotImplementedError
-            entry = self.driver.lib.get_entry_and_fields(selected.id)
+            entry = self.driver.lib.get_entry(selected.id)
             if self.field in entry.tag_box_fields:
                 field_to_edit = entry.tag_box_fields[
                     entry.tag_box_fields.index(self.field)
