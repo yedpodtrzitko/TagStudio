@@ -1185,8 +1185,9 @@ class QtDriver(QObject):
 
     def update_thumbs(self):
         """Updates search thumbnails."""
-        # start_time = time.time()
-        # logging.info(f'Current Page: {self.cur_page_idx}, Stack Length:{len(self.nav_stack)}')
+        if self.lib.library_dir is None:
+            return
+
         with self.thumb_job_queue.mutex:
             # Cancels all thumb jobs waiting to be started
             self.thumb_job_queue.queue.clear()
@@ -1198,43 +1199,23 @@ class QtDriver(QObject):
         ratio: float = self.main_window.devicePixelRatio()
         base_size: tuple[int, int] = (self.thumb_size, self.thumb_size)
 
-        for i, item_thumb in enumerate(self.item_thumbs, start=0):
+        for i, item_thumb in enumerate(self.item_thumbs):
             if i < len(self.nav_frames[self.cur_frame_idx].contents):
-                # Set new item type modes
-                # logging.info(f'[UPDATE] Setting Mode To: {self.nav_stack[self.cur_page_idx].contents[i][0]}')
                 search_result = self.nav_frames[self.cur_frame_idx].contents[i]
                 item_thumb.set_search_result(search_result)
                 item_thumb.ignore_size = False
-                # logging.info(f'[UPDATE] Set Mode To: {item.mode}')
-                # Set thumbnails to loading (will always finish if rendering)
-
                 self.thumb_job_queue.put(
                     (
                         item_thumb.renderer.render,
-                        (
-                            sys.float_info.max,
-                            search_result.path,
-                            base_size,
-                            ratio,
-                            False,
-                            True,
-                        ),
+                        (sys.float_info.max, None, base_size, ratio, True, True),
                     )
                 )
-                # # Restore Selected Borders
-                # if (item_thumb.mode, item_thumb.item_id) in self.selected:
-                # 	item_thumb.thumb_button.set_selected(True)
-                # else:
-                # 	item_thumb.thumb_button.set_selected(False)
             else:
                 item_thumb.ignore_size = True
-                # item_thumb.set_mode(None)
                 item_thumb.set_search_result(None)
                 item_thumb.set_item_id(-1)
                 item_thumb.thumb_button.set_selected(False)
 
-        # scrollbar: QScrollArea = self.main_window.scrollArea
-        # scrollbar.verticalScrollBar().setValue(scrollbar_pos)
         self.flow_container.layout().update()
         self.main_window.update()
 
@@ -1247,9 +1228,9 @@ class QtDriver(QObject):
             if isinstance(search_result, EntrySearchResult):
                 filepath = self.lib.library_dir / search_result.path
 
-                # item_thumb.set_item_id(search_result.id)
+                item_thumb.set_item_id(search_result.id)
                 item_thumb.search_result = search_result
-                item_thumb.opener.set_filepath(filepath)
+                item_thumb.opener.set_filepath(str(filepath))
 
                 item_thumb.assign_archived(search_result.archived)
                 item_thumb.assign_favorite(search_result.favorited)
@@ -1260,16 +1241,12 @@ class QtDriver(QObject):
                 item_thumb.update_clickable(
                     clickable=(
                         lambda checked=False,
-                        search_result=search_result: self.select_result(
+                        search_result=search_result: self.select_item(
                             search_result=search_result,
-                            append=True
-                            if QGuiApplication.keyboardModifiers()
-                            == Qt.KeyboardModifier.ControlModifier
-                            else False,
-                            bridge=True
-                            if QGuiApplication.keyboardModifiers()
-                            == Qt.KeyboardModifier.ShiftModifier
-                            else False,
+                            append=QGuiApplication.keyboardModifiers()
+                            == Qt.KeyboardModifier.ControlModifier,
+                            bridge=QGuiApplication.keyboardModifiers()
+                            == Qt.KeyboardModifier.ShiftModifier,
                         )
                     )
                 )
@@ -1302,6 +1279,15 @@ class QtDriver(QObject):
             # Restore Selected Borders
             if search_result in self.selected:
                 item_thumb.thumb_button.set_selected(True)
+            else:
+                item_thumb.thumb_button.set_selected(False)
+
+            self.thumb_job_queue.put(
+                (
+                    item_thumb.renderer.render,
+                    (time.time(), filepath, base_size, ratio, False, True),
+                )
+            )
 
     def update_badges(self):
         for i, item_thumb in enumerate(self.item_thumbs, start=0):

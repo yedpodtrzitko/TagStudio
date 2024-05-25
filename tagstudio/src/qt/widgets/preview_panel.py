@@ -510,11 +510,12 @@ class PreviewPanel(QWidget):
         # 1 Selected Item
         elif len(self.driver.selected) == 1:
             # 1 Selected Entry
-            if self.driver.selected[0][0] == ItemType.ENTRY:
-                item: Entry = self.lib.get_entry(self.driver.selected[0][1])
+            selected = self.driver.selected[0]
+            if isinstance(selected, EntrySearchResult):
+                item: Entry = self.lib.get_entry(selected.id)
                 # If a new selection is made, update the thumbnail and filepath.
                 if not self.selected or self.selected != self.driver.selected:
-                    filepath: Path = self.lib.library_dir / item.path / item.filename
+                    filepath: Path = self.lib.library_dir / item.path
 
                     self.file_label.setFilePath(filepath)
                     window_title = str(filepath)
@@ -602,14 +603,6 @@ class PreviewPanel(QWidget):
                             c.setHidden(True)
 
                 self.add_field_button.setHidden(False)
-
-            # 1 Selected Collation
-            elif self.driver.selected[0][0] == ItemType.COLLATION:
-                pass
-
-            # 1 Selected Tag
-            elif self.driver.selected[0][0] == ItemType.TAG_GROUP:
-                pass
 
         # Multiple Selected Items
         elif len(self.driver.selected) > 1:
