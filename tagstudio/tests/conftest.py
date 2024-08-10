@@ -76,3 +76,12 @@ def qt_driver(qtbot, library):
             # driver.lib.add_entries([generate_entry(path=pathlib.Path("foo.txt"))])
             driver.frame_content = library.entries
             yield driver
+
+
+@pytest.fixture
+def generate_tag():
+    def inner(**kwargs):
+        params = dict(name="foo", color=TagColor.red) | kwargs
+        return Tag(**params)
+
+    yield inner

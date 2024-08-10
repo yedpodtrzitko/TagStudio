@@ -199,8 +199,6 @@ class FieldContainer(QWidget):
 
 
 class FieldWidget(QWidget):
-    field = dict
-
     def __init__(self, title) -> None:
         super().__init__()
         # self.item = item

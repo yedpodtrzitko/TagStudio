@@ -1,7 +1,6 @@
 # Copyright (C) 2024 Travis Abendshien (CyanVoxel).
 # Licensed under the GPL-3.0 License.
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
-
 from pathlib import Path
 import time
 import typing
@@ -443,7 +442,7 @@ class PreviewPanel(QWidget):
                 self.lib.add_field_to_entry(entry, field_item.row())
 
     # def update_widgets(self, item: Union[Entry, Collation, Tag]):
-    def update_widgets(self):
+    def update_widgets(self) -> bool:
         """
         Render the panel widgets with the newest data from the Library.
         """
@@ -454,6 +453,18 @@ class PreviewPanel(QWidget):
 
         # update list of libraries
         self.fill_libs_widget(self.libs_layout)
+
+        # update active entry
+        if self.driver.selected:
+            # reload entry and fill it into the grid again
+            # TODO -do this more granularly
+            for grid_idx in self.driver.selected:
+                entry = self.driver.frame_content[grid_idx]
+                _, entries = self.lib.search_library(FilterState(id=entry.id))
+                logger.info(
+                    "found item", entries=entries, grid_idx=grid_idx, lookup_id=entry.id
+                )
+                self.driver.frame_content[grid_idx] = entries[0]
 
         # 0 Selected Items
         if not self.driver.selected:
@@ -676,15 +687,28 @@ class PreviewPanel(QWidget):
                     self.common_fields = [
                         f for f in self.common_fields if f not in common_to_remove
                     ]
-            order: list[int] = (
-                [0]
-                + [1, 2]
-                + [9, 17, 18, 19, 20]
-                + [8, 7, 6]
-                + [4]
-                + [3, 21]
-                + [10, 14, 11, 12, 13, 22]
-                + [5]
+            order: list[FieldID] = (
+                [FieldID.TITLE]
+                + [FieldID.AUTHOR, FieldID.ARTIST]
+                + [
+                    FieldID.COLLATION,
+                    FieldID.BOOK,
+                    FieldID.COMIC,
+                    FieldID.SERIES,
+                    FieldID.MANGA,
+                ]
+                + [FieldID.META_TAGS, FieldID.CONTENT_TAGS, FieldID.TAGS]
+                + [FieldID.DESCRIPTION]
+                + [FieldID.URL, FieldID.SOURCE]
+                + [
+                    FieldID.DATE,
+                    FieldID.DATE_PUBLISHED,
+                    FieldID.DATE_CREATED,
+                    FieldID.DATE_MODIFIED,
+                    FieldID.DATE_TAKEN,
+                    FieldID.DATE_UPLOADED,
+                ]
+                + [FieldID.NOTES]
             )
             self.mixed_fields = sorted(
                 self.mixed_fields,
@@ -719,6 +743,7 @@ class PreviewPanel(QWidget):
 
         self.setWindowTitle(window_title)
         self.show()
+        return True
 
     def set_tags_updated_slot(self, slot: object):
         """
@@ -752,18 +777,17 @@ class PreviewPanel(QWidget):
             title = f"{field.name} (Tag Box)"
 
             if not mixed:
-                entry = self.driver.frame_content[self.selected[0]]
+                # entry = self.driver.frame_content[self.selected[0]]
                 inner_container = container.get_inner_widget()
                 if isinstance(inner_container, TagBoxWidget):
                     # TODO
-                    # inner_container.set_item(entry)
+                    inner_container.set_field(field)
                     inner_container.set_tags(list(field.tags))
 
                     try:
                         inner_container.updated.disconnect()
                     except RuntimeError:
                         logger.error("Failed to disconnect inner_container.updated")
-                        pass
 
                 else:
                     logger.info(
@@ -771,7 +795,7 @@ class PreviewPanel(QWidget):
                         container=inner_container,
                     )
                     inner_container = TagBoxWidget(
-                        entry,
+                        field,
                         title,
                         # index,
                         list(field.tags),
@@ -780,12 +804,12 @@ class PreviewPanel(QWidget):
 
                     container.set_inner_widget(inner_container)
 
-                inner_container.field = field
+                # inner_container.field = field
                 inner_container.updated.connect(
                     lambda: (
-                        print("inner_container updated emited"),
+                        print("inner_container updated emitted", inner_container),
                         self.write_container(index, field),
-                        # self.tags_updated.emit(),
+                        self.update_widgets(),
                     )
                 )
                 # if type(item) == Entry:

@@ -5,10 +5,9 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from src.core.library import Tag
 from src.core.library.alchemy import Entry
 from src.core.library.alchemy import Library
-from src.core.library.alchemy.enums import TagColor, FilterState
+from src.core.library.alchemy.enums import FilterState
 from src.core.library.alchemy.fields import DEFAULT_FIELDS
 
 
@@ -21,15 +20,6 @@ def generate_entry(*, path: Path = None) -> Entry:
     return Entry(
         path=path,
     )
-
-
-@pytest.fixture
-def generate_tag():
-    def inner(**kwargs):
-        params = dict(name="foo", color=TagColor.red) | kwargs
-        return Tag(**params)
-
-    yield inner
 
 
 @pytest.mark.skip
@@ -66,9 +56,9 @@ def test_create_tag(library, generate_tag):
     assert library.add_tag(generate_tag(name="bar"))
 
 
-def test_library_search(library, tag_fixture):
+def test_library_search(library, generate_tag):
     entries = library.entries
-    tag = tag_fixture()
+    tag = generate_tag()
     assert len(entries) == 1, entries
     assert [x.name for x in entries[0].tags] == [tag.name]
 
@@ -162,9 +152,17 @@ def test_add_field_tag(library, generate_tag):
     tag_field = entry.tag_box_fields[0]
 
     # When
-    library.add_field_tag(tag, tag_field)
+    library.add_field_tag(entry, tag, tag_field.type)
 
     # Then
     entry = [x for x in library.entries if x.id == entry.id][0]
     tag_field = entry.tag_box_fields[0]
     assert [x.name for x in tag_field.tags if x.name == tag_name]
+
+
+def test_entry_field_name(library):
+    # Given
+    _, entries = library.search_library(FilterState())
+    tag_field = entries[0].fields[0]
+
+    assert tag_field.name == "tag_box"

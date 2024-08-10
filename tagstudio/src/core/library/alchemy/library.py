@@ -5,7 +5,7 @@ from typing import Iterator, Literal, Any
 
 import structlog
 from sqlalchemy import and_, or_, select, create_engine, Engine, func
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.orm import (
     Session,
     contains_eager,
@@ -346,7 +346,7 @@ class Library:
                 "searching library",
                 filter=search,
                 lookup_strategy=lookup_strategy,
-                query_full=statement.compile(compile_kwargs={"literal_binds": True}),
+                # query_full=str(statement.compile(compile_kwargs={"literal_binds": True})),
             )
 
             entries_ = list(session.scalars(statement).unique())
@@ -474,7 +474,7 @@ class Library:
                 else:
                     raise NotImplementedError
 
-    def add_field_to_entry(self, entry: Entry, field_id: int) -> None:
+    def add_field_to_entry(self, entry: Entry, field_id: int) -> bool:
         logger.info("adding field to entry", entry=entry, field_id=field_id)
         # TODO - using entry here directly doesnt work, as it's expunged from session
         # so the session tries to insert it again which fails
@@ -510,8 +510,15 @@ class Library:
             else:
                 raise ValueError("Unknown field.")
 
-            session.add(field)
-            session.commit()
+            try:
+                session.add(field)
+                session.commit()
+                return True
+            except IntegrityError as e:
+                logger.exception(e)
+                session.rollback()
+                return False
+                # TODO - trigger error signal
 
     def add_tag(self, tag: Tag) -> bool:
         with Session(self.engine, expire_on_commit=False) as session, session.begin():
@@ -525,15 +532,31 @@ class Library:
             else:
                 return True
 
-    def add_field_tag(
-        self,
-        tag: Tag,
-        field: TagBoxField,
-    ) -> None:
+    def add_field_tag(self, entry: Entry, tag: Tag, field_type: TagBoxTypes) -> bool:
         with Session(self.engine) as session, session.begin():
-            field.tags = field.tags | {tag}
-            session.add(field)
-            session.commit()
+            # find field matching entry and field_type
+            field = session.scalars(
+                select(TagBoxField).where(
+                    and_(
+                        TagBoxField.entry_id == entry.id,
+                        TagBoxField.type == field_type,
+                    )
+                )
+            ).first()
+
+            if not field:
+                logger.info("no field found", entry=entry, field_type=field_type)
+                return False
+
+            try:
+                field.tags = field.tags | {tag}
+                session.add(field)
+                session.commit()
+                return True
+            except InvalidRequestError as e:
+                logger.exception(e)
+                session.rollback()
+                return False
 
     def add_tag_to_entry_meta_tags(self, tag: int | Tag, entry_id: int) -> None:
         if isinstance(tag, Tag):

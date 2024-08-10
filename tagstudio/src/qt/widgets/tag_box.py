@@ -21,7 +21,6 @@ from src.qt.widgets.panel import PanelModal
 from src.qt.modals.build_tag import BuildTagPanel
 from src.qt.modals.tag_search import TagSearchPanel
 
-# Only import for type checking/autocompletion, will not be imported at runtime.
 if typing.TYPE_CHECKING:
     from src.qt.ts_qt import QtDriver
 
@@ -30,18 +29,18 @@ logger = structlog.get_logger(__name__)
 
 class TagBoxWidget(FieldWidget):
     updated = Signal()
+    error_occurred = Signal(Exception)
 
     def __init__(
         self,
-        item: Entry,
+        field: TagBoxField,
         title: str,
-        # field_index: int,
         tags: list[Tag],  # tags from TagBoxField model
         driver: "QtDriver",
     ) -> None:
         super().__init__(title)
 
-        # self.item = item
+        self.field = field
         self.driver = driver  # Used for creating tag click callbacks that search entries for that tag.
         # self.field_index = field_index
         self.tags = tags
@@ -86,6 +85,9 @@ class TagBoxWidget(FieldWidget):
 
         self.set_tags(tags)
 
+    def set_field(self, field: TagBoxField):
+        self.field = field
+
     def set_tags(self, tags: list[Tag]):
         is_recycled = False
         while self.base_layout.itemAt(0) and self.base_layout.itemAt(1):
@@ -101,7 +103,12 @@ class TagBoxWidget(FieldWidget):
                 )
             )
 
-            tw.on_remove.connect(lambda tag_id=tag.id: self.remove_tag(tag_id))
+            tw.on_remove.connect(
+                lambda tag_id=tag.id: (
+                    self.remove_tag(tag_id),
+                    self.driver.preview_panel.update_widgets(),
+                )
+            )
             tw.on_edit.connect(lambda tag_id=tag.id: self.edit_tag(tag_id))
             self.base_layout.addWidget(tw)
 
@@ -140,14 +147,14 @@ class TagBoxWidget(FieldWidget):
 
         tag = self.driver.lib.get_tag(tag_id=tag_id)
 
+        # TODO - this is ignoring the chosen tag field, taking the first one
         for idx in self.driver.selected:
             entry: Entry = self.driver.frame_content[idx]
 
-            # TODO - add tag to correct field
-            tag_field: TagBoxField = entry.tag_box_fields[0]
-            self.driver.lib.add_field_tag(tag, tag_field)
+            if not self.driver.lib.add_field_tag(entry, tag, self.field.type):
+                # TODO - add some visible error
+                self.error_occurred.emit(Exception("Failed to add tag"))
 
-        # TODO - this was originally in the loop, is it needed there?
         self.updated.emit()
 
         if tag_id in (TAG_FAVORITE, TAG_ARCHIVED):

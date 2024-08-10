@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Self
+from typing import Optional
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship

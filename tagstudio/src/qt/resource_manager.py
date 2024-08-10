@@ -2,13 +2,13 @@
 # Licensed under the GPL-3.0 License.
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
-import logging
 from pathlib import Path
 from typing import Any
 
+import structlog
 import ujson
 
-logging.basicConfig(format="%(message)s", level=logging.INFO)
+logger = structlog.get_logger(__name__)
 
 
 class ResourceManager:
@@ -25,8 +25,8 @@ class ResourceManager:
                 Path(__file__).parent / "resources.json", mode="r", encoding="utf-8"
             ) as f:
                 ResourceManager._map = ujson.load(f)
-                logging.info(
-                    f"[ResourceManager] {len(ResourceManager._map.items())} resources registered"
+                logger.info(
+                    "resources registered", count=len(ResourceManager._map.items())
                 )
             ResourceManager._initialized = True
 
