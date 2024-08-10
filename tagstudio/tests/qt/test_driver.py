@@ -23,7 +23,21 @@ def test_select_item_bridge(qt_driver):
     qt_driver._init_thumb_grid()
     assert len(qt_driver.item_thumbs) == 3
 
+    # select first item
     qt_driver.select_item(0, False, False)
-    qt_driver.select_item(2, False, True)
+    assert qt_driver.selected == [0]
 
+    # add second item to selection
+    qt_driver.select_item(1, False, bridge=True)
+    assert qt_driver.selected == [0, 1]
+
+    # add third item to selection
+    qt_driver.select_item(2, False, bridge=True)
+    assert qt_driver.selected == [0, 1, 2]
+
+    # select third item only
+    qt_driver.select_item(2, False, bridge=False)
+    assert qt_driver.selected == [2]
+
+    qt_driver.select_item(0, False, bridge=True)
     assert qt_driver.selected == [0, 1, 2]

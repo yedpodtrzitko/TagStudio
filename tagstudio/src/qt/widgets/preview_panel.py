@@ -53,6 +53,30 @@ INFO = "[INFO]"
 
 logger = structlog.get_logger(__name__)
 
+FIELDS_ORDER: list[FieldID] = (
+    [FieldID.TITLE]
+    + [FieldID.AUTHOR, FieldID.ARTIST]
+    + [
+        FieldID.COLLATION,
+        FieldID.BOOK,
+        FieldID.COMIC,
+        FieldID.SERIES,
+        FieldID.MANGA,
+    ]
+    + [FieldID.META_TAGS, FieldID.CONTENT_TAGS, FieldID.TAGS]
+    + [FieldID.DESCRIPTION]
+    + [FieldID.URL, FieldID.SOURCE]
+    + [
+        FieldID.DATE,
+        FieldID.DATE_PUBLISHED,
+        FieldID.DATE_CREATED,
+        FieldID.DATE_MODIFIED,
+        FieldID.DATE_TAKEN,
+        FieldID.DATE_UPLOADED,
+    ]
+    + [FieldID.NOTES]
+)
+
 
 def update_selected_entry(driver: "QtDriver"):
     for grid_idx in driver.selected:
@@ -457,7 +481,7 @@ class PreviewPanel(QWidget):
         # update active entry
         if self.driver.selected:
             # reload entry and fill it into the grid again
-            # TODO -do this more granularly
+            # TODO - do this more granular
             for grid_idx in self.driver.selected:
                 entry = self.driver.frame_content[grid_idx]
                 _, entries = self.lib.search_library(FilterState(id=entry.id))
@@ -466,7 +490,6 @@ class PreviewPanel(QWidget):
                 )
                 self.driver.frame_content[grid_idx] = entries[0]
 
-        # 0 Selected Items
         if not self.driver.selected:
             if self.selected or not self.initialized:
                 self.file_label.setText("No Items Selected")
@@ -507,6 +530,7 @@ class PreviewPanel(QWidget):
             self.preview_img.show()
             self.preview_vid.stop()
             self.preview_vid.hide()
+
             # If a new selection is made, update the thumbnail and filepath.
             if not self.selected or self.selected != self.driver.selected:
                 filepath = self.lib.library_dir / item.path
@@ -616,7 +640,6 @@ class PreviewPanel(QWidget):
 
             self.selected = self.driver.selected
             logger.info("rendering item fields", item=item, fields=item.tag_box_fields)
-            # logger.info("rendering item fields", item=item, fields=item.fields)
             for idx, field in enumerate(item.fields):
                 logger.info("write container in update_widgets", idx=idx, field=field)
                 self.write_container(idx, field)
@@ -658,62 +681,23 @@ class PreviewPanel(QWidget):
                     self.preview_img.clicked.disconnect()
                     self.preview_img.is_connected = False
 
-            self.common_fields = []
-            self.mixed_fields = []
-            for i, grid_idx in enumerate(self.driver.selected):
-                item = self.driver.frame_content[grid_idx]
-                if i == 0:
-                    for f in item.fields:
-                        self.common_fields.append(f)
-                else:
-                    common_to_remove = []
-                    for f in self.common_fields:
-                        # Common field found (Same ID, identical content)
-                        if f not in item.fields:
-                            common_to_remove.append(f)
+            # fill shared fields from first item
+            first_item = self.driver.frame_content[self.driver.selected[0]]
+            common_fields = [f for f in first_item.fields]
+            mixed_fields = []
 
-                            # Mixed field found (Same ID, different content)
-                            # TODO
-                            continue
-                            if self.lib.get_field_index_in_entry(
-                                item, self.lib.get_field_attr(f, "id")
-                            ):
-                                f_stripped = {self.lib.get_field_attr(f, "id"): None}
-                                if f_stripped not in self.mixed_fields and (
-                                    f not in self.common_fields or f in common_to_remove
-                                ):
-                                    #  and (f not in self.common_fields or f in common_to_remove)
-                                    self.mixed_fields.append(f_stripped)
-                    self.common_fields = [
-                        f for f in self.common_fields if f not in common_to_remove
-                    ]
-            order: list[FieldID] = (
-                [FieldID.TITLE]
-                + [FieldID.AUTHOR, FieldID.ARTIST]
-                + [
-                    FieldID.COLLATION,
-                    FieldID.BOOK,
-                    FieldID.COMIC,
-                    FieldID.SERIES,
-                    FieldID.MANGA,
-                ]
-                + [FieldID.META_TAGS, FieldID.CONTENT_TAGS, FieldID.TAGS]
-                + [FieldID.DESCRIPTION]
-                + [FieldID.URL, FieldID.SOURCE]
-                + [
-                    FieldID.DATE,
-                    FieldID.DATE_PUBLISHED,
-                    FieldID.DATE_CREATED,
-                    FieldID.DATE_MODIFIED,
-                    FieldID.DATE_TAKEN,
-                    FieldID.DATE_UPLOADED,
-                ]
-                + [FieldID.NOTES]
-            )
-            self.mixed_fields = sorted(
-                self.mixed_fields,
-                key=lambda x: order.index(self.lib.get_field_attr(x, "id")),
-            )
+            # iterate through other items
+            for i, grid_idx in enumerate(self.driver.selected[1:]):
+                item = self.driver.frame_content[grid_idx]
+                item_field_types = {(f.type, f.order) for f in item.fields}
+                for f in common_fields:
+                    if (f.type, f.order) not in item_field_types:
+                        common_fields.remove(f)
+                    else:
+                        mixed_fields.append(f)
+
+            self.common_fields = common_fields
+            self.mixed_fields = sorted(mixed_fields, key=lambda x: x.order)
 
             self.selected = list(self.driver.selected)
             logger.info(
@@ -729,7 +713,7 @@ class PreviewPanel(QWidget):
                 start=len(self.common_fields),
             )
             for i, f in enumerate(self.mixed_fields, start=len(self.common_fields)):
-                self.write_container(i, f, mixed=True)
+                self.write_container(i, f, is_mixed=True)
 
             # Hide leftover containers
             if len(self.containers) > len(self.common_fields) + len(self.mixed_fields):
@@ -757,9 +741,12 @@ class PreviewPanel(QWidget):
         self.is_connected = True
 
     def write_container(
-        self, index: int, field: TagBoxField | TextField, mixed: bool = False
+        self, index: int, field: TagBoxField | TextField, is_mixed: bool = False
     ):
-        """Update/Create data for a FieldContainer."""
+        """Update/Create data for a FieldContainer.
+
+        :param is_mixed: Relevant when multiple items are selected. If True, field is not present in all selected items
+        """
         # Remove 'Add Field' button from scroll_layout, to be re-added later.
         self.scroll_layout.takeAt(self.scroll_layout.count() - 1).widget()
         if len(self.containers) < (index + 1):
@@ -768,19 +755,15 @@ class PreviewPanel(QWidget):
             self.scroll_layout.addWidget(container)
         else:
             container = self.containers[index]  # type: ignore
-            # container.inner_layout.removeItem(container.inner_layout.itemAt(1))
-            # container.setHidden(False)
 
         if isinstance(field, TagBoxField):
             container.set_title(field.name)
             container.set_inline(False)
             title = f"{field.name} (Tag Box)"
 
-            if not mixed:
-                # entry = self.driver.frame_content[self.selected[0]]
+            if not is_mixed:
                 inner_container = container.get_inner_widget()
                 if isinstance(inner_container, TagBoxWidget):
-                    # TODO
                     inner_container.set_field(field)
                     inner_container.set_tags(list(field.tags))
 
@@ -797,8 +780,6 @@ class PreviewPanel(QWidget):
                     inner_container = TagBoxWidget(
                         field,
                         title,
-                        # index,
-                        list(field.tags),
                         self.driver,
                     )
 
@@ -844,7 +825,7 @@ class PreviewPanel(QWidget):
             # container.set_editable(True)
             container.set_inline(False)
             # Normalize line endings in any text content.
-            if not mixed:
+            if not is_mixed:
                 text = self.lib.get_field_attr(field, "content").replace("\r", "\n")
             else:
                 text = "<i>Mixed Data</i>"
@@ -852,7 +833,7 @@ class PreviewPanel(QWidget):
             inner_container = TextWidget(title, text)
             container.set_inner_widget(inner_container)
             # if type(item) == Entry:
-            if not mixed:
+            if not is_mixed:
                 modal = PanelModal(
                     EditTextLine(self.lib.get_field_attr(field, "content")),
                     title=title,
@@ -887,7 +868,7 @@ class PreviewPanel(QWidget):
             # container.set_editable(True)
             container.set_inline(False)
             # Normalize line endings in any text content.
-            if not mixed:
+            if not is_mixed:
                 text = self.lib.get_field_attr(field, "content").replace("\r", "\n")
             else:
                 text = "<i>Mixed Data</i>"
@@ -895,7 +876,7 @@ class PreviewPanel(QWidget):
             inner_container = TextWidget(title, text)
             container.set_inner_widget(inner_container)
             # if type(item) == Entry:
-            if not mixed:
+            if not is_mixed:
                 container.set_copy_callback(None)
                 modal = PanelModal(
                     EditTextBox(self.lib.get_field_attr(field, "content")),
@@ -925,7 +906,7 @@ class PreviewPanel(QWidget):
 
         elif field.type == DatetimeField:
             # logger.info(f'WRITING DATETIME FOR ITEM {item.id}')
-            if not mixed:
+            if not is_mixed:
                 try:
                     container.set_title(self.lib.get_field_attr(field, "name"))
                     # container.set_editable(False)

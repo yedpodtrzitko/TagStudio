@@ -971,13 +971,13 @@ class QtDriver(QObject):
                 self.item_thumbs[grid_index].thumb_button.set_selected(False)
 
         elif bridge and self.selected:
-            last_index = self.selected[-1]
-            current_index = grid_index
+            select_from = min(self.selected)
+            select_to = max(self.selected)
 
-            if last_index < current_index:
-                index_range = range(last_index, current_index + 1)
+            if select_to < grid_index:
+                index_range = range(select_from, grid_index + 1)
             else:
-                index_range = range(current_index, last_index + 1)
+                index_range = range(grid_index, select_to + 1)
 
             self.selected = list(index_range)
 
@@ -1010,7 +1010,7 @@ class QtDriver(QObject):
             self.sort_fields_action.setDisabled(False)
 
     def update_thumbs(self):
-        """Updates search thumbnails."""
+        """Update search thumbnails."""
         # start_time = time.time()
         # logger.info(f'Current Page: {self.cur_page_idx}, Stack Length:{len(self.nav_stack)}')
         with self.thumb_job_queue.mutex:

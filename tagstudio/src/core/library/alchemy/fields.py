@@ -3,10 +3,10 @@ from __future__ import annotations
 import datetime
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Union, Type, TypeVar, Any
+from typing import TYPE_CHECKING, Union, Any
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship, Session
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
 
@@ -87,6 +87,8 @@ class TagBoxField(Base):
 
     tags: Mapped[set[Tag]] = relationship(secondary="tag_fields")
     name: Mapped[str]
+    # TODO - implement this
+    order: Mapped[int] = mapped_column(default=0)  # position in the list
 
     @property
     def tag_ids(self) -> list[int]:

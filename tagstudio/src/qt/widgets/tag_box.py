@@ -35,7 +35,6 @@ class TagBoxWidget(FieldWidget):
         self,
         field: TagBoxField,
         title: str,
-        tags: list[Tag],  # tags from TagBoxField model
         driver: "QtDriver",
     ) -> None:
         super().__init__(title)
@@ -43,7 +42,6 @@ class TagBoxWidget(FieldWidget):
         self.field = field
         self.driver = driver  # Used for creating tag click callbacks that search entries for that tag.
         # self.field_index = field_index
-        self.tags = tags
         self.setObjectName("tagBox")
         self.base_layout = FlowLayout()
         self.base_layout.setGridEfficiency(False)
@@ -83,12 +81,12 @@ class TagBoxWidget(FieldWidget):
             )
         )
 
-        self.set_tags(tags)
+        self.set_tags(field.tags)
 
     def set_field(self, field: TagBoxField):
         self.field = field
 
-    def set_tags(self, tags: list[Tag]):
+    def set_tags(self, tags: typing.Iterable[Tag]):
         is_recycled = False
         while self.base_layout.itemAt(0) and self.base_layout.itemAt(1):
             self.base_layout.takeAt(0).widget().deleteLater()
@@ -111,8 +109,6 @@ class TagBoxWidget(FieldWidget):
             )
             tw.on_edit.connect(lambda tag_id=tag.id: self.edit_tag(tag_id))
             self.base_layout.addWidget(tw)
-
-        self.tags = tags
 
         # Move or add the '+' button.
         if is_recycled:
