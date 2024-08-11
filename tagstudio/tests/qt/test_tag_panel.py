@@ -9,7 +9,7 @@ def test_tag_panel(qtbot, library):
 
 def test_add_tag_callback(qt_driver):
     # Given
-    assert len(qt_driver.lib.tags) == 1
+    assert len(qt_driver.lib.tags) == 2
     qt_driver.add_tag_action_callback()
 
     # When

@@ -24,10 +24,10 @@ def test_tag_widget(qtbot, library, qt_driver):
 
 def test_tag_widget_add_existing_raises(qtbot, library, qt_driver):
     entry = library.entries[0]
-    field = entry.tag_box_fields[0]
+    field = [f for f in entry.tag_box_fields if f.name == "tag_box"][0]
 
+    assert len(entry.tags) == 1
     tag = next(iter(entry.tags))
-
     tag_widget = TagBoxWidget(field, "title", qt_driver)
 
     qtbot.add_widget(tag_widget)
@@ -66,8 +66,7 @@ def test_tag_widget_remove(qtbot, qt_driver):
     assert tag
 
     assert entry.tag_box_fields
-    assert entry.tag_box_fields[0].tags
-    field = entry.tag_box_fields[0]
+    field = [f for f in entry.tag_box_fields if f.name == "tag_box"][0]
 
     tag_widget = TagBoxWidget(field, "title", qt_driver)
     tag_widget.driver.selected = [0]

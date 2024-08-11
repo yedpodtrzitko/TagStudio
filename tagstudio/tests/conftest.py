@@ -12,7 +12,7 @@ sys.path.insert(0, str(CWD.parent))
 
 from src.core.library import Library, Tag
 from src.core.library.alchemy.enums import TagColor
-from src.core.library.alchemy.fields import TagBoxField
+from src.core.library.alchemy.fields import TagBoxField, TagBoxTypes
 from tests.alchemy.test_library import generate_entry
 from src.core.library import alchemy as backend
 from src.qt.ts_qt import QtDriver
@@ -34,6 +34,11 @@ def library():
         color=TagColor.red,
     )
 
+    tag2 = Tag(
+        name="bar",
+        color=TagColor.blue,
+    )
+
     assert lib.add_tag(tag)
 
     # default item with deterministic name
@@ -43,10 +48,24 @@ def library():
             name="tag_box",
             tags={tag},
         ),
+        TagBoxField(
+            name="meta_box",
+            type=TagBoxTypes.meta_tag_box,
+            # tags={tag2}
+        ),
     ]
 
-    assert lib.add_entries([entry])
-    assert lib.tags
+    entry2 = generate_entry(path=pathlib.Path("bar.txt"))
+    entry2.tag_box_fields = [
+        TagBoxField(
+            name="meta_box",
+            tags={tag2},
+            type=TagBoxTypes.meta_tag_box,
+        ),
+    ]
+
+    assert lib.add_entries([entry, entry2])
+    assert len(lib.tags) == 2
 
     yield lib
 
@@ -80,8 +99,8 @@ def qt_driver(qtbot, library):
 
 @pytest.fixture
 def generate_tag():
-    def inner(**kwargs):
-        params = dict(name="foo", color=TagColor.red) | kwargs
+    def inner(name, **kwargs):
+        params = dict(name=name, color=TagColor.red) | kwargs
         return Tag(**params)
 
     yield inner

@@ -90,10 +90,6 @@ class TagBoxField(Base):
     # TODO - implement this
     order: Mapped[int] = mapped_column(default=0)  # position in the list
 
-    @property
-    def tag_ids(self) -> list[int]:
-        return [tag.id for tag in self.tags]
-
     def __init__(
         self,
         name: str,

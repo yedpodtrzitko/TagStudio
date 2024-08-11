@@ -50,27 +50,29 @@ def test_library_add_file():
 
 def test_create_tag(library, generate_tag):
     # tag already exists
-    assert not library.add_tag(generate_tag())
+    assert not library.add_tag(generate_tag("foo"))
 
     # new tag name
-    assert library.add_tag(generate_tag(name="bar"))
+    assert library.add_tag(generate_tag("xxx"))
 
 
 def test_library_search(library, generate_tag):
     entries = library.entries
-    tag = generate_tag()
-    assert len(entries) == 1, entries
-    assert [x.name for x in entries[0].tags] == [tag.name]
+    assert len(entries) == 2, entries
+    tag = next(iter(entries[0].tags))
+    assert {x.name for x in entries[0].tags} == {"foo"}
 
     query_count, items = library.search_library(
         FilterState(
             name=tag.name,  # TODO - is this the query we want?
         ),
     )
-    assert query_count == 1
-    assert len(items) == 1
+    assert query_count == 2
+    assert len(items) == 2
     entry = items[0]
-    assert [x.name for x in entry.tags] == [tag.name]
+    assert {x.name for x in entry.tags} == {
+        "foo",
+    }
 
     assert entry.tag_box_fields
 
@@ -90,7 +92,7 @@ def test_tag_search(library):
     ["file_path", "exists"],
     [
         (Path("foo.txt"), True),
-        (Path("bar.txt"), False),
+        (Path("-----.txt"), False),
     ],
 )
 def test_has_item(library, file_path, exists):
@@ -117,7 +119,7 @@ def test_entries_count(library):
         )
     )
 
-    assert matches == 11
+    assert matches == 12
     assert len(page) == 5
 
 
@@ -148,7 +150,7 @@ def test_add_field_tag(library, generate_tag):
     # Given
     entry = library.entries[0]
     tag_name = "xxx"
-    tag = generate_tag(name=tag_name)
+    tag = generate_tag(tag_name)
     tag_field = entry.tag_box_fields[0]
 
     # When

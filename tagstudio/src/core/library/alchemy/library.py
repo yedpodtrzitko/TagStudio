@@ -93,8 +93,6 @@ class Library:
 
     def remove_field_tag(self, field: TagBoxField, tag_id: int):
         with Session(self.engine) as session, session.begin():
-            tag = session.scalar(select(Tag).where(Tag.id == tag_id))
-
             # remove instance of TagField matching combination of `field` and `tag_id`
             session.delete(
                 session.scalar(
@@ -301,19 +299,12 @@ class Library:
         assert isinstance(search, FilterState)
         assert self.engine
         with Session(self.engine, expire_on_commit=False) as session, session.begin():
-            statement = (
-                select(Entry)
-                .outerjoin(Entry.text_fields)
-                .outerjoin(Entry.datetime_fields)
-                .outerjoin(Entry.tag_box_fields)
-                .outerjoin(TagBoxField.tags)
-                .options(
-                    contains_eager(Entry.text_fields),
-                    contains_eager(Entry.datetime_fields),
-                    contains_eager(Entry.tag_box_fields)
-                    .contains_eager(TagBoxField.tags)
-                    .options(selectinload(Tag.aliases), selectinload(Tag.subtags)),
-                )
+            statement = select(Entry).options(
+                selectinload(Entry.text_fields),
+                selectinload(Entry.datetime_fields),
+                selectinload(Entry.tag_box_fields)
+                .joinedload(TagBoxField.tags)
+                .options(selectinload(Tag.aliases), selectinload(Tag.subtags)),
             )
 
             query_count = select(func.count()).select_from(statement.alias("entries"))
@@ -346,7 +337,9 @@ class Library:
                 "searching library",
                 filter=search,
                 lookup_strategy=lookup_strategy,
-                # query_full=str(statement.compile(compile_kwargs={"literal_binds": True})),
+                query_full=str(
+                    statement.compile(compile_kwargs={"literal_binds": True})
+                ),
             )
 
             entries_ = list(session.scalars(statement).unique())

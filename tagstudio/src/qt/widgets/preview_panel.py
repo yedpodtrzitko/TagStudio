@@ -478,18 +478,6 @@ class PreviewPanel(QWidget):
         # update list of libraries
         self.fill_libs_widget(self.libs_layout)
 
-        # update active entry
-        if self.driver.selected:
-            # reload entry and fill it into the grid again
-            # TODO - do this more granular
-            for grid_idx in self.driver.selected:
-                entry = self.driver.frame_content[grid_idx]
-                _, entries = self.lib.search_library(FilterState(id=entry.id))
-                logger.info(
-                    "found item", entries=entries, grid_idx=grid_idx, lookup_id=entry.id
-                )
-                self.driver.frame_content[grid_idx] = entries[0]
-
         if not self.driver.selected:
             if self.selected or not self.initialized:
                 self.file_label.setText("No Items Selected")
@@ -521,8 +509,23 @@ class PreviewPanel(QWidget):
             self.selected = list(self.driver.selected)
             self.add_field_button.setHidden(True)
 
-        # 1 Selected Item
-        elif len(self.driver.selected) == 1:
+            # common code
+            self.initialized = True
+            self.setWindowTitle(window_title)
+            self.show()
+            return True
+
+        # reload entry and fill it into the grid again
+        # TODO - do this more granular
+        for grid_idx in self.driver.selected:
+            entry = self.driver.frame_content[grid_idx]
+            _, entries = self.lib.search_library(FilterState(id=entry.id))
+            logger.info(
+                "found item", entries=entries, grid_idx=grid_idx, lookup_id=entry.id
+            )
+            self.driver.frame_content[grid_idx] = entries[0]
+
+        if len(self.driver.selected) == 1:
             # 1 Selected Entry
             selected_idx = self.driver.selected[0]
             item = self.driver.frame_content[selected_idx]
@@ -689,11 +692,10 @@ class PreviewPanel(QWidget):
             # iterate through other items
             for i, grid_idx in enumerate(self.driver.selected[1:]):
                 item = self.driver.frame_content[grid_idx]
-                item_field_types = {(f.type, f.order) for f in item.fields}
+                item_field_types = {f.type for f in item.fields}
                 for f in common_fields:
-                    if (f.type, f.order) not in item_field_types:
+                    if f.type not in item_field_types:
                         common_fields.remove(f)
-                    else:
                         mixed_fields.append(f)
 
             self.common_fields = common_fields
@@ -793,7 +795,6 @@ class PreviewPanel(QWidget):
                         self.update_widgets(),
                     )
                 )
-                # if type(item) == Entry:
                 # NOTE: Tag Boxes have no Edit Button (But will when you can convert field types)
                 # container.set_remove_callback(lambda: (self.lib.get_entry(item.id).fields.pop(index), self.update_widgets(item)))
                 prompt = f'Are you sure you want to remove this "{field.name}" field?'
@@ -810,7 +811,7 @@ class PreviewPanel(QWidget):
                 container.set_edit_callback(None)
             else:
                 text = "<i>Mixed Data</i>"
-                title = f"{self.lib.get_field_attr(field, 'name')} (Wacky Tag Box)"
+                title = f"{field.name} (Wacky Tag Box)"
                 inner_container = TextWidget(title, text)
                 container.set_inner_widget(inner_container)
                 container.set_copy_callback(None)
@@ -821,23 +822,23 @@ class PreviewPanel(QWidget):
             # self.dynamic_widgets.append(inner_container)
         elif isinstance(field, TextField):  # TODO - formerly text_line
             # logger.info(f'WRITING TEXTLINE FOR ITEM {item.id}')
-            container.set_title(self.lib.get_field_attr(field, "name"))
+            container.set_title(field.name)
             # container.set_editable(True)
             container.set_inline(False)
             # Normalize line endings in any text content.
             if not is_mixed:
-                text = self.lib.get_field_attr(field, "content").replace("\r", "\n")
+                text = field.value.replace("\r", "\n")
             else:
                 text = "<i>Mixed Data</i>"
-            title = f"{self.lib.get_field_attr(field, 'name')} (Text Line)"
+            title = f"{field.name} (Text Line)"
             inner_container = TextWidget(title, text)
             container.set_inner_widget(inner_container)
             # if type(item) == Entry:
             if not is_mixed:
                 modal = PanelModal(
-                    EditTextLine(self.lib.get_field_attr(field, "content")),
+                    EditTextLine(field.value),
                     title=title,
-                    window_title=f'Edit {self.lib.get_field_attr(field, "name")}',
+                    window_title=f"Edit {field.name}",
                     save_callback=(
                         lambda content: (
                             self.update_field(field, content),
@@ -864,24 +865,24 @@ class PreviewPanel(QWidget):
 
         elif isinstance(field, TextField):  # formerly text_box
             # logger.info(f'WRITING TEXTBOX FOR ITEM {item.id}')
-            container.set_title(self.lib.get_field_attr(field, "name"))
+            container.set_title(field.name)
             # container.set_editable(True)
             container.set_inline(False)
             # Normalize line endings in any text content.
             if not is_mixed:
-                text = self.lib.get_field_attr(field, "content").replace("\r", "\n")
+                text = field.value.replace("\r", "\n")
             else:
                 text = "<i>Mixed Data</i>"
-            title = f"{self.lib.get_field_attr(field, 'name')} (Text Box)"
+            title = f"{field.name} (Text Box)"
             inner_container = TextWidget(title, text)
             container.set_inner_widget(inner_container)
             # if type(item) == Entry:
             if not is_mixed:
                 container.set_copy_callback(None)
                 modal = PanelModal(
-                    EditTextBox(self.lib.get_field_attr(field, "content")),
+                    EditTextBox(field.value),
                     title=title,
-                    window_title=f'Edit {self.lib.get_field_attr(field, "name")}',
+                    window_title=f"Edit {field.name}",
                     save_callback=(
                         lambda content: (
                             self.update_field(field, content),
@@ -908,24 +909,20 @@ class PreviewPanel(QWidget):
             # logger.info(f'WRITING DATETIME FOR ITEM {item.id}')
             if not is_mixed:
                 try:
-                    container.set_title(self.lib.get_field_attr(field, "name"))
+                    container.set_title(field.name)
                     # container.set_editable(False)
                     container.set_inline(False)
                     # TODO: Localize this and/or add preferences.
-                    date = dt.strptime(
-                        self.lib.get_field_attr(field, "content"), "%Y-%m-%d %H:%M:%S"
-                    )
-                    title = f"{self.lib.get_field_attr(field, 'name')} (Date)"
+                    date = dt.strptime(field.value, "%Y-%m-%d %H:%M:%S")
+                    title = f"{field.name} (Date)"
                     inner_container = TextWidget(title, date.strftime("%D - %r"))
                     container.set_inner_widget(inner_container)
                 except:
-                    container.set_title(self.lib.get_field_attr(field, "name"))
+                    container.set_title(field.name)
                     # container.set_editable(False)
                     container.set_inline(False)
-                    title = f"{self.lib.get_field_attr(field, 'name')} (Date) (Unknown Format)"
-                    inner_container = TextWidget(
-                        title, str(self.lib.get_field_attr(field, "content"))
-                    )
+                    title = f"{field.name} (Date) (Unknown Format)"
+                    inner_container = TextWidget(title, str(field.value))
                 # if type(item) == Entry:
                 container.set_copy_callback(None)
                 container.set_edit_callback(None)
@@ -941,14 +938,13 @@ class PreviewPanel(QWidget):
                 )
             else:
                 text = "<i>Mixed Data</i>"
-                title = f"{self.lib.get_field_attr(field, 'name')} (Wacky Date)"
+                title = f"{field.name} (Wacky Date)"
                 inner_container = TextWidget(title, text)
                 container.set_inner_widget(inner_container)
                 container.set_copy_callback(None)
                 container.set_edit_callback(None)
                 container.set_remove_callback(None)
         else:
-            # logger.info(f'[ENTRY PANEL] Unknown Type: {self.lib.get_field_attr(field, "type")}')
             container.set_title(field.name)
             # container.set_editable(False)
             container.set_inline(False)
