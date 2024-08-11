@@ -305,7 +305,27 @@ class Library:
         assert isinstance(search, FilterState)
         assert self.engine
         with Session(self.engine, expire_on_commit=False) as session, session.begin():
-            statement = select(Entry).options(
+            statement = select(Entry)
+
+            if search.name:
+                statement = (
+                    statement.join(Entry.tag_box_fields)
+                    .join(TagBoxField.tags)
+                    .where(
+                        or_(
+                            Tag.name == search.name,
+                            Tag.shorthand == search.name,
+                        )
+                    )
+                )
+
+            elif search.id:
+                statement = statement.where(Entry.id == search.id)
+            elif search.tag_id:
+                # TODO
+                statement = statement.where(Tag.id == search.tag_id)
+
+            statement = statement.options(
                 selectinload(Entry.text_fields),
                 selectinload(Entry.datetime_fields),
                 selectinload(Entry.tag_box_fields)
@@ -319,30 +339,9 @@ class Library:
             # ADD limit and offset
             statement = statement.limit(search.limit).offset(search.offset)
 
-            lookup_strategy = None
-
-            if search.name:
-                lookup_strategy = "tag_name"
-                statement = statement.where(
-                    or_(
-                        Tag.name == search.name,
-                        Tag.shorthand == search.name,
-                    )
-                ).distinct()
-
-            elif search.id:
-                lookup_strategy = "id"
-                statement = statement.where(Entry.id == search.id)
-            elif search.tag_id:
-                lookup_strategy = "tag_id"
-                statement = statement.where(Tag.id == search.tag_id)
-
-            # TODO - add other lookups
-
             logger.info(
                 "searching library",
                 filter=search,
-                lookup_strategy=lookup_strategy,
                 query_full=str(
                     statement.compile(compile_kwargs={"literal_binds": True})
                 ),

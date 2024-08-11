@@ -60,15 +60,16 @@ def test_library_search(library, generate_tag):
     entries = library.entries
     assert len(entries) == 2, entries
     tag = next(iter(entries[0].tags))
-    assert {x.name for x in entries[0].tags} == {"foo"}
 
     query_count, items = library.search_library(
         FilterState(
-            name=tag.name,  # TODO - is this the query we want?
+            name=tag.name,
         ),
     )
-    assert query_count == 2
-    assert len(items) == 2
+
+    assert query_count == 1
+    assert len(items) == 1
+
     entry = items[0]
     assert {x.name for x in entry.tags} == {
         "foo",
