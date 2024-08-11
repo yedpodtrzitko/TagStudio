@@ -70,7 +70,8 @@ class Tag(Base):
         parent_tags: set["Tag"] = None,
         subtags: set["Tag"] = None,
         icon: str | None = None,
-        color: TagColor = TagColor.default,
+        color: TagColor = TagColor.DEFAULT,
+        id: int | None = None,
     ):
         self.name = name
         self.aliases = aliases or set()
@@ -79,6 +80,7 @@ class Tag(Base):
         self.color = color
         self.icon = icon
         self.shorthand = shorthand
+        self.id = id
         super().__init__()
 
     def __str__(self) -> str:
@@ -201,11 +203,3 @@ class Entry(Base):
 
         for tag_box_field in self.tag_box_fields:
             tag_box_field.tags.remove(tag)
-
-    def add_tag(self, tag_id: int) -> None:
-        """
-        Adds a Tag to the Entry. If given a field index, the given Tag will
-        only be added to that index. If left blank, the Tag will be added to
-        all TagBoxFields in the Entry.
-        """
-        # TODO

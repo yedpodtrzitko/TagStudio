@@ -9,15 +9,15 @@ def test_tag_panel(qtbot, library):
 
 def test_add_tag_callback(qt_driver):
     # Given
-    assert len(qt_driver.lib.tags) == 2
+    assert len(qt_driver.lib.tags) == 4
     qt_driver.add_tag_action_callback()
 
     # When
-    qt_driver.modal.widget.name_field.setText("bar")
+    qt_driver.modal.widget.name_field.setText("xxx")
     qt_driver.modal.widget.color_field.setCurrentIndex(1)
     qt_driver.modal.saved.emit()
 
     # Then
     tags = qt_driver.lib.tags
-    assert len(tags) == 2
-    assert tags[1].name == "bar"
+    assert len(tags) == 5
+    assert "xxx" in {tag.name for tag in tags}

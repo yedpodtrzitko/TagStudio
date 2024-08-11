@@ -25,27 +25,29 @@ from .fields import (
 )
 from .joins import TagField
 from .models import Entry, Tag, TagAlias
-from ...constants import TS_FOLDER_NAME
+from ...constants import TS_FOLDER_NAME, TAG_ARCHIVED, TAG_FAVORITE
 
 LIBRARY_FILENAME: str = "ts_library.sqlite"
 
 logger = structlog.get_logger(__name__)
 
 
-def get_library_defaults() -> list[Tag]:
+def get_default_tags() -> list[Tag]:
     archive_tag = Tag(
+        id=TAG_ARCHIVED,
         name="Archived",
         aliases={TagAlias(name="Archive")},
-        color=TagColor.red,
+        color=TagColor.RED,
     )
 
     favorite_tag = Tag(
+        id=TAG_FAVORITE,
         name="Favorite",
         aliases={
             TagAlias(name="Favorited"),
             TagAlias(name="Favorites"),
         },
-        color=TagColor.yellow,
+        color=TagColor.YELLOW,
     )
 
     return [archive_tag, favorite_tag]
@@ -84,6 +86,10 @@ class Library:
         session = Session(self.engine)
         with session.begin():
             make_tables(self.engine)
+
+            tags = get_default_tags()
+            session.add_all(tags)
+            session.commit()
 
     def delete_item(self, item):
         logger.info("deleting item", item=item)

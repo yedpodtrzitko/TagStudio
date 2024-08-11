@@ -218,7 +218,7 @@ class BuildTagPanel(PanelWidget):
                 color = c
                 break
         else:
-            color = TagColor.default
+            color = TagColor.DEFAULT
 
         new_tag = Tag(
             name=self.name_field.text(),

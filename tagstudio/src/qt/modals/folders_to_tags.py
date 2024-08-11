@@ -7,6 +7,7 @@ import logging
 import math
 import typing
 
+import structlog
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QWidget,
@@ -19,6 +20,7 @@ from PySide6.QtWidgets import (
 )
 from src.core.library import Tag, Library
 from src.core.library.alchemy.enums import TagColor
+from src.core.library.alchemy.fields import TagBoxTypes
 from src.core.palette import ColorType, get_tag_color
 from src.qt.flowlayout import FlowLayout
 from src.qt.widgets.preview_panel import logger
@@ -27,15 +29,15 @@ from src.qt.widgets.preview_panel import logger
 if typing.TYPE_CHECKING:
     from src.qt.ts_qt import QtDriver
 
-ERROR = f"[ERROR]"
-WARNING = f"[WARNING]"
-INFO = f"[INFO]"
+ERROR = "[ERROR]"
+WARNING = "[WARNING]"
+INFO = "[INFO]"
 
-logging.basicConfig(format="%(message)s", level=logging.INFO)
+logger = structlog.get_logger(__name__)
 
 
 def folders_to_tags(library: Library):
-    logging.info("Converting folders to Tags")
+    logger.info("Converting folders to Tags")
     tree: dict = dict(dirs={})
 
     def add_tag_to_tree(items: list[Tag]):
@@ -71,9 +73,9 @@ def folders_to_tags(library: Library):
 
         tag = add_folders_to_tree(folders)
         if tag and not entry.has_tag(tag):
-            entry.add_tag(tag.id)  # Field.TAGS
+            library.add_field_tag(entry, tag, TagBoxTypes.tag_box)
 
-    logging.info("Done")
+    logger.info("Done")
 
 
 def reverse_tag(library: Library, tag: Tag, items: list[Tag] | None) -> list[Tag]:
@@ -106,7 +108,7 @@ def generate_preview_data(library):
         branch = tree
         for folder in items:
             if folder not in branch["dirs"]:
-                new_tag = Tag(name=folder, color=TagColor.green)
+                new_tag = Tag(name=folder, color=TagColor.GREEN)
                 branch["dirs"][folder] = dict(dirs={}, tag=new_tag, files=[])
             branch = branch["dirs"][folder]
         return branch
@@ -161,7 +163,7 @@ class FoldersToTagsModal(QWidget):
         self.count = -1
         self.filename = ""
 
-        self.setWindowTitle(f"Create Tags From Folders")
+        self.setWindowTitle("Create Tags From Folders")
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.setMinimumSize(640, 640)
         self.root_layout = QVBoxLayout(self)

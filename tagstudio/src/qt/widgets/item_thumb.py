@@ -27,6 +27,7 @@ from src.core.constants import (
     TAG_ARCHIVED,
 )
 from src.core.library import ItemType, Entry
+from src.core.library.alchemy.fields import TagBoxTypes
 from src.qt.flowlayout import FlowWidget
 from src.qt.helpers.file_opener import FileOpenerHelper
 from src.qt.widgets.thumb_renderer import ThumbRenderer
@@ -35,9 +36,9 @@ from src.qt.widgets.thumb_button import ThumbButton
 if typing.TYPE_CHECKING:
     from src.qt.widgets.preview_panel import PreviewPanel
 
-ERROR = f"[ERROR]"
-WARNING = f"[WARNING]"
-INFO = f"[INFO]"
+ERROR = "[ERROR]"
+WARNING = "[WARNING]"
+INFO = "[INFO]"
 
 logger = structlog.get_logger(__name__)
 
@@ -60,27 +61,27 @@ class ItemThumb(FlowWidget):
     tag_group_icon_128.load()
 
     small_text_style = (
-        f"background-color:rgba(0, 0, 0, 192);"
-        f"font-family:Oxanium;"
-        f"font-weight:bold;"
-        f"font-size:12px;"
-        f"border-radius:3px;"
-        f"padding-top: 4px;"
-        f"padding-right: 1px;"
-        f"padding-bottom: 1px;"
-        f"padding-left: 1px;"
+        "background-color:rgba(0, 0, 0, 192);"
+        "font-family:Oxanium;"
+        "font-weight:bold;"
+        "font-size:12px;"
+        "border-radius:3px;"
+        "padding-top: 4px;"
+        "padding-right: 1px;"
+        "padding-bottom: 1px;"
+        "padding-left: 1px;"
     )
 
     med_text_style = (
-        f"background-color:rgba(0, 0, 0, 192);"
-        f"font-family:Oxanium;"
-        f"font-weight:bold;"
-        f"font-size:18px;"
-        f"border-radius:3px;"
-        f"padding-top: 4px;"
-        f"padding-right: 1px;"
-        f"padding-bottom: 1px;"
-        f"padding-left: 1px;"
+        "background-color:rgba(0, 0, 0, 192);"
+        "font-family:Oxanium;"
+        "font-weight:bold;"
+        "font-size:18px;"
+        "border-radius:3px;"
+        "padding-top: 4px;"
+        "padding-right: 1px;"
+        "padding-bottom: 1px;"
+        "padding-left: 1px;"
     )
 
     def __init__(
@@ -460,20 +461,17 @@ class ItemThumb(FlowWidget):
         self.toggle_item_tag(toggle_value, TAG_FAVORITE)
 
     def toggle_item_tag(self, toggle_value: bool, tag_id: int):
-        def toggle_tag(entry: Entry):
-            if toggle_value:
-                self.favorite_badge.setHidden(False)
-                entry.add_tag(
-                    tag_id,
-                    # field_id=FieldID.META_TAGS,
-                    # field_index=-1,
-                )
-            else:
-                entry.remove_tag(self.panel.driver.lib)
-
         entry = self.panel.driver.frame_content[self.item_id]
-        toggle_tag(entry)
+
+        tag = self.lib.get_tag(tag_id)
+
+        if toggle_value:
+            self.favorite_badge.setHidden(False)
+            self.lib.add_field_tag(entry, tag, TagBoxTypes.meta_tag_box)
+        else:
+            self.lib.remove_field_tag(entry, tag, TagBoxTypes.meta_tag_box)
 
         if self.panel.is_open:
             self.panel.update_widgets()
+
         self.panel.driver.update_badges()

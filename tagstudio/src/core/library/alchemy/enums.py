@@ -1,46 +1,45 @@
 import enum
-from dataclasses import dataclass, field
-from enum import Enum, auto
+from dataclasses import dataclass
 
 
-class TagColor(Enum):
-    default = 1
-    black = 2
-    dark_gray = 3
-    gray = 4
-    light_gray = 5
-    white = 6
-    light_pink = 7
-    pink = 8
-    red = 9
-    red_orange = 10
-    orange = 11
-    yellow_orange = 12
-    yellow = 13
-    lime = 14
-    light_green = 15
-    mint = 16
-    green = 17
-    teal = 18
-    cyan = 19
-    light_blue = 20
-    blue = 21
-    blue_violet = 22
-    violet = 23
-    purple = 24
-    lavender = 25
-    berry = 26
-    magenta = 27
-    salmon = 28
-    auburn = 29
-    dark_brown = 30
-    brown = 31
-    light_brown = 32
-    blonde = 33
-    peach = 34
-    warm_gray = 35
-    cool_gray = 36
-    olive = 37
+class TagColor(enum.IntEnum):
+    DEFAULT = 1
+    BLACK = 2
+    DARK_GRAY = 3
+    GRAY = 4
+    LIGHT_GRAY = 5
+    WHITE = 6
+    LIGHT_PINK = 7
+    PINK = 8
+    RED = 9
+    RED_ORANGE = 10
+    ORANGE = 11
+    YELLOW_ORANGE = 12
+    YELLOW = 13
+    LIME = 14
+    LIGHT_GREEN = 15
+    MINT = 16
+    GREEN = 17
+    TEAL = 18
+    CYAN = 19
+    LIGHT_BLUE = 20
+    BLUE = 21
+    BLUE_VIOLET = 22
+    VIOLET = 23
+    PURPLE = 24
+    LAVENDER = 25
+    BERRY = 26
+    MAGENTA = 27
+    SALMON = 28
+    AUBURN = 29
+    DARK_BROWN = 30
+    BROWN = 31
+    LIGHT_BROWN = 32
+    BLONDE = 33
+    PEACH = 34
+    WARM_GRAY = 35
+    COOL_GRAY = 36
+    OLIVE = 37
 
 
 class SearchMode(enum.IntEnum):

@@ -31,12 +31,12 @@ def library():
 
     tag = Tag(
         name="foo",
-        color=TagColor.red,
+        color=TagColor.RED,
     )
 
     tag2 = Tag(
         name="bar",
-        color=TagColor.blue,
+        color=TagColor.BLUE,
     )
 
     assert lib.add_tag(tag)
@@ -65,7 +65,7 @@ def library():
     ]
 
     assert lib.add_entries([entry, entry2])
-    assert len(lib.tags) == 2
+    assert len(lib.tags) == 4
 
     yield lib
 
@@ -100,7 +100,7 @@ def qt_driver(qtbot, library):
 @pytest.fixture
 def generate_tag():
     def inner(name, **kwargs):
-        params = dict(name=name, color=TagColor.red) | kwargs
+        params = dict(name=name, color=TagColor.RED) | kwargs
         return Tag(**params)
 
     yield inner
