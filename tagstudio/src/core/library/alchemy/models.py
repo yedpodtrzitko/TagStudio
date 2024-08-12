@@ -66,9 +66,9 @@ class Tag(Base):
         self,
         name: str,
         shorthand: str | None = None,
-        aliases: set[TagAlias] = None,
-        parent_tags: set["Tag"] = None,
-        subtags: set["Tag"] = None,
+        aliases: set[TagAlias] | None = None,
+        parent_tags: set["Tag"] | None = None,
+        subtags: set["Tag"] | None = None,
         icon: str | None = None,
         color: TagColor = TagColor.DEFAULT,
         id: int | None = None,
@@ -80,6 +80,7 @@ class Tag(Base):
         self.color = color
         self.icon = icon
         self.shorthand = shorthand
+        assert not self.id
         self.id = id
         super().__init__()
 
@@ -167,7 +168,7 @@ class Entry(Base):
     def __init__(
         self,
         path: Path,
-        fields: list[Field] = None,
+        fields: list[Field] | None = None,
     ) -> None:
         self.path = path
         self.type = None

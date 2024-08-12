@@ -88,8 +88,12 @@ class Library:
             make_tables(self.engine)
 
             tags = get_default_tags()
-            session.add_all(tags)
-            session.commit()
+            try:
+                session.add_all(tags)
+                session.commit()
+            except IntegrityError:
+                # default tags may exist already
+                pass
 
     def delete_item(self, item):
         logger.info("deleting item", item=item)
@@ -518,17 +522,19 @@ class Library:
                 return False
                 # TODO - trigger error signal
 
-    def add_tag(self, tag: Tag) -> bool:
+    def add_tag(self, tag: Tag) -> Tag | None:
         with Session(self.engine, expire_on_commit=False) as session, session.begin():
             try:
                 session.add(tag)
                 session.commit()
+
+                session.expunge(tag)
+                return tag
+
             except IntegrityError as e:
                 logger.exception(e)
                 session.rollback()
-                return False
-            else:
-                return True
+                return None
 
     def add_field_tag(self, entry: Entry, tag: Tag, field_type: TagBoxTypes) -> bool:
         with Session(self.engine) as session, session.begin():

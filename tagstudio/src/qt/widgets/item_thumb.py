@@ -372,7 +372,7 @@ class ItemThumb(FlowWidget):
                 self.ext_badge.setHidden(True)
                 self.count_badge.setHidden(True)
 
-    def update_thumb(self, timestamp: float, image: QPixmap = None):
+    def update_thumb(self, timestamp: float, image: QPixmap | None = None):
         """Update attributes of a thumbnail element."""
         # logging.info(f'[GUI] Updating Thumbnail for element {id(element)}: {id(image) if image else None}')
         if timestamp > ItemThumb.update_cutoff:

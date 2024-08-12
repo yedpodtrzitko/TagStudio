@@ -53,7 +53,9 @@ def test_create_tag(library, generate_tag):
     assert not library.add_tag(generate_tag("foo"))
 
     # new tag name
-    assert library.add_tag(generate_tag("xxx"))
+    tag = library.add_tag(generate_tag("xxx", id=123))
+    assert tag
+    assert tag.id == 123
 
 
 def test_library_search(library, generate_tag):

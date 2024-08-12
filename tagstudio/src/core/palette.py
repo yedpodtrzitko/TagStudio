@@ -1,7 +1,7 @@
 # Copyright (C) 2024 Travis Abendshien (CyanVoxel).
 # Licensed under the GPL-3.0 License.
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
-
+import traceback
 from enum import IntEnum
 
 import structlog
@@ -284,12 +284,14 @@ TAG_COLORS = {
 }
 
 
-def get_tag_color(type, color_id: TagColor):
+def get_tag_color(color_type: ColorType, color_id: TagColor) -> str:
     try:
-        return TAG_COLORS[color_id][type]
-        # if type == ColorType.TEXT:
-        #    return get_tag_color([color][type], color)
+        if color_type == ColorType.TEXT:
+            text_account = TAG_COLORS[color_id][color_type]
+            return get_tag_color(text_account, color_id)
 
+        return TAG_COLORS[color_id][color_type]
     except KeyError:
+        traceback.print_stack()
         logger.error("Color not found", color_id=color_id)
         return "#FF00FF"

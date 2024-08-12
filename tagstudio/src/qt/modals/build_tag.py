@@ -25,10 +25,6 @@ from src.qt.widgets.panel import PanelWidget, PanelModal
 from src.qt.widgets.tag import TagWidget
 from src.qt.modals.tag_search import TagSearchPanel
 
-ERROR = f"[ERROR]"
-WARNING = f"[WARNING]"
-INFO = f"[INFO]"
-
 logger = structlog.get_logger(__name__)
 
 
@@ -40,7 +36,7 @@ class BuildTagPanel(PanelWidget):
         self.lib = library
         # self.callback = callback
         # self.tag_id = tag_id
-        self.tag = None
+        self.tag: Tag | None = None
         self.setMinimumSize(300, 400)
         self.root_layout = QVBoxLayout(self)
         self.root_layout.setContentsMargins(6, 0, 6, 0)
@@ -140,14 +136,17 @@ class BuildTagPanel(PanelWidget):
         self.color_field.setMaxVisibleItems(10)
         self.color_field.setStyleSheet("combobox-popup:0;")
         for color in TagColor:
-            self.color_field.addItem(color.name)
+            self.color_field.addItem(color.name, userData=color.value)
         # self.color_field.setProperty("appearance", "flat")
-        self.color_field.currentTextChanged.connect(
-            lambda c: self.color_field.setStyleSheet(
-                "combobox-popup:0;"
-                "font-weight:600;"
-                f"color:{get_tag_color(ColorType.TEXT, c)};"
-                f"background-color:{get_tag_color(ColorType.PRIMARY, c)};"
+        self.color_field.currentIndexChanged.connect(
+            lambda c: (
+                # TODO - index and userData might get out of sync, use userData
+                self.color_field.setStyleSheet(
+                    "combobox-popup:0;"
+                    "font-weight:600;"
+                    f"color:{get_tag_color(ColorType.TEXT, c+1)};"
+                    f"background-color:{get_tag_color(ColorType.PRIMARY, c+1)};"
+                )
             )
         )
         self.color_layout.addWidget(self.color_field)
@@ -171,6 +170,7 @@ class BuildTagPanel(PanelWidget):
 
     def add_subtag_callback(self, tag_id: int):
         logger.info("add_subtag_callback", tag_id=tag_id)
+        # TODO
         self.tag.add_subtag(tag_id)
         self.set_subtags()
 
@@ -179,6 +179,7 @@ class BuildTagPanel(PanelWidget):
         # tag = self.lib.get_tag(self.tag_id)
         # TODO: Create a single way to update tags and refresh library data
         # new = self.build_tag()
+        # TODO
         self.tag.remove_subtag(tag_id)
         # self.tag = new
         # self.lib.update_tag(new)
@@ -188,6 +189,7 @@ class BuildTagPanel(PanelWidget):
     def set_subtags(self):
         while self.scroll_layout.itemAt(0):
             self.scroll_layout.takeAt(0).widget().deleteLater()
+        # TODO
         logger.info("setting subtags", tag=self.tag, subtags=self.tag.subtag_ids)
 
         c = QWidget()
@@ -205,7 +207,7 @@ class BuildTagPanel(PanelWidget):
         logger.info("setting tag", tag=tag)
 
         self.name_field.setText(tag.name)
-        self.shorthand_field.setText(tag.shorthand)
+        self.shorthand_field.setText(tag.shorthand or "")
         # TODO: Implement aliases
         # self.aliases_field.setText("\n".join(tag.aliases))
         self.set_subtags()
