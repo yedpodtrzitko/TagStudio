@@ -15,10 +15,6 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton
 from src.core.library import Tag
 from src.core.palette import ColorType, get_tag_color
 
-ERROR = f"[ERROR]"
-WARNING = f"[WARNING]"
-INFO = f"[INFO]"
-
 
 class TagWidget(QWidget):
     edit_icon_128: Image.Image = Image.open(

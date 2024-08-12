@@ -23,10 +23,6 @@ from src.core.palette import ColorType, get_tag_color
 from src.qt.widgets.panel import PanelWidget
 from src.qt.widgets.tag import TagWidget
 
-ERROR = f"[ERROR]"
-WARNING = f"[WARNING]"
-INFO = f"[INFO]"
-
 logger = structlog.get_logger(__name__)
 
 

@@ -2,11 +2,10 @@
 # Licensed under the GPL-3.0 License.
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
-import logging
-import traceback
 from pathlib import Path
 
 import cv2
+import structlog
 from PIL import Image, ImageChops, UnidentifiedImageError
 from PIL.Image import DecompressionBombError
 from PySide6.QtCore import (
@@ -16,13 +15,9 @@ from PySide6.QtCore import (
 
 from src.core.constants import DOC_TYPES, VIDEO_TYPES, IMAGE_TYPES
 from src.core.library import Library
+from src.core.library.alchemy.fields import TagBoxTypes
 
-ERROR = f"[ERROR]"
-WARNING = f"[WARNING]"
-INFO = f"[INFO]"
-
-
-logging.basicConfig(format="%(message)s", level=logging.INFO)
+logger = structlog.get_logger(__name__)
 
 
 class CollageIconRenderer(QObject):
@@ -47,21 +42,17 @@ class CollageIconRenderer(QObject):
 
         try:
             if data_tint_mode or data_only_mode:
-                color = "#000000"  # Black (Default)
-
                 if entry.fields:
                     has_any_tags: bool = False
                     has_content_tags: bool = False
                     has_meta_tags: bool = False
                     for field in entry.fields:
-                        if field.name == "Tags":
-                            if field.content:
+                        if isinstance(field.type, TagBoxTypes):
+                            if field.tags:
                                 has_any_tags = True
-                                continue
-                                # TODO
-                                if field.id == 7:
+                                if field.type == TagBoxTypes.tag_content_box:
                                     has_content_tags = True
-                                elif field.id == 8:
+                                elif field.id == TagBoxTypes.meta_tag_box:
                                     has_meta_tags = True
                     if has_content_tags and has_meta_tags:
                         color = "#28bb48"  # Green
@@ -79,11 +70,12 @@ class CollageIconRenderer(QObject):
                     # collage.paste(pic, (y*thumb_size, x*thumb_size))
                     self.rendered.emit(pic)
             if not data_only_mode:
-                logging.info(
-                    f"\r{INFO} Combining [ID:{entry_id}/{len(self.lib.entries)}]: {self.get_file_color(filepath.suffix.lower())}{entry.path}\033[0m"
+                logger.info(
+                    "Combining icons",
+                    entry=entry,
+                    color=self.get_file_color(filepath.suffix.lower()),
                 )
-                # sys.stdout.write(f'\r{INFO} Combining [{i+1}/{len(self.lib.entries)}]: {self.get_file_color(file_type)}{entry.path}{os.sep}{entry.filename}{RESET}')
-                # sys.stdout.flush()
+
                 if filepath.suffix.lower() in IMAGE_TYPES:
                     try:
                         with Image.open(str(self.lib.library_dir / entry.path)) as pic:
@@ -98,8 +90,10 @@ class CollageIconRenderer(QObject):
                                 )
                             # collage.paste(pic, (y*thumb_size, x*thumb_size))
                             self.rendered.emit(pic)
-                    except DecompressionBombError as e:
-                        logging.info(f"[ERROR] One of the images was too big ({e})")
+                    except DecompressionBombError:
+                        logger.exception(
+                            "One of the images was too big", entry=entry.path
+                        )
                 elif filepath.suffix.lower() in VIDEO_TYPES:
                     video = cv2.VideoCapture(str(filepath))
                     video.set(
@@ -126,7 +120,7 @@ class CollageIconRenderer(QObject):
                         # collage.paste(pic, (y*thumb_size, x*thumb_size))
                         self.rendered.emit(pic)
         except (UnidentifiedImageError, FileNotFoundError):
-            logging.info(f"\n{ERROR} Couldn't read {entry.path}")
+            logger.error("Couldn't read entry", entry=entry.path)
             with Image.open(
                 str(
                     Path(__file__).parents[2]
@@ -140,19 +134,11 @@ class CollageIconRenderer(QObject):
                 # collage.paste(pic, (y*thumb_size, x*thumb_size))
                 self.rendered.emit(pic)
         except KeyboardInterrupt:
-            # self.quit(save=False, backup=True)
-            run = False
-            # clear()
-            logging.info("\n")
-            logging.info(f"{INFO} Collage operation cancelled.")
-            clear_scr = False
-        except:
-            logging.info(f"{ERROR} {entry.path}")
-            traceback.print_exc()
-            logging.info("Continuing...")
+            logger.info("Collage operation cancelled.")
+        except Exception:
+            logger.exception("render failed", entry=entry.path)
 
         self.done.emit()
-        # logging.info('Done!')
 
     def get_file_color(self, ext: str):
         if ext.lower().replace(".", "", 1) == "gif":

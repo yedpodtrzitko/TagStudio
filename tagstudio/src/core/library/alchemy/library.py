@@ -56,7 +56,7 @@ def get_default_tags() -> list[Tag]:
 class Library:
     """Class for the Library object, and all CRUD operations made upon it."""
 
-    library_dir: Path | str | None
+    library_dir: Path | str
     missing_files: list[str]
     dupe_files: list[str]
     engine: Engine | None
@@ -207,6 +207,7 @@ class Library:
         self.files_not_in_library: list[Path] = []
         self.dir_file_count = 0
 
+        assert isinstance(self.library_dir, Path)
         for path in self.library_dir.glob("**/*"):
             str_path = str(path)
             if (

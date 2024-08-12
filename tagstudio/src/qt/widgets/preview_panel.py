@@ -430,11 +430,6 @@ class PreviewPanel(QWidget):
         self.preview_vid.setMinimumSize(adj_size)
         # self.preview_img.setMinimumSize(adj_size)
 
-        # if self.preview_img.iconSize().toTuple()[0] < self.preview_img.size().toTuple()[0] + 10:
-        # 	if type(self.item) == Entry:
-        # 		filepath = os.path.normpath(f'{self.lib.library_dir}/{self.item.path}/{self.item.filename}')
-        # 		self.thumb_renderer.render(time.time(), filepath, self.preview_img.size().toTuple(), self.devicePixelRatio(),update_on_ratio_change=True)
-
     def place_add_field_button(self):
         self.scroll_layout.addWidget(self.afb_container)
         self.scroll_layout.setAlignment(

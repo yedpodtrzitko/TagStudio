@@ -13,9 +13,6 @@ import structlog
 from PySide6.QtWidgets import QLabel
 from PySide6.QtCore import Qt
 
-ERROR = f"[ERROR]"
-WARNING = f"[WARNING]"
-INFO = f"[INFO]"
 
 logger = structlog.get_logger(__name__)
 
@@ -28,6 +25,7 @@ def open_file(path: str | Path, file_manager: bool = False):
             file_manager (bool, optional): Whether to open the file in the file manager (e.g. Finder on macOS).
                     Defaults to False.
     """
+    path = Path(path)
     logger.info("Opening file", path=path)
     if not path.exists():
         logger.error("File not found", path=path)
@@ -35,7 +33,7 @@ def open_file(path: str | Path, file_manager: bool = False):
 
     try:
         if sys.platform == "win32":
-            normpath = os.path.normpath(path)
+            normpath = Path(path).resolve().as_posix()
             if file_manager:
                 command_name = "explorer"
                 command_args = '/select,"' + normpath + '"'

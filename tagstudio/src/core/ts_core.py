@@ -73,9 +73,7 @@ class TagStudioCore:
                     # 		f'[INFO]: TagStudio does not currently support sidecar files for "{source}"')
 
         # except FileNotFoundError:
-        except:
-            # print(
-            # 	f'[INFO]: No sidecar file found at "{os.path.normpath(file_path + ".json")}"')
+        except Exception:
             pass
 
         return info
@@ -184,8 +182,6 @@ class TagStudioCore:
         try:
             entry = self.lib.get_entry(entry_id)
             stubs = str(entry.filename).rsplit("_", 3)
-            # print(stubs)
-            # source, author = os.path.split(entry.path)
             url = f"www.twitter.com/{stubs[0]}/status/{stubs[-3]}/photo/{stubs[-2]}"
             return url
         except:

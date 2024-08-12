@@ -93,10 +93,6 @@ if sys.platform == "win32":
 else:
     from signal import signal, SIGINT, SIGTERM, SIGQUIT
 
-ERROR = f"[ERROR]"
-WARNING = f"[WARNING]"
-INFO = f"[INFO]"
-
 logger = structlog.get_logger(__name__)
 
 
@@ -522,7 +518,6 @@ class QtDriver(QObject):
         # so the resource isn't being used, then store the specific size variations
         # in a global dict for methods to access for different DPIs.
         # adj_font_size = math.floor(12 * self.main_window.devicePixelRatio())
-        # self.ext_font = ImageFont.truetype(os.path.normpath(f'{Path(__file__).parents[2]}/resources/qt/fonts/Oxanium-Bold.ttf'), adj_font_size)
 
         search_button: QPushButton = self.main_window.searchButton
         search_button.clicked.connect(

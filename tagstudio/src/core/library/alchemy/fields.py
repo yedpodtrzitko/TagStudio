@@ -25,6 +25,7 @@ class TextFieldTypes(Enum):
 class TagBoxTypes(Enum):
     meta_tag_box = "Meta Tags"
     tag_box = "Tags"
+    tag_content_box = "Content Tags"
 
 
 class DateTimeTypes(Enum):
