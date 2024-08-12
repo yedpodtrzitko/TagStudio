@@ -144,8 +144,8 @@ class BuildTagPanel(PanelWidget):
                 self.color_field.setStyleSheet(
                     "combobox-popup:0;"
                     "font-weight:600;"
-                    f"color:{get_tag_color(ColorType.TEXT, c+1)};"
-                    f"background-color:{get_tag_color(ColorType.PRIMARY, c+1)};"
+                    f"color:{get_tag_color(ColorType.TEXT, self.color_field.currentData())};"
+                    f"background-color:{get_tag_color(ColorType.PRIMARY, self.color_field.currentData())};"
                 )
             )
         )
@@ -214,13 +214,7 @@ class BuildTagPanel(PanelWidget):
         self.color_field.setCurrentIndex(tag.color.value)
 
     def build_tag(self) -> Tag:
-        # TODO - optimize
-        for c in TagColor:
-            if c.name == self.color_field.currentText().lower():
-                color = c
-                break
-        else:
-            color = TagColor.DEFAULT
+        color = self.color_field.currentData() or TagColor.DEFAULT
 
         new_tag = Tag(
             name=self.name_field.text(),

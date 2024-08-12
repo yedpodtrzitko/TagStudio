@@ -3,6 +3,7 @@
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 import traceback
 from enum import IntEnum
+from typing import Any
 
 import structlog
 
@@ -19,7 +20,7 @@ class ColorType(IntEnum):
     DARK_ACCENT = 4
 
 
-TAG_COLORS = {
+TAG_COLORS: dict[TagColor, dict[ColorType, Any]] = {
     TagColor.DEFAULT: {
         ColorType.PRIMARY: "#1e1e1e",
         ColorType.TEXT: ColorType.LIGHT_ACCENT,
@@ -287,7 +288,7 @@ TAG_COLORS = {
 def get_tag_color(color_type: ColorType, color_id: TagColor) -> str:
     try:
         if color_type == ColorType.TEXT:
-            text_account = TAG_COLORS[color_id][color_type]
+            text_account: ColorType = TAG_COLORS[color_id][color_type]
             return get_tag_color(text_account, color_id)
 
         return TAG_COLORS[color_id][color_type]
