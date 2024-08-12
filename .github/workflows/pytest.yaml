@@ -17,12 +17,31 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
 
+      - name: Install system dependencies
+        run: |
+          # dont run update, it is slow 
+          # sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libxkbcommon-x11-0 \
+            x11-utils \
+            libyaml-dev \
+            libegl1-mesa \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-xinerama0 \
+            libopengl0 \
+            libxcb-cursor0 \
+            libpulse0
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade uv
           uv pip install --system -r requirements.txt
           uv pip install --system -r requirements-dev.txt
 
-      - name: Run tests
+      - name: Run pytest
         run: |
-          pytest tagstudio/tests/
+          xvfb-run pytest tagstudio/tests/
