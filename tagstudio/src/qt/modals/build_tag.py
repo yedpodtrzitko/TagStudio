@@ -171,7 +171,7 @@ class BuildTagPanel(PanelWidget):
     def add_subtag_callback(self, tag_id: int):
         logger.info("add_subtag_callback", tag_id=tag_id)
         # TODO
-        self.tag.add_subtag(tag_id)
+        self.lib.add_subtag(self.tag.id, tag_id)
         self.set_subtags()
 
     def remove_subtag_callback(self, tag_id: int):
@@ -180,6 +180,7 @@ class BuildTagPanel(PanelWidget):
         # TODO: Create a single way to update tags and refresh library data
         # new = self.build_tag()
         # TODO
+        return
         self.tag.remove_subtag(tag_id)
         # self.tag = new
         # self.lib.update_tag(new)
@@ -190,7 +191,9 @@ class BuildTagPanel(PanelWidget):
         while self.scroll_layout.itemAt(0):
             self.scroll_layout.takeAt(0).widget().deleteLater()
         # TODO
-        logger.info("setting subtags", tag=self.tag, subtags=self.tag.subtag_ids)
+        logger.info(
+            "setting subtags", tag=self.tag
+        )  # , subtag_count=len(self.tag.subtags))
 
         c = QWidget()
         l = QVBoxLayout(c)

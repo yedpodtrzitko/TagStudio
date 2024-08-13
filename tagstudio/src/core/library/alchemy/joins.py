@@ -7,8 +7,8 @@ from .db import Base
 class TagSubtag(Base):
     __tablename__ = "tag_subtags"
 
-    parent_tag_id: Mapped[int] = mapped_column(ForeignKey("tags.id"), primary_key=True)
-    subtag_id: Mapped[int] = mapped_column(ForeignKey("tags.id"), primary_key=True)
+    parent_id: Mapped[int] = mapped_column(ForeignKey("tags.id"), primary_key=True)
+    child_id: Mapped[int] = mapped_column(ForeignKey("tags.id"), primary_key=True)
 
 
 class TagField(Base):

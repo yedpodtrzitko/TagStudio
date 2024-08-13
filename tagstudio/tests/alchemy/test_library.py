@@ -171,3 +171,21 @@ def test_entry_field_name(library):
     tag_field = entries[0].fields[0]
 
     assert tag_field.name == "tag_box"
+
+
+def test_subtags_add(library, generate_tag):
+    # Given
+    tag = library.tags[0]
+    assert tag.id is not None
+
+    subtag = generate_tag("subtag1")
+    subtag = library.add_tag(subtag)
+    assert subtag.id is not None
+
+    # When
+    assert library.add_subtag(tag.id, subtag.id)
+
+    # Then
+    assert tag.id is not None
+    tag = library.get_tag(tag.id)
+    assert tag.subtag_ids

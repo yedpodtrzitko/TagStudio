@@ -23,7 +23,7 @@ from .fields import (
     TagBoxTypes,
     TextField,
 )
-from .joins import TagField
+from .joins import TagField, TagSubtag
 from .models import Entry, Tag, TagAlias
 from ...constants import TS_FOLDER_NAME, TAG_ARCHIVED, TAG_FAVORITE
 
@@ -155,10 +155,17 @@ class Library:
     @property
     def tags(self) -> list[Tag]:
         with Session(self.engine) as session, session.begin():
-            tags = list(session.scalars(select(Tag)).all())
-            session.expunge_all()
+            # load all tags and join subtags
+            tags_query = select(Tag).options(selectinload(Tag.subtags))
+            tags = session.scalars(tags_query).unique()
+            tags_list = list(tags)
 
-        return list(tags)
+            for tag in tags_list:
+                session.expunge(tag)
+                for subtag in tag.subtags:
+                    session.expunge(subtag)
+
+        return list(tags_list)
 
     def save_library_to_disk(self):
         logger.error("save_library_to_disk to be implemented")
@@ -524,7 +531,7 @@ class Library:
                 # TODO - trigger error signal
 
     def add_tag(self, tag: Tag) -> Tag | None:
-        with Session(self.engine, expire_on_commit=False) as session, session.begin():
+        with Session(self.engine, expire_on_commit=False) as session:
             try:
                 session.add(tag)
                 session.commit()
@@ -609,10 +616,32 @@ class Library:
         logger.error("save_library_backup_to_disk to be implemented")
 
     def get_tag(self, tag_id: int) -> Tag:
-        with Session(self.engine) as session, session.begin():
-            tag = session.scalars(select(Tag).where(Tag.id == tag_id)).one()
+        with Session(self.engine) as session:
+            tags_query = select(Tag).options(selectinload(Tag.subtags))
+            tag = session.scalar(tags_query)
+
             session.expunge(tag)
-            return tag
+            for subtag in tag.subtags:
+                session.expunge(subtag)
+
+        return tag
+
+    def add_subtag(self, base_id: int, new_tag_id: int) -> bool:
+        # open session and save as parent tag
+        with Session(self.engine) as session:
+            tag = TagSubtag(
+                parent_id=base_id,
+                child_id=new_tag_id,
+            )
+
+            try:
+                session.add(tag)
+                session.commit()
+                return True
+            except IntegrityError:
+                session.rollback()
+                logger.exception("IntegrityError")
+                return False
 
     def refresh_dupe_entries(self, filename: str) -> None:
         logger.info("refreshing dupe entries", filename=filename)

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .db import Base
 from .enums import TagColor
 from .fields import DatetimeField, Field, TagBoxField, TagBoxTypes, TextField
+from .joins import TagSubtag
 
 
 class TagAlias(Base):
@@ -41,16 +42,16 @@ class Tag(Base):
     aliases: Mapped[set[TagAlias]] = relationship(back_populates="tag")
 
     parent_tags: Mapped[set["Tag"]] = relationship(
-        secondary="tag_subtags",
-        primaryjoin="Tag.id == tag_subtags.c.subtag_id",
-        secondaryjoin="Tag.id == tag_subtags.c.parent_tag_id",
+        secondary=TagSubtag.__tablename__,
+        primaryjoin="Tag.id == TagSubtag.child_id",
+        secondaryjoin="Tag.id == TagSubtag.parent_id",
         back_populates="subtags",
     )
 
     subtags: Mapped[set["Tag"]] = relationship(
-        secondary="tag_subtags",
-        primaryjoin="Tag.id == tag_subtags.c.parent_tag_id",
-        secondaryjoin="Tag.id == tag_subtags.c.subtag_id",
+        secondary=TagSubtag.__tablename__,
+        primaryjoin="Tag.id == TagSubtag.parent_id",
+        secondaryjoin="Tag.id == TagSubtag.child_id",
         back_populates="parent_tags",
     )
 
@@ -89,28 +90,6 @@ class Tag(Base):
 
     def __repr__(self) -> str:
         return self.__str__()
-
-    @property
-    def display_name(self) -> str:
-        """Returns a formatted tag name intended for displaying."""
-        if self.subtags:
-            first_subtag = list(self.subtags.copy())[0]
-            first_subtag_display_name = first_subtag.shorthand or first_subtag.name
-            return f"{self.name}" f" ({first_subtag_display_name})"
-        else:
-            return f"{self.name}"
-
-    def add_subtag(self, tag: int):
-        # TODO
-        return
-        if tag not in self.subtags:
-            self.subtags.add(tag)
-
-    def remove_subtag(self, tag: int):
-        # TODO
-        return
-        if tag in self.subtags:
-            self.subtags.remove(tag)
 
 
 class Entry(Base):
