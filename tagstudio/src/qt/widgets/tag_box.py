@@ -122,9 +122,9 @@ class TagBoxWidget(FieldWidget):
             self.base_layout.update()
 
     def edit_tag(self, tag_id: int):
-        btp = BuildTagPanel(self.driver.lib, tag_id)
-        # btp.on_edit.connect(lambda x: self.edit_tag_callback(x))
         tag = self.driver.lib.get_tag(tag_id)
+        btp = BuildTagPanel(self.driver.lib, tag=tag)
+
         self.edit_modal = PanelModal(
             btp,
             tag.name,  # TODO - display name including subtags

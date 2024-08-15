@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-import pytest
+from PySide6.QtGui import QAction
 
 from src.core.library import Entry
 from src.qt.widgets.tag import TagWidget
@@ -79,7 +79,6 @@ def test_tag_widget_remove(qtbot, qt_driver):
 
     qtbot.add_widget(tag_widget)
 
-    # get all widgets from `tag_widget.base_layout`
     tag_widget = tag_widget.base_layout.itemAt(0).widget()
     assert isinstance(tag_widget, TagWidget)
 
@@ -87,3 +86,30 @@ def test_tag_widget_remove(qtbot, qt_driver):
 
     entry: Entry = qt_driver.lib.entries[0]
     assert not entry.tag_box_fields[0].tags
+
+
+def test_tag_widget_edit(qtbot, qt_driver):
+    entry: Entry = qt_driver.lib.entries[0]
+
+    tag = list(entry.tags)[0]
+    assert tag
+
+    assert entry.tag_box_fields
+    field = [f for f in entry.tag_box_fields if f.name == "tag_box"][0]
+
+    tag_box_widget = TagBoxWidget(field, "title", qt_driver)
+    tag_box_widget.driver.selected = [0]
+
+    qtbot.add_widget(tag_box_widget)
+
+    tag_widget = tag_box_widget.base_layout.itemAt(0).widget()
+    assert isinstance(tag_widget, TagWidget)
+
+    actions = tag_widget.bg_button.actions()
+    edit_action = [a for a in actions if a.text() == "Edit"][0]
+    edit_action.triggered.emit()
+
+    panel = tag_box_widget.edit_modal.widget
+    assert panel.tag.name == tag.name
+
+    # TODO - add save button trigger

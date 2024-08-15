@@ -31,13 +31,11 @@ logger = structlog.get_logger(__name__)
 class BuildTagPanel(PanelWidget):
     on_edit = Signal(object)
 
-    def __init__(self, library: Library, tag_id: int = -1):
+    def __init__(
+        self, library: Library, tag_id: int | None = None, tag: Tag | None = None
+    ):
         super().__init__()
         self.lib = library
-        # self.callback = callback
-        # self.tag_id = tag_id
-        self.tag: Tag | None = None
-        self.subtags: set[int] = set()
 
         self.setMinimumSize(300, 400)
         self.root_layout = QVBoxLayout(self)
@@ -158,14 +156,14 @@ class BuildTagPanel(PanelWidget):
         self.root_layout.addWidget(self.color_widget)
         # self.parent().done.connect(self.update_tag)
 
-        if tag_id >= 0:
-            self.tag = self.lib.get_tag(tag_id)
-        else:
-            self.tag = Tag(
-                name="New Tag",
-            )
+        if tag_id is not None:
+            tag = self.lib.get_tag(tag_id)
+        elif not tag:
+            tag = Tag(name="New Tag")
 
-        self.set_tag(self.tag)
+        # TODO - fill subtags
+        self.subtags: set[int] = set()
+        self.set_tag(tag)
 
     def add_subtag_callback(self, tag_id: int):
         logger.info("add_subtag_callback", tag_id=tag_id)
@@ -180,10 +178,6 @@ class BuildTagPanel(PanelWidget):
     def set_subtags(self):
         while self.scroll_layout.itemAt(0):
             self.scroll_layout.takeAt(0).widget().deleteLater()
-
-        logger.info(
-            "setting subtags", tag=self.tag
-        )  # , subtag_count=len(self.tag.subtags))
 
         c = QWidget()
         layout = QVBoxLayout(c)
@@ -205,6 +199,7 @@ class BuildTagPanel(PanelWidget):
         # self.aliases_field.setText("\n".join(tag.aliases))
         self.set_subtags()
         self.color_field.setCurrentIndex(tag.color.value)
+        self.tag = tag
 
     def build_tag(self) -> Tag:
         color = self.color_field.currentData() or TagColor.DEFAULT

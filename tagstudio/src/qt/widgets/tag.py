@@ -36,8 +36,8 @@ class TagWidget(QWidget):
     ) -> None:
         super().__init__()
         self.tag = tag
-        self.has_edit: bool = has_edit
-        self.has_remove: bool = has_remove
+        self.has_edit = has_edit
+        self.has_remove = has_remove
         # self.bg_label = QLabel()
         # self.setStyleSheet('background-color:blue;')
 

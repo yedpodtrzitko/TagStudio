@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QFrame,
 )
 
-from src.core.library import Library
+from src.core.library import Library, Tag
 from src.core.library.alchemy.enums import FilterState
 from src.qt.widgets.panel import PanelWidget, PanelModal
 from src.qt.widgets.tag import TagWidget
@@ -74,7 +74,7 @@ class TagDatabasePanel(PanelWidget):
 
         self.root_layout.addWidget(self.search_field)
         self.root_layout.addWidget(self.scroll_area)
-        self.update_tags("")
+        self.update_tags()
 
     # def reset(self):
     # 	self.search_field.setText('')
@@ -85,46 +85,33 @@ class TagDatabasePanel(PanelWidget):
         if text and self.first_tag_id >= 0:
             # callback(self.first_tag_id)
             self.search_field.setText("")
-            self.update_tags("")
+            self.update_tags()
         else:
             self.search_field.setFocus()
             self.parentWidget().hide()
 
-    def update_tags(self, query: str):
+    def update_tags(self, query: str | None = None):
         # TODO: Look at recycling rather than deleting and reinitializing
         while self.scroll_layout.itemAt(0):
             self.scroll_layout.takeAt(0).widget().deleteLater()
 
-        # If there is a query, get a list of tag_ids that match, otherwise return all
-        if query:
-            tags = self.lib.search_tags(
-                FilterState(name=query, page_size=self.tag_limit)
-            )
-        else:
-            # Get tag ids to keep this behaviorally identical
-            # tags = [t.id for t in self.lib.tags]
-            tags = self.lib.tags
+        tags = self.lib.search_tags(FilterState(name=query, page_size=self.tag_limit))
 
-        first_id_set = False
         for tag in tags:
-            if not first_id_set:
-                self.first_tag_id = tag.id
-                first_id_set = True
             container = QWidget()
             row = QHBoxLayout(container)
             row.setContentsMargins(0, 0, 0, 0)
             row.setSpacing(3)
             tw = TagWidget(tag, True, False)
-            tw.on_edit.connect(lambda checked=False, t=tag.id: self.edit_tag(t))
+            tw.on_edit.connect(lambda checked=False, t=tag: self.edit_tag(tag))
             row.addWidget(tw)
             self.scroll_layout.addWidget(container)
 
         self.search_field.setFocus()
 
-    def edit_tag(self, tag_id: int):
-        btp = BuildTagPanel(self.lib, tag_id)
-        # btp.on_edit.connect(lambda x: self.edit_tag_callback(x))
-        tag = self.lib.get_tag(tag_id)
+    def edit_tag(self, tag: Tag):
+        btp = BuildTagPanel(self.lib, tag=tag)
+
         self.edit_modal = PanelModal(
             btp,
             tag.name,
