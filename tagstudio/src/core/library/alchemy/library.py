@@ -557,7 +557,7 @@ class Library:
             ).first()
 
             if not field:
-                logger.info("no field found", entry=entry, field_type=field_type)
+                logger.error("no field found", entry=entry, field_type=field_type)
                 return False
 
             try:
@@ -618,7 +618,7 @@ class Library:
     def get_tag(self, tag_id: int) -> Tag:
         with Session(self.engine) as session:
             tags_query = select(Tag).options(selectinload(Tag.subtags))
-            tag = session.scalar(tags_query)
+            tag = session.scalar(tags_query.where(Tag.id == tag_id))
 
             session.expunge(tag)
             for subtag in tag.subtags:

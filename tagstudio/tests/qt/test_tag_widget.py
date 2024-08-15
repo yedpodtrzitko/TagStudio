@@ -24,18 +24,21 @@ def test_tag_widget(qtbot, library, qt_driver):
     assert tag_widget.add_modal.isVisible()
 
 
-@pytest.mark.skip  # TOOD: fix this test
 def test_tag_widget_add_existing_raises(qtbot, library, qt_driver):
+    # Given
     entry = library.entries[0]
-    field = [f for f in entry.tag_box_fields if f.name == "tag_box"][0]
+    tag_field = [f for f in entry.tag_box_fields if f.name == "tag_box"][0]
 
     assert len(entry.tags) == 1
     tag = next(iter(entry.tags))
-    tag_widget = TagBoxWidget(field, "title", qt_driver)
+    tag_widget = TagBoxWidget(tag_field, "title", qt_driver)
 
+    # When
     qtbot.add_widget(tag_widget)
-
+    tag_widget.driver.frame_content = [entry]
     tag_widget.driver.selected = [0]
+
+    # Then
     with patch.object(tag_widget, "error_occurred") as mocked:
         tag_widget.add_modal.widget.tag_chosen.emit(tag.id)
         assert mocked.emit.called
