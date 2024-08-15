@@ -530,10 +530,19 @@ class Library:
                 return False
                 # TODO - trigger error signal
 
-    def add_tag(self, tag: Tag) -> Tag | None:
+    def add_tag(self, tag: Tag, subtag_ids: list[int] | None = None) -> Tag | None:
         with Session(self.engine, expire_on_commit=False) as session:
             try:
                 session.add(tag)
+                session.flush()
+
+                for subtag_id in subtag_ids or []:
+                    subtag = TagSubtag(
+                        parent_id=tag.id,
+                        child_id=subtag_id,
+                    )
+                    session.add(subtag)
+
                 session.commit()
 
                 session.expunge(tag)

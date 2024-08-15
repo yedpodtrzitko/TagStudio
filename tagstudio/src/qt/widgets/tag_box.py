@@ -134,7 +134,9 @@ class TagBoxWidget(FieldWidget):
         )
         # self.edit_modal.widget.update_display_name.connect(lambda t: self.edit_modal.title_widget.setText(t))
         # TODO - this was update_tag()
-        self.edit_modal.saved.connect(lambda: self.driver.lib.add_tag(btp.build_tag()))
+        self.edit_modal.saved.connect(
+            lambda: self.driver.lib.add_tag(btp.build_tag(), subtag_ids=btp.subtags)
+        )
         # panel.tag_updated.connect(lambda tag: self.lib.update_tag(tag))
         self.edit_modal.show()
 

@@ -37,6 +37,8 @@ class BuildTagPanel(PanelWidget):
         # self.callback = callback
         # self.tag_id = tag_id
         self.tag: Tag | None = None
+        self.subtags: set[int] = set()
+
         self.setMinimumSize(300, 400)
         self.root_layout = QVBoxLayout(self)
         self.root_layout.setContentsMargins(6, 0, 6, 0)
@@ -90,6 +92,7 @@ class BuildTagPanel(PanelWidget):
         self.subtags_layout.setContentsMargins(0, 0, 0, 0)
         self.subtags_layout.setSpacing(0)
         self.subtags_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
         self.subtags_title = QLabel()
         self.subtags_title.setText("Parent Tags")
         self.subtags_layout.addWidget(self.subtags_title)
@@ -116,10 +119,6 @@ class BuildTagPanel(PanelWidget):
         self.add_tag_modal = PanelModal(tsp, "Add Parent Tags", "Add Parent Tags")
         self.subtags_add_button.clicked.connect(self.add_tag_modal.show)
         self.subtags_layout.addWidget(self.subtags_add_button)
-
-        # self.subtags_field = TagBoxWidget()
-        # self.subtags_field.setMinimumHeight(60)
-        # self.subtags_layout.addWidget(self.subtags_field)
 
         # Shorthand ------------------------------------------------------------
         self.color_widget = QWidget()
@@ -170,40 +169,31 @@ class BuildTagPanel(PanelWidget):
 
     def add_subtag_callback(self, tag_id: int):
         logger.info("add_subtag_callback", tag_id=tag_id)
-        # TODO
-        self.lib.add_subtag(self.tag.id, tag_id)
+        self.subtags.add(tag_id)
         self.set_subtags()
 
     def remove_subtag_callback(self, tag_id: int):
-        logger.info(f"removing {tag_id}")
-        # tag = self.lib.get_tag(self.tag_id)
-        # TODO: Create a single way to update tags and refresh library data
-        # new = self.build_tag()
-        # TODO
-        return
-        self.tag.remove_subtag(tag_id)
-        # self.tag = new
-        # self.lib.update_tag(new)
+        logger.info("removing subtag", tag_id=tag_id)
+        self.subtags.remove(tag_id)
         self.set_subtags()
-        # self.on_edit.emit(self.build_tag())
 
     def set_subtags(self):
         while self.scroll_layout.itemAt(0):
             self.scroll_layout.takeAt(0).widget().deleteLater()
-        # TODO
+
         logger.info(
             "setting subtags", tag=self.tag
         )  # , subtag_count=len(self.tag.subtags))
 
         c = QWidget()
-        l = QVBoxLayout(c)
-        l.setContentsMargins(0, 0, 0, 0)
-        l.setSpacing(3)
-        for tag_id in self.tag.subtag_ids:
+        layout = QVBoxLayout(c)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(3)
+        for tag_id in self.subtags:
             tag = self.lib.get_tag(tag_id)
             tw = TagWidget(tag, False, True)
             tw.on_remove.connect(lambda t=tag_id: self.remove_subtag_callback(t))
-            l.addWidget(tw)
+            layout.addWidget(tw)
         self.scroll_layout.addWidget(c)
 
     def set_tag(self, tag: Tag):
@@ -222,10 +212,9 @@ class BuildTagPanel(PanelWidget):
         new_tag = Tag(
             name=self.name_field.text(),
             shorthand=self.shorthand_field.text(),
-            # aliases=set(self.aliases_field.toPlainText().split("\n")),
-            # subtags_ids=self.tag.subtag_ids,
             color=color,
         )
+
         logger.info("built tag", tag=new_tag, self_tag=self.tag)
         return new_tag
 

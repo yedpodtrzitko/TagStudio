@@ -672,7 +672,7 @@ class QtDriver(QObject):
         panel: BuildTagPanel = self.modal.widget
         self.modal.saved.connect(
             lambda: (
-                self.lib.add_tag(panel.build_tag()),
+                self.lib.add_tag(panel.build_tag(), panel.subtags),
                 self.modal.hide(),  # type: ignore
             )
         )
