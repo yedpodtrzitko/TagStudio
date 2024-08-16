@@ -31,6 +31,22 @@ LIBRARY_FILENAME: str = "ts_library.sqlite"
 
 logger = structlog.get_logger(__name__)
 
+import re
+import unicodedata
+
+
+def slugify(input_string: str) -> str:
+    # Convert to lowercase and normalize unicode characters
+    slug = unicodedata.normalize("NFKD", input_string.lower())
+
+    # Remove non-word characters (except hyphens and spaces)
+    slug = re.sub(r"[^\w\s-]", "", slug).strip()
+
+    # Replace spaces with hyphens
+    slug = re.sub(r"[-\s]+", "-", slug)
+
+    return slug
+
 
 def get_default_tags() -> list[Tag]:
     archive_tag = Tag(
@@ -651,6 +667,52 @@ class Library:
                 session.rollback()
                 logger.exception("IntegrityError")
                 return False
+
+    def update_tag(self, tag: Tag, subtag_ids: list[int]) -> None:
+        """
+        Edit a Tag in the Library.
+        """
+        # TODO - maybe merge this with add_tag?
+
+        if tag.shorthand:
+            tag.shorthand = slugify(tag.shorthand)
+
+        if tag.aliases:
+            # TODO
+            ...
+
+        # save the tag
+        with Session(self.engine) as session:
+            try:
+                # update the existing tag
+                session.add(tag)
+                session.flush()
+
+                # load all tag's subtag to know which to remove
+                prev_subtags = session.scalars(
+                    select(TagSubtag).where(TagSubtag.parent_id == tag.id)
+                ).all()
+
+                for subtag in prev_subtags:
+                    if subtag.child_id not in subtag_ids:
+                        session.delete(subtag)
+                    else:
+                        # no change, remove from list
+                        subtag_ids.remove(subtag.child_id)
+
+                # create remaining items
+                for subtag_id in subtag_ids:
+                    # add new subtag
+                    subtag = TagSubtag(
+                        parent_id=tag.id,
+                        child_id=subtag_id,
+                    )
+                    session.add(subtag)
+
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                logger.exception("IntegrityError")
 
     def refresh_dupe_entries(self, filename: str) -> None:
         logger.info("refreshing dupe entries", filename=filename)

@@ -204,25 +204,11 @@ class BuildTagPanel(PanelWidget):
     def build_tag(self) -> Tag:
         color = self.color_field.currentData() or TagColor.DEFAULT
 
-        new_tag = Tag(
-            name=self.name_field.text(),
-            shorthand=self.shorthand_field.text(),
-            color=color,
-        )
+        tag = self.tag
 
-        logger.info("built tag", tag=new_tag, self_tag=self.tag)
-        return new_tag
+        tag.name = self.name_field.text()
+        tag.shorthand = self.shorthand_field.text()
+        tag.color = color
 
-        # NOTE: The callback and signal do the same thing, I'm currently
-        # transitioning from using callbacks to the Qt method of using signals.
-        # self.tag_updated.emit(new_tag)
-        # self.callback(new_tag)
-
-    # def on_return(self, callback, text:str):
-    # 	if text and self.first_tag_id >= 0:
-    # 		callback(self.first_tag_id)
-    # 		self.search_field.setText('')
-    # 		self.update_tags('')
-    # 	else:
-    # 		self.search_field.setFocus()
-    # 		self.parentWidget().hide()
+        logger.info("built tag", tag=tag)
+        return tag

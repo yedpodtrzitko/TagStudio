@@ -123,10 +123,10 @@ class TagBoxWidget(FieldWidget):
 
     def edit_tag(self, tag_id: int):
         tag = self.driver.lib.get_tag(tag_id)
-        btp = BuildTagPanel(self.driver.lib, tag=tag)
+        build_tag_panel = BuildTagPanel(self.driver.lib, tag=tag)
 
         self.edit_modal = PanelModal(
-            btp,
+            build_tag_panel,
             tag.name,  # TODO - display name including subtags
             "Edit Tag",
             done_callback=self.driver.preview_panel.update_widgets,
@@ -135,7 +135,10 @@ class TagBoxWidget(FieldWidget):
         # self.edit_modal.widget.update_display_name.connect(lambda t: self.edit_modal.title_widget.setText(t))
         # TODO - this was update_tag()
         self.edit_modal.saved.connect(
-            lambda: self.driver.lib.add_tag(btp.build_tag(), subtag_ids=btp.subtags)
+            lambda: self.driver.lib.update_tag(
+                build_tag_panel.build_tag(),
+                subtag_ids=build_tag_panel.subtags,
+            )
         )
         # panel.tag_updated.connect(lambda tag: self.lib.update_tag(tag))
         self.edit_modal.show()
@@ -158,7 +161,7 @@ class TagBoxWidget(FieldWidget):
         if tag_id in (TAG_FAVORITE, TAG_ARCHIVED):
             self.driver.update_badges()
 
-    def edit_tag_callback(self, tag):
+    def edit_tag_callback(self, tag: Tag):
         self.driver.lib.update_tag(tag)
 
     def remove_tag(self, tag_id: int):

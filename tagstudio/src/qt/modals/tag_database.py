@@ -110,10 +110,10 @@ class TagDatabasePanel(PanelWidget):
         self.search_field.setFocus()
 
     def edit_tag(self, tag: Tag):
-        btp = BuildTagPanel(self.lib, tag=tag)
+        build_tag_panel = BuildTagPanel(self.lib, tag=tag)
 
         self.edit_modal = PanelModal(
-            btp,
+            build_tag_panel,
             tag.name,
             "Edit Tag",
             done_callback=(self.update_tags(self.search_field.text())),
@@ -121,7 +121,7 @@ class TagDatabasePanel(PanelWidget):
         )
         # self.edit_modal.widget.update_display_name.connect(lambda t: self.edit_modal.title_widget.setText(t))
         # TODO Check Warning: Expected type 'BuildTagPanel', got 'PanelWidget' instead
-        self.edit_modal.saved.connect(lambda: self.edit_tag_callback(btp))
+        self.edit_modal.saved.connect(lambda: self.edit_tag_callback(build_tag_panel))
         self.edit_modal.show()
 
     def edit_tag_callback(self, btp: BuildTagPanel):
