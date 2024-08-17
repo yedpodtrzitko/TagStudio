@@ -107,7 +107,7 @@ class TagBoxWidget(FieldWidget):
                     self.driver.preview_panel.update_widgets(),
                 )
             )
-            tw.on_edit.connect(lambda tag_id=tag.id: self.edit_tag(tag_id))
+            tw.on_edit.connect(lambda t=tag: self.edit_tag(t))
             self.base_layout.addWidget(tw)
 
         # Move or add the '+' button.
@@ -121,8 +121,8 @@ class TagBoxWidget(FieldWidget):
         if self.base_layout.itemAt(0) and not self.base_layout.itemAt(1):
             self.base_layout.update()
 
-    def edit_tag(self, tag_id: int):
-        tag = self.driver.lib.get_tag(tag_id)
+    def edit_tag(self, tag: Tag):
+        assert isinstance(tag, Tag), f"tag is {type(tag)}"
         build_tag_panel = BuildTagPanel(self.driver.lib, tag=tag)
 
         self.edit_modal = PanelModal(

@@ -103,7 +103,7 @@ class TagDatabasePanel(PanelWidget):
             row.setContentsMargins(0, 0, 0, 0)
             row.setSpacing(3)
             tw = TagWidget(tag, True, False)
-            tw.on_edit.connect(lambda checked=False, t=tag: self.edit_tag(tag))
+            tw.on_edit.connect(lambda checked=False, t=tag: self.edit_tag(t))
             row.addWidget(tw)
             self.scroll_layout.addWidget(container)
 

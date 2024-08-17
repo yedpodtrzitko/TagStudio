@@ -5,6 +5,7 @@ from PySide6.QtGui import QAction
 from src.core.library import Entry
 from src.qt.widgets.tag import TagWidget
 from src.qt.widgets.tag_box import TagBoxWidget
+from src.qt.modals.build_tag import BuildTagPanel
 
 
 def test_tag_widget(qtbot, library, qt_driver):
@@ -89,6 +90,7 @@ def test_tag_widget_remove(qtbot, qt_driver):
 
 
 def test_tag_widget_edit(qtbot, qt_driver):
+    # Given
     entry: Entry = qt_driver.lib.entries[0]
 
     tag = list(entry.tags)[0]
@@ -105,11 +107,13 @@ def test_tag_widget_edit(qtbot, qt_driver):
     tag_widget = tag_box_widget.base_layout.itemAt(0).widget()
     assert isinstance(tag_widget, TagWidget)
 
+    # When
     actions = tag_widget.bg_button.actions()
     edit_action = [a for a in actions if a.text() == "Edit"][0]
     edit_action.triggered.emit()
 
+    # Then
     panel = tag_box_widget.edit_modal.widget
+    assert isinstance(panel, BuildTagPanel)
     assert panel.tag.name == tag.name
-
-    # TODO - add save button trigger
+    assert panel.name_field.text() == tag.name
