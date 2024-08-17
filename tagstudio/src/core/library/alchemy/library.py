@@ -24,8 +24,8 @@ from .fields import (
     TextField,
 )
 from .joins import TagField, TagSubtag
-from .models import Entry, Tag, TagAlias
-from ...constants import TS_FOLDER_NAME, TAG_ARCHIVED, TAG_FAVORITE
+from .models import Entry, Preferences, Tag, TagAlias
+from ...constants import PREFS, TS_FOLDER_NAME, TAG_ARCHIVED, TAG_FAVORITE
 
 LIBRARY_FILENAME: str = "ts_library.sqlite"
 
@@ -77,8 +77,6 @@ class Library:
     dupe_files: list[str]
     engine: Engine | None
     dupe_entries: list[Entry]  # TODO
-    ext_list: list[str]  # TODO
-    is_exclude_list: bool  # TODO
 
     def __init__(self):
         self.clear_internal_vars()
@@ -99,8 +97,7 @@ class Library:
 
         logger.info("opening library", connection_string=connection_string)
         self.engine = create_engine(connection_string)
-        session = Session(self.engine)
-        with session.begin():
+        with Session(self.engine) as session:
             make_tables(self.engine)
 
             tags = get_default_tags()
@@ -109,7 +106,15 @@ class Library:
                 session.commit()
             except IntegrityError:
                 # default tags may exist already
-                pass
+                session.rollback()
+
+            for pref in PREFS:
+                try:
+                    session.add(Preferences(key=pref.name, value=pref.value))
+                    session.commit()
+                except IntegrityError:
+                    logger.error("pref already exists", pref=pref)
+                    session.rollback()
 
     def delete_item(self, item):
         logger.info("deleting item", item=item)
@@ -736,3 +741,22 @@ class Library:
 
     def merge_dupe_entries(self):
         logger.error("merge_dupe_entries to be implemented")
+
+    def prefs(self, key: PREFS) -> Any:
+        # load given item from Preferences table
+        with Session(self.engine) as session:
+            return session.scalar(
+                select(Preferences).where(Preferences.key == key.name)
+            ).value
+
+    def set_prefs(self, key: PREFS, value: Any) -> None:
+        # set given item in Preferences table
+        with Session(self.engine) as session:
+            # load existing preference and update value
+            pref = session.scalar(
+                select(Preferences).where(Preferences.key == key.name)
+            )
+            pref.value = value
+            session.add(pref)
+            session.commit()
+            # TODO - try/except

@@ -367,9 +367,7 @@ class QtDriver(QObject):
         edit_menu.addSeparator()
 
         manage_file_extensions_action = QAction("Manage File Extensions", menu_bar)
-        manage_file_extensions_action.triggered.connect(
-            lambda: self.show_file_extension_modal()
-        )
+        manage_file_extensions_action.triggered.connect(self.show_file_extension_modal)
         edit_menu.addAction(manage_file_extensions_action)
 
         tag_database_action = QAction("Manage Tags", menu_bar)

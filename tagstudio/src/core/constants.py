@@ -1,3 +1,6 @@
+from enum import Enum, StrEnum
+
+
 VERSION: str = "9.3.2"  # Major.Minor.Patch
 VERSION_BRANCH: str = ""  # Usually "" or "Pre-Release"
 
@@ -126,3 +129,8 @@ DATE_FIELDS = ["datetime"]
 
 TAG_FAVORITE = 1
 TAG_ARCHIVED = 0
+
+
+class PREFS(Enum):
+    IS_EXCLUDE_LIST = False
+    EXTENSION_LIST: list[str] = []

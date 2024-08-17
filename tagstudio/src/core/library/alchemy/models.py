@@ -1,7 +1,7 @@
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import JSON, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -183,3 +183,15 @@ class Entry(Base):
 
         for tag_box_field in self.tag_box_fields:
             tag_box_field.tags.remove(tag)
+
+
+class Preferences(Base):
+    __tablename__ = "preferences"
+
+    key: Mapped[str] = mapped_column(primary_key=True)
+    value: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+    def __init__(self, key: str, value: Any) -> None:
+        self.key = key
+        self.value = value
+        super().__init__()
