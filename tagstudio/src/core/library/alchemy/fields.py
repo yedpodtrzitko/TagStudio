@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Union, Any
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -79,6 +79,7 @@ class TextField(Base):
 
 class TagBoxField(Base):
     __tablename__ = "tag_box_fields"
+    __table_args__ = (UniqueConstraint("entry_id", "type", name="uq_entry_id_type"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     type: Mapped[TagBoxTypes] = mapped_column(default=TagBoxTypes.tag_box)
@@ -186,9 +187,12 @@ DEFAULT_FIELDS: list[DefaultField] = [
     DefaultField(name="Description", class_=TextField, type=TextFieldTypes.text_box),
     DefaultField(name="Notes", class_=TextField, type=TextFieldTypes.text_box),
     DefaultField(name="Comments", class_=TextField, type=TextFieldTypes.text_box),
+    # 11
     DefaultField(name="Tags", class_=TagBoxField, type=TagBoxTypes.tag_box),
-    DefaultField(name="Content Tags", class_=TagBoxField, type=TagBoxTypes.tag_box),
-    DefaultField(name="Meta Tags", class_=TagBoxField, type=TagBoxTypes.tag_box),
+    DefaultField(
+        name="Content Tags", class_=TagBoxField, type=TagBoxTypes.tag_content_box
+    ),
+    DefaultField(name="Meta Tags", class_=TagBoxField, type=TagBoxTypes.meta_tag_box),
     DefaultField(name="Date", class_=DatetimeField, type=DateTimeTypes.datetime),
     DefaultField(
         name="Date Created", class_=DatetimeField, type=DateTimeTypes.datetime

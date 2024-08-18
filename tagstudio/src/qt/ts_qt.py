@@ -707,6 +707,7 @@ class QtDriver(QObject):
             "File Extensions",
             has_save=True,
         )
+
         self.modal.saved.connect(
             lambda: (
                 panel.save(),

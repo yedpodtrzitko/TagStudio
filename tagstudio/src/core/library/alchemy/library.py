@@ -506,41 +506,37 @@ class Library:
                     raise NotImplementedError
 
     def add_field_to_entry(self, entry: Entry, field_id: int) -> bool:
-        logger.info("adding field to entry", entry=entry, field_id=field_id)
-        # TODO - using entry here directly doesnt work, as it's expunged from session
-        # so the session tries to insert it again which fails
-
         default_field = DEFAULT_FIELDS[field_id]
 
-        logger.info("found field type", field_type=default_field.class_)
+        logger.info(
+            "found field type",
+            entry=entry,
+            field_id=field_id,
+            field_type=default_field.class_,
+        )
 
-        field: Any
-        with Session(self.engine) as session, session.begin():
-            if default_field.class_ == TextField:
-                field = TextField(
-                    name=default_field.name,
-                    type=default_field.type,
-                    value="",
-                    entry_id=entry.id,
-                )
-                # entry.text_fields.append(field)
-            elif default_field.class_ == TagBoxField:
-                field = TagBoxField(
-                    name=default_field.name,
-                    type=default_field.type,
-                    entry_id=entry.id,
-                )
-                # entry.tag_box_fields.append(field)
-            elif default_field.class_ == DatetimeField:
-                field = DatetimeField(
-                    name=default_field.name,
-                    type=default_field.type,
-                    entry_id=entry.id,
-                )
-                # entry.datetime_fields.append(field)
-            else:
-                raise ValueError("Unknown field.")
+        field: Any  # make mypy happy
+        if default_field.class_ == TextField:
+            field = TextField(
+                name=default_field.name,
+                type=default_field.type,
+                value="",
+                entry_id=entry.id,
+            )
+        elif default_field.class_ == TagBoxField:
+            field = TagBoxField(
+                name=default_field.name,
+                type=default_field.type,
+                entry_id=entry.id,
+            )
+        elif default_field.class_ == DatetimeField:
+            field = DatetimeField(
+                name=default_field.name,
+                type=default_field.type,
+                entry_id=entry.id,
+            )
 
+        with Session(self.engine) as session:
             try:
                 session.add(field)
                 session.commit()

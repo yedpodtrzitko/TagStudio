@@ -42,6 +42,7 @@ from src.qt.widgets.text_box_edit import EditTextBox
 from src.qt.widgets.text_line_edit import EditTextLine
 from src.qt.helpers.qbutton_wrapper import QPushButtonWrapper
 from src.qt.widgets.video_player import VideoPlayer
+from src.core.library.alchemy.library import Library
 
 # Only import for type checking/autocompletion, will not be imported at runtime.
 if typing.TYPE_CHECKING:
@@ -95,7 +96,7 @@ class PreviewPanel(QWidget):
 
     tags_updated = Signal()
 
-    def __init__(self, library, driver: "QtDriver"):
+    def __init__(self, library: Library, driver: "QtDriver"):
         super().__init__()
         self.is_connected = False
         self.lib = library
