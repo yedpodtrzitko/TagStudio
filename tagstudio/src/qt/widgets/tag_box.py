@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QPushButton
 from src.core.constants import TAG_FAVORITE, TAG_ARCHIVED
 from src.core.library import Entry, Tag
 from src.core.library.alchemy.enums import FilterState
-from src.core.library.alchemy.fields import TagBoxField
+from src.core.library.alchemy.fields import TagBoxField, TagBoxTypes
 from src.qt.flowlayout import FlowLayout
 from src.qt.widgets.fields import FieldWidget
 from src.qt.widgets.tag import TagWidget
@@ -170,11 +170,9 @@ class TagBoxWidget(FieldWidget):
 
         for grid_idx in self.driver.selected:
             entry = self.driver.frame_content[grid_idx]
-            # TODO - remove tag from correct field
             assert entry.fields
-            tag_field = entry.fields[0]
-
-            self.driver.lib.remove_field_tag(tag_field, tag_id)
+            # TODO - remove tag from correct field
+            self.driver.lib.remove_field_tag(entry, tag_id, TagBoxTypes.tag_box)
 
             self.updated.emit()
 

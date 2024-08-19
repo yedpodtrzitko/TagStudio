@@ -129,7 +129,7 @@ class Entry(Base):
         return tag_set
 
     @property
-    def favorited(self) -> bool:
+    def is_favorited(self) -> bool:
         for tag_box_field in self.tag_box_fields:
             for tag in tag_box_field.tags:
                 if tag.name == "Favorite":

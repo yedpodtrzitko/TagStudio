@@ -937,7 +937,7 @@ class QtDriver(QObject):
 
         for _ in range(self.filter.page_size):
             item_thumb = ItemThumb(
-                None, self.lib, self.preview_panel, (self.thumb_size, self.thumb_size)
+                None, self.lib, self, (self.thumb_size, self.thumb_size)
             )
             layout.addWidget(item_thumb)
             self.item_thumbs.append(item_thumb)

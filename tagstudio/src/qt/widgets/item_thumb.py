@@ -4,7 +4,7 @@
 import time
 import typing
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import structlog
 from PIL import Image, ImageQt
@@ -26,19 +26,15 @@ from src.core.constants import (
     TAG_FAVORITE,
     TAG_ARCHIVED,
 )
-from src.core.library import ItemType, Entry
+from src.core.library import ItemType, Entry, Library
 from src.core.library.alchemy.fields import TagBoxTypes
 from src.qt.flowlayout import FlowWidget
 from src.qt.helpers.file_opener import FileOpenerHelper
 from src.qt.widgets.thumb_renderer import ThumbRenderer
 from src.qt.widgets.thumb_button import ThumbButton
 
-if typing.TYPE_CHECKING:
-    from src.qt.widgets.preview_panel import PreviewPanel
-
-ERROR = "[ERROR]"
-WARNING = "[WARNING]"
-INFO = "[INFO]"
+if TYPE_CHECKING:
+    from src.qt.ts_qt import QtDriver
 
 logger = structlog.get_logger(__name__)
 
@@ -86,16 +82,16 @@ class ItemThumb(FlowWidget):
 
     def __init__(
         self,
-        mode,
-        library,
-        panel: "PreviewPanel",
+        mode: ItemType,
+        library: Library,
+        driver: "QtDriver",
         thumb_size: tuple[int, int],
     ):
         """Modes: entry, collation, tag_group"""
         super().__init__()
         self.lib = library
-        self.panel = panel
         self.mode = mode
+        self.driver = driver
         self.item_id: int = -1
         self.is_favorite: bool = False
         self.is_archived: bool = False
@@ -451,27 +447,41 @@ class ItemThumb(FlowWidget):
         return super().leaveEvent(event)
 
     def on_archived_check(self, toggle_value: bool):
-        # if self.mode == ItemType.ENTRY:
         self.is_archived = toggle_value
-        self.toggle_item_tag(toggle_value, TAG_ARCHIVED)
+        for idx in self.driver.selected:
+            entry = self.driver.frame_content[idx]
+            self.toggle_item_tag(
+                entry, toggle_value, TAG_ARCHIVED, TagBoxTypes.meta_tag_box
+            )
 
     def on_favorite_check(self, toggle_value: bool):
-        # if self.mode == ItemType.ENTRY:
         self.is_favorite = toggle_value
-        self.toggle_item_tag(toggle_value, TAG_FAVORITE)
+        for idx in self.driver.selected:
+            entry = self.driver.frame_content[idx]
+            self.toggle_item_tag(
+                entry, toggle_value, TAG_FAVORITE, TagBoxTypes.meta_tag_box
+            )
 
-    def toggle_item_tag(self, toggle_value: bool, tag_id: int):
-        entry = self.panel.driver.frame_content[self.item_id]
+    def toggle_item_tag(
+        self, entry: Entry, toggle_value: bool, tag_id: int, field_type: TagBoxTypes
+    ):
+        logger.info(
+            "toggle_item_tag",
+            entry_id=entry.id,
+            toggle_value=toggle_value,
+            tag_id=tag_id,
+            field_type=field_type,
+        )
 
         tag = self.lib.get_tag(tag_id)
 
         if toggle_value:
             self.favorite_badge.setHidden(False)
-            self.lib.add_field_tag(entry, tag, TagBoxTypes.meta_tag_box)
+            self.lib.add_field_tag(entry, tag, field_type)
         else:
-            self.lib.remove_field_tag(entry, tag, TagBoxTypes.meta_tag_box)
+            self.lib.remove_field_tag(entry, tag.id, field_type)
 
-        if self.panel.is_open:
-            self.panel.update_widgets()
+        if self.driver.preview_panel.is_open:
+            self.driver.preview_panel.update_widgets()
 
-        self.panel.driver.update_badges()
+        self.driver.update_badges()

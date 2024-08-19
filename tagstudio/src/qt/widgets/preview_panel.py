@@ -837,7 +837,7 @@ class PreviewPanel(QWidget):
                     window_title=f"Edit {field.name}",
                     save_callback=(
                         lambda content: (
-                            self.update_field(field, content),
+                            self.update_field(field, content),  # type: ignore
                             self.update_widgets(),
                         )
                     ),
@@ -999,15 +999,14 @@ class PreviewPanel(QWidget):
                     "Tried to remove field from Entry that never had it", entry=entry
                 )
 
-    def update_field(self, field, content):
+    def update_field(self, field, content) -> None:
         """Remove a field from all selected Entries, given a field object."""
         field = dict(field)
         for grid_idx in self.selected:
             entry = self.driver.frame_content[grid_idx]
             try:
-                logger.info(field)
                 index = entry.fields.index(field)
-                self.lib.update_entry_field(entry.id, index, content, "replace")
+                self.lib.update_field(index, content, [entry.id], "replace")
             except ValueError:
                 logger.exception(
                     "Tried to update field from Entry that never had it", entry=entry

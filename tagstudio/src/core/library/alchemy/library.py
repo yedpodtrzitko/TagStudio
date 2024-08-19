@@ -23,7 +23,7 @@ from .fields import (
     TagBoxTypes,
     TextField,
 )
-from .joins import TagField, TagSubtag
+from .joins import TagSubtag, TagField
 from .models import Entry, Preferences, Tag, TagAlias
 from ...constants import PREFS, TS_FOLDER_NAME, TAG_ARCHIVED, TAG_FAVORITE
 
@@ -118,25 +118,44 @@ class Library:
 
     def delete_item(self, item):
         logger.info("deleting item", item=item)
-        with Session(self.engine) as session, session.begin():
+        with Session(self.engine) as session:
             session.delete(item)
             session.commit()
 
-    def remove_field_tag(self, field: TagBoxField, tag_id: int):
-        with Session(self.engine) as session, session.begin():
-            # remove instance of TagField matching combination of `field` and `tag_id`
-            session.delete(
-                session.scalar(
-                    select(TagField).where(
-                        and_(
-                            TagField.field_id == field.id,
-                            TagField.tag_id == tag_id,
-                        )
+    def remove_field_tag(self, entry: Entry, tag_id: int, field_type: TagBoxTypes):
+        with Session(self.engine) as session:
+            # find field matching entry and field_type
+            field = session.scalars(
+                select(TagBoxField).where(
+                    and_(
+                        TagBoxField.entry_id == entry.id,
+                        TagBoxField.type == field_type,
                     )
                 )
-            )
+            ).first()
 
-            session.commit()
+            if not field:
+                logger.error("no field found", entry=entry, field=field)
+                return False
+
+            try:
+                # find the record in `TagField` table and delete it
+                tag_field = session.scalars(
+                    select(TagField).where(
+                        and_(
+                            TagField.tag_id == tag_id,
+                            TagField.field_id == field.id,
+                        )
+                    )
+                ).first()
+                if tag_field:
+                    session.delete(tag_field)
+                    session.commit()
+                    return True
+            except IntegrityError as e:
+                logger.exception(e)
+                session.rollback()
+                return False
 
     def get_entry(self, entry_id: int) -> Entry | None:
         """Load entry without joins."""
@@ -153,7 +172,7 @@ class Library:
         """Load all entries with joins.
         Debugging purposes only.
         """
-        with Session(self.engine) as session, session.begin():
+        with Session(self.engine) as session:
             stmt = (
                 select(Entry)
                 .outerjoin(Entry.text_fields)
@@ -469,7 +488,7 @@ class Library:
         field: Field,
         entry_ids: list[int],
     ) -> None:
-        with Session(self.engine) as session, session.begin():
+        with Session(self.engine) as session:
             fields = session.scalars(
                 select(field.__class__).where(
                     and_(
@@ -489,7 +508,7 @@ class Library:
         entry_ids: list[int],
         mode: Literal["replace", "append", "remove"],
     ):
-        with Session(self.engine) as session, session.begin():
+        with Session(self.engine) as session:
             fields = session.scalars(
                 select(field.__class__).where(
                     and_(
@@ -571,7 +590,7 @@ class Library:
                 return None
 
     def add_field_tag(self, entry: Entry, tag: Tag, field_type: TagBoxTypes) -> bool:
-        with Session(self.engine) as session, session.begin():
+        with Session(self.engine) as session:
             # find field matching entry and field_type
             field = session.scalars(
                 select(TagBoxField).where(
@@ -595,48 +614,6 @@ class Library:
                 logger.exception(e)
                 session.rollback()
                 return False
-
-    def add_tag_to_entry_meta_tags(self, tag: int | Tag, entry_id: int) -> None:
-        if isinstance(tag, Tag):
-            tag = tag.id
-
-        with Session(self.engine) as session, session.begin():
-            meta_tag_box = session.scalars(
-                select(TagBoxField).where(
-                    and_(
-                        TagBoxField.entry_id == entry_id,
-                        TagBoxField.type == TagBoxTypes.meta_tag_box,
-                    )
-                )
-            ).one()
-            tag = session.scalars(select(Tag).where(Tag.id == tag)).one()
-
-            meta_tag_box.tags.add(tag)
-
-    def remove_tag_from_entry_meta_tags(self, tag: int | Tag, entry_id: int) -> None:
-        if isinstance(tag, Tag):
-            tag = tag.id
-
-        with Session(self.engine) as session, session.begin():
-            meta_tag_box = session.scalars(
-                select(TagBoxField).where(
-                    and_(
-                        TagBoxField.entry_id == entry_id,
-                        TagBoxField.type == TagBoxTypes.meta_tag_box,
-                    )
-                )
-            ).one()
-            tag = session.scalars(select(Tag).where(Tag.id == tag)).one()
-
-            meta_tag_box.tags.remove(tag)
-
-    def entry_archived_favorited_status(self, entry: int | Entry) -> tuple[bool, bool]:
-        if isinstance(entry, Entry):
-            entry = entry.id
-        with Session(self.engine) as session, session.begin():
-            entry_ = session.scalars(select(Entry).where(Entry.id == entry)).one()
-
-            return (entry_.archived, entry_.favorited)
 
     def save_library_backup_to_disk(self, *args, **kwargs):
         logger.error("save_library_backup_to_disk to be implemented")
