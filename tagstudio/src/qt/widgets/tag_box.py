@@ -165,14 +165,13 @@ class TagBoxWidget(FieldWidget):
         self.driver.lib.update_tag(tag)
 
     def remove_tag(self, tag_id: int):
-        logger.info("remove_tag", selected=self.driver.selected, field=self.field)
-        assert self.driver.selected
+        logger.info(
+            "remove_tag", selected=self.driver.selected, field_type=self.field.type
+        )
 
         for grid_idx in self.driver.selected:
             entry = self.driver.frame_content[grid_idx]
-            assert entry.fields
-            # TODO - remove tag from correct field
-            self.driver.lib.remove_field_tag(entry, tag_id, TagBoxTypes.tag_box)
+            self.driver.lib.remove_field_tag(entry, tag_id, self.field.type)
 
             self.updated.emit()
 

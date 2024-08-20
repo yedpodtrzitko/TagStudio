@@ -1,7 +1,5 @@
 from unittest.mock import patch
 
-from PySide6.QtGui import QAction
-
 from src.core.library import Entry
 from src.qt.widgets.tag import TagWidget
 from src.qt.widgets.tag_box import TagBoxWidget
