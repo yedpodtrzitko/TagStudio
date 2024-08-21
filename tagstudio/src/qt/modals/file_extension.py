@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 
 from src.core.library import Library
 from src.qt.widgets.panel import PanelWidget
-from src.core.constants import PREFS
+from src.core.constants import LibraryPrefs
 
 
 class FileExtensionItemDelegate(QStyledItemDelegate):
@@ -44,7 +44,7 @@ class FileExtensionModal(PanelWidget):
         self.root_layout.setContentsMargins(6, 6, 6, 6)
 
         # Create Table Widget --------------------------------------------------
-        self.table = QTableWidget(len(self.lib.prefs(PREFS.EXTENSION_LIST)), 1)
+        self.table = QTableWidget(len(self.lib.prefs(LibraryPrefs.EXTENSION_LIST)), 1)
         self.table.horizontalHeader().setVisible(False)
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setStretchLastSection(True)
@@ -69,7 +69,7 @@ class FileExtensionModal(PanelWidget):
         self.mode_combobox.addItem("Include")
         self.mode_combobox.addItem("Exclude")
 
-        is_exclude_list = int(bool(self.lib.prefs(PREFS.IS_EXCLUDE_LIST)))
+        is_exclude_list = int(bool(self.lib.prefs(LibraryPrefs.IS_EXCLUDE_LIST)))
 
         self.mode_combobox.setCurrentIndex(is_exclude_list)
         self.mode_combobox.currentIndexChanged.connect(
@@ -97,10 +97,10 @@ class FileExtensionModal(PanelWidget):
             mode (int): The list mode, given by the index of the mode inside
                 the mode combobox. True for "Exclude", False for "Include".
         """
-        self.lib.set_prefs(PREFS.IS_EXCLUDE_LIST, bool(mode))
+        self.lib.set_prefs(LibraryPrefs.IS_EXCLUDE_LIST, bool(mode))
 
     def refresh_list(self):
-        for i, ext in enumerate(self.lib.prefs(PREFS.EXTENSION_LIST)):
+        for i, ext in enumerate(self.lib.prefs(LibraryPrefs.EXTENSION_LIST)):
             self.table.setItem(i, 0, QTableWidgetItem(ext))
 
     def add_item(self):
@@ -114,4 +114,4 @@ class FileExtensionModal(PanelWidget):
                 extensions.append(ext.text().strip().lower())
 
         # save preference
-        self.lib.set_prefs(PREFS.EXTENSION_LIST, extensions)
+        self.lib.set_prefs(LibraryPrefs.EXTENSION_LIST, extensions)

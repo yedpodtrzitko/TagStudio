@@ -25,7 +25,7 @@ from .fields import (
 )
 from .joins import TagSubtag, TagField
 from .models import Entry, Preferences, Tag, TagAlias
-from ...constants import PREFS, TS_FOLDER_NAME, TAG_ARCHIVED, TAG_FAVORITE
+from ...constants import LibraryPrefs, TS_FOLDER_NAME, TAG_ARCHIVED, TAG_FAVORITE
 
 LIBRARY_FILENAME: str = "ts_library.sqlite"
 
@@ -108,7 +108,7 @@ class Library:
                 # default tags may exist already
                 session.rollback()
 
-            for pref in PREFS:
+            for pref in LibraryPrefs:
                 try:
                     session.add(Preferences(key=pref.name, value=pref.value))
                     session.commit()
@@ -356,7 +356,8 @@ class Library:
         """
         assert isinstance(search, FilterState)
         assert self.engine
-        with Session(self.engine, expire_on_commit=False) as session, session.begin():
+
+        with Session(self.engine, expire_on_commit=False) as session:
             statement = select(Entry)
 
             if search.name:
@@ -376,6 +377,17 @@ class Library:
             elif search.tag_id:
                 # TODO
                 statement = statement.where(Tag.id == search.tag_id)
+
+            extensions = self.prefs(LibraryPrefs.EXTENSION_LIST)
+            is_exclude_list = self.prefs(LibraryPrefs.IS_EXCLUDE_LIST)
+            if extensions and is_exclude_list:
+                statement = statement.where(
+                    Entry.path.notilike(f"%.{','.join(extensions)}")
+                )
+            elif extensions:
+                statement = statement.where(
+                    Entry.path.ilike(f"%.{','.join(extensions)}")
+                )
 
             statement = statement.options(
                 selectinload(Entry.text_fields),
@@ -715,14 +727,14 @@ class Library:
     def merge_dupe_entries(self):
         logger.error("merge_dupe_entries to be implemented")
 
-    def prefs(self, key: PREFS) -> Any:
+    def prefs(self, key: LibraryPrefs) -> Any:
         # load given item from Preferences table
         with Session(self.engine) as session:
             return session.scalar(
                 select(Preferences).where(Preferences.key == key.name)
             ).value
 
-    def set_prefs(self, key: PREFS, value: Any) -> None:
+    def set_prefs(self, key: LibraryPrefs, value: Any) -> None:
         # set given item in Preferences table
         with Session(self.engine) as session:
             # load existing preference and update value

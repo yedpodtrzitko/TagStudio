@@ -5,6 +5,7 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
+from src.core.constants import LibraryPrefs
 from src.core.library.alchemy import Entry
 from src.core.library.alchemy import Library
 from src.core.library.alchemy.enums import FilterState
@@ -86,6 +87,7 @@ def test_tag_search(library):
     assert library.search_tags(
         FilterState(name=tag.name),
     )
+
     assert not library.search_tags(
         FilterState(name=tag.name * 2),
     )
@@ -189,3 +191,25 @@ def test_subtags_add(library, generate_tag):
     assert tag.id is not None
     tag = library.get_tag(tag.id)
     assert tag.subtag_ids
+
+
+@pytest.mark.parametrize("is_exclude", [True, False])
+def test_search_filter_extensions(library, is_exclude):
+    # Given
+    entries = library.entries
+    assert len(entries) == 2, entries
+
+    library.set_prefs(LibraryPrefs.IS_EXCLUDE_LIST, is_exclude)
+    library.set_prefs(LibraryPrefs.EXTENSION_LIST, ["md"])
+
+    # When
+    query_count, items = library.search_library(
+        FilterState(),
+    )
+
+    # Then
+    assert query_count == 1
+    assert len(items) == 1
+
+    entry = items[0]
+    assert (entry.path.suffix == ".txt") == is_exclude

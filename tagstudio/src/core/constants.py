@@ -131,6 +131,6 @@ TAG_FAVORITE = 1
 TAG_ARCHIVED = 0
 
 
-class PREFS(Enum):
+class LibraryPrefs(Enum):
     IS_EXCLUDE_LIST = False
     EXTENSION_LIST: list[str] = []

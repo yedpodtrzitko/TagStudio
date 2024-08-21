@@ -55,7 +55,7 @@ def library():
         ),
     ]
 
-    entry2 = generate_entry(path=pathlib.Path("bar.txt"))
+    entry2 = generate_entry(path=pathlib.Path("bar.md"))
     entry2.tag_box_fields = [
         TagBoxField(
             name="meta_box",
