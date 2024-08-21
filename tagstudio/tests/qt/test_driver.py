@@ -2,11 +2,29 @@ from pathlib import Path
 from unittest.mock import Mock
 
 from src.core.library import Entry
+from src.core.library.json.library import ItemType
+from src.qt.widgets.item_thumb import ItemThumb
 
 
 def test_update_thumbs(qt_driver):
     qt_driver.frame_content = [Entry(path=Path("/tmp/foo"))]
+
+    qt_driver.item_thumbs = []
+    for i in range(3):
+        qt_driver.item_thumbs.append(
+            ItemThumb(
+                mode=ItemType.ENTRY,
+                library=qt_driver.lib,
+                driver=qt_driver,
+                thumb_size=(100, 100),
+            )
+        )
+
     qt_driver.update_thumbs()
+
+    for idx, thumb in enumerate(qt_driver.item_thumbs):
+        # only first item is visible
+        assert thumb.isVisible() == (idx == 0)
 
 
 def test_select_item_bridge(qt_driver):

@@ -123,7 +123,6 @@ class QtDriver(QObject):
 
     def __init__(self, backend, args):
         super().__init__()
-        # self.core: TagStudioCore = core
         self.lib = backend.Library()
         self.rm: ResourceManager = ResourceManager()
         self.args = args
@@ -477,11 +476,11 @@ class QtDriver(QObject):
 
         self.init_library_window()
 
-        lib = None
+        lib: str | None = None
         if self.args.open:
             lib = self.args.open
         elif self.settings.value(SettingItems.START_LOAD_LAST, True, type=bool):
-            lib = self.settings.value(SettingItems.LAST_LIBRARY)
+            lib = str(self.settings.value(SettingItems.LAST_LIBRARY))
 
             # TODO: Remove this check if the library is no longer saved with files
             if lib and not (Path(lib) / TS_FOLDER_NAME).exists():
@@ -1028,12 +1027,15 @@ class QtDriver(QObject):
             zip_longest(self.frame_content, self.item_thumbs)
         ):
             # if self.nav_frames[self.cur_frame_idx].contents[i][0] == ItemType.ENTRY:
-            if not entry or not item_thumb:
-                break
+            if not entry:
+                item_thumb.hide()
+                continue
 
             filepath = self.lib.library_dir / entry.path
             item_thumb = self.item_thumbs[idx]
             item_thumb.set_mode(ItemType.ENTRY)
+            item_thumb.show()
+
             self.thumb_job_queue.put(
                 (
                     item_thumb.renderer.render,
@@ -1049,8 +1051,8 @@ class QtDriver(QObject):
             # for collations a few lines down should NOT be allowed during modifier keys.
             item_thumb.update_clickable(
                 clickable=(
-                    lambda checked=False, idx=idx: self.select_item(
-                        idx,
+                    lambda checked=False, index=idx: self.select_item(
+                        index,
                         append=(
                             QGuiApplication.keyboardModifiers()
                             == Qt.KeyboardModifier.ControlModifier
