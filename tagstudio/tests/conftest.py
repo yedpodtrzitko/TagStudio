@@ -4,7 +4,6 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch, Mock
 
 import pytest
-from syrupy.extensions.json import JSONSnapshotExtension
 
 CWD = pathlib.Path(__file__).parent
 # this needs to be above `src` imports
@@ -16,11 +15,6 @@ from src.core.library.alchemy.fields import TagBoxField, TagBoxTypes
 from tests.alchemy.test_library import generate_entry
 from src.core.library import alchemy as backend
 from src.qt.ts_qt import QtDriver
-
-
-@pytest.fixture
-def snapshot_json(snapshot):
-    return snapshot.with_defaults(extension_class=JSONSnapshotExtension)
 
 
 @pytest.fixture
