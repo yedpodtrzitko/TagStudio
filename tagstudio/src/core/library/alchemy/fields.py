@@ -170,44 +170,73 @@ class DatetimeField(Base):
 
 @dataclass
 class DefaultField:
+    id: int
     name: str
     class_: Any
     type: TextFieldTypes | TagBoxTypes | DateTimeTypes
 
 
-DEFAULT_FIELDS: list[DefaultField] = [
-    DefaultField(name="Title", class_=TextField, type=TextFieldTypes.text_line),
-    DefaultField(name="Author", class_=TextField, type=TextFieldTypes.text_line),
-    DefaultField(name="Artist", class_=TextField, type=TextFieldTypes.text_line),
-    DefaultField(name="Guest Artist", class_=TextField, type=TextFieldTypes.text_line),
-    DefaultField(name="Composer", class_=TextField, type=TextFieldTypes.text_line),
-    DefaultField(name="URL", class_=TextField, type=TextFieldTypes.text_line),
-    DefaultField(name="Source", class_=TextField, type=TextFieldTypes.text_line),
-    DefaultField(name="Publisher", class_=TextField, type=TextFieldTypes.text_line),
-    DefaultField(name="Description", class_=TextField, type=TextFieldTypes.text_box),
-    DefaultField(name="Notes", class_=TextField, type=TextFieldTypes.text_box),
-    DefaultField(name="Comments", class_=TextField, type=TextFieldTypes.text_box),
-    # 11
-    DefaultField(name="Tags", class_=TagBoxField, type=TagBoxTypes.tag_box),
-    DefaultField(
-        name="Content Tags", class_=TagBoxField, type=TagBoxTypes.tag_content_box
-    ),
-    DefaultField(name="Meta Tags", class_=TagBoxField, type=TagBoxTypes.meta_tag_box),
-    DefaultField(name="Date", class_=DatetimeField, type=DateTimeTypes.datetime),
-    DefaultField(
-        name="Date Created", class_=DatetimeField, type=DateTimeTypes.datetime
-    ),
-    DefaultField(
-        name="Date Modified", class_=DatetimeField, type=DateTimeTypes.datetime
-    ),
-    DefaultField(name="Date Taken", class_=DatetimeField, type=DateTimeTypes.datetime),
-    DefaultField(
-        name="Date Published", class_=DatetimeField, type=DateTimeTypes.datetime
-    ),
-    DefaultField(
-        name="Date Uploaded", class_=DatetimeField, type=DateTimeTypes.datetime
-    ),
-    DefaultField(
-        name="Date Released", class_=DatetimeField, type=DateTimeTypes.datetime
-    ),
-]
+class DefaultFields(Enum):
+    TITLE = DefaultField(
+        id=0, name="Title", class_=TextField, type=TextFieldTypes.text_line
+    )
+    AUTHOR = DefaultField(
+        id=1, name="Author", class_=TextField, type=TextFieldTypes.text_line
+    )
+    ARTIST = DefaultField(
+        id=2, name="Artist", class_=TextField, type=TextFieldTypes.text_line
+    )
+    GUEST_ARTIST = DefaultField(
+        id=3, name="Guest Artist", class_=TextField, type=TextFieldTypes.text_line
+    )
+    COMPOSER = DefaultField(
+        id=4, name="Composer", class_=TextField, type=TextFieldTypes.text_line
+    )
+    URL = DefaultField(
+        id=5, name="URL", class_=TextField, type=TextFieldTypes.text_line
+    )
+    SOURCE = DefaultField(
+        id=6, name="Source", class_=TextField, type=TextFieldTypes.text_line
+    )
+    PUBLISHER = DefaultField(
+        id=7, name="Publisher", class_=TextField, type=TextFieldTypes.text_line
+    )
+    DESCRIPTION = DefaultField(
+        id=8, name="Description", class_=TextField, type=TextFieldTypes.text_box
+    )
+    NOTES = DefaultField(
+        id=9, name="Notes", class_=TextField, type=TextFieldTypes.text_box
+    )
+    COMMENTS = DefaultField(
+        id=10, name="Comments", class_=TextField, type=TextFieldTypes.text_box
+    )
+    TAGS = DefaultField(
+        id=11, name="Tags", class_=TagBoxField, type=TagBoxTypes.tag_box
+    )
+    TAGS_CONTENT = DefaultField(
+        id=12, name="Content Tags", class_=TagBoxField, type=TagBoxTypes.tag_content_box
+    )
+    TAGS_META = DefaultField(
+        id=13, name="Meta Tags", class_=TagBoxField, type=TagBoxTypes.meta_tag_box
+    )
+    DATE = DefaultField(
+        id=14, name="Date", class_=DatetimeField, type=DateTimeTypes.datetime
+    )
+    DATE_CREATED = DefaultField(
+        id=15, name="Date Created", class_=DatetimeField, type=DateTimeTypes.datetime
+    )
+    DATE_MODIFIED = DefaultField(
+        id=16, name="Date Modified", class_=DatetimeField, type=DateTimeTypes.datetime
+    )
+    DATE_TAKEN = DefaultField(
+        id=17, name="Date Taken", class_=DatetimeField, type=DateTimeTypes.datetime
+    )
+    DATE_PUBLISHED = DefaultField(
+        id=18, name="Date Published", class_=DatetimeField, type=DateTimeTypes.datetime
+    )
+    DATE_UPLOADED = DefaultField(
+        id=19, name="Date Uploaded", class_=DatetimeField, type=DateTimeTypes.datetime
+    )
+    DATE_RELEASED = DefaultField(
+        id=20, name="Date Released", class_=DatetimeField, type=DateTimeTypes.datetime
+    )

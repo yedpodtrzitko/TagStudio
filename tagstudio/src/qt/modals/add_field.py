@@ -13,7 +13,8 @@ from PySide6.QtWidgets import (
     QListWidget,
 )
 
-from src.core.library import DEFAULT_FIELDS, Library
+from src.core.library import Library
+from src.core.library.alchemy.fields import DefaultFields
 
 
 class AddFieldModal(QWidget):
@@ -45,8 +46,8 @@ class AddFieldModal(QWidget):
         self.list_widget.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
 
         items = []
-        for df in DEFAULT_FIELDS:
-            items.append(f"{df.name} ({df.type})")
+        for df in DefaultFields:
+            items.append(f"{df.value.name} ({df.value.type})")
 
         self.list_widget.addItems(items)
 

@@ -16,12 +16,13 @@ from sqlalchemy.orm import (
 from .db import make_tables
 from .enums import TagColor, FilterState
 from .fields import (
-    DEFAULT_FIELDS,
     DatetimeField,
     Field,
     TagBoxField,
     TagBoxTypes,
     TextField,
+    DefaultFields,
+    DefaultField,
 )
 from .joins import TagSubtag, TagField
 from .models import Entry, Preferences, Tag, TagAlias
@@ -536,8 +537,22 @@ class Library:
                 else:
                     raise NotImplementedError
 
-    def add_field_to_entry(self, entry: Entry, field_id: int) -> bool:
-        default_field = DEFAULT_FIELDS[field_id]
+    def add_field_to_entry(
+        self,
+        entry: Entry,
+        field_id: int | None = None,
+        field: DefaultFields | None = None,
+    ) -> bool:
+        # TODO - improve this
+        default_field: DefaultField
+        if field:
+            default_field = field.value
+        elif field_id is not None:
+            default_field = [x.value for x in DefaultFields if x.value.id == field_id][
+                0
+            ]
+        else:
+            raise ValueError("missing field identifier")
 
         logger.info(
             "found field type",
@@ -546,22 +561,22 @@ class Library:
             field_type=default_field.class_,
         )
 
-        field: Any  # make mypy happy
+        field_model: Any  # make mypy happy
         if default_field.class_ == TextField:
-            field = TextField(
+            field_model = TextField(
                 name=default_field.name,
                 type=default_field.type,
                 value="",
                 entry_id=entry.id,
             )
         elif default_field.class_ == TagBoxField:
-            field = TagBoxField(
+            field_model = TagBoxField(
                 name=default_field.name,
                 type=default_field.type,
                 entry_id=entry.id,
             )
         elif default_field.class_ == DatetimeField:
-            field = DatetimeField(
+            field_model = DatetimeField(
                 name=default_field.name,
                 type=default_field.type,
                 entry_id=entry.id,
@@ -569,7 +584,7 @@ class Library:
 
         with Session(self.engine) as session:
             try:
-                session.add(field)
+                session.add(field_model)
                 session.commit()
                 return True
             except IntegrityError as e:

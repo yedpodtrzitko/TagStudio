@@ -3,7 +3,6 @@
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
 
-import logging
 import math
 import typing
 
@@ -20,7 +19,7 @@ from PySide6.QtWidgets import (
 )
 from src.core.library import Tag, Library
 from src.core.library.alchemy.enums import TagColor
-from src.core.library.alchemy.fields import TagBoxTypes
+from src.core.library.alchemy.fields import TagBoxTypes, DefaultFields
 from src.core.palette import ColorType, get_tag_color
 from src.qt.flowlayout import FlowLayout
 from src.qt.widgets.preview_panel import logger
@@ -94,7 +93,7 @@ def reverse_tag(library: Library, tag: Tag, items: list[Tag] | None) -> list[Tag
 # =========== UI ===========
 
 
-def generate_preview_data(library):
+def generate_preview_data(library) -> dict:
     tree: dict = dict(dirs={}, files=[])
 
     def add_tag_to_tree(items: list):
@@ -119,23 +118,32 @@ def generate_preview_data(library):
 
     for entry in library.entries:
         folders = list(entry.path.parts)
-        if len(folders) == 1 and folders[0] == "":
+        print("folders", folders)
+        if folders == [""]:
             continue
+
         branch = add_folders_to_tree(folders)
         if branch:
-            field_indexes = library.get_field_index_in_entry(entry, 6)
+            # add tag field to Entry
+            library.add_field_to_entry(entry, field=DefaultFields.TAGS)
+
+            # TODO - verify this is intended behaviour
+            library.add_field_tag(entry, branch["tag"].name, TagBoxTypes.tag_box)
+
             has_tag = False
-            for index in field_indexes:
+            index: int
+            for index in []:  # field_indexes:
                 content = library.get_field_attr(entry.fields[index], "content")
                 for tag_id in content:
                     tag = library.get_tag(tag_id)
                     if tag.name == branch["tag"].name:
                         has_tag = True
                         break
+
             if not has_tag:
                 branch["files"].append(entry.filename)
 
-    def cut_branches_adding_nothing(branch: dict):
+    def cut_branches_adding_nothing(branch: dict) -> bool:
         folders = set(branch["dirs"].keys())
         for folder in folders:
             cut = cut_branches_adding_nothing(branch["dirs"][folder])
@@ -143,11 +151,15 @@ def generate_preview_data(library):
                 branch["dirs"].pop(folder)
 
         if "tag" not in branch:
-            return
-        if branch["tag"].id == -1 or len(branch["files"]) > 0:  # Needs to be first
             return False
-        if len(branch["dirs"].keys()) == 0:
+
+        if branch["tag"].id == -1 or branch["files"]:  # Needs to be first
+            return False
+
+        if not branch["dirs"]:
             return True
+
+        return False  # I guess?
 
     cut_branches_adding_nothing(tree)
 

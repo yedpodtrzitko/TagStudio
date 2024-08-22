@@ -9,7 +9,7 @@ from src.core.constants import LibraryPrefs
 from src.core.library.alchemy import Entry
 from src.core.library.alchemy import Library
 from src.core.library.alchemy.enums import FilterState
-from src.core.library.alchemy.fields import DEFAULT_FIELDS
+from src.core.library.alchemy.fields import DefaultFields
 
 
 def generate_entry(*, path: Path = None) -> Entry:
@@ -137,13 +137,8 @@ def test_add_field_to_entry(library):
 
     library.add_entries([entry])
 
-    # TODO - do this better way
-    for field_idx, item in enumerate(DEFAULT_FIELDS):
-        if item.name == "Tags":
-            break
-
     # When
-    library.add_field_to_entry(entry, field_idx)
+    library.add_field_to_entry(entry, field=DefaultFields.TAGS)
 
     # Then
     entry = [x for x in library.entries if x.path == item_path][0]
