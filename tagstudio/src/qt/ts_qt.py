@@ -12,7 +12,6 @@ import math
 import os
 import sys
 import time
-import typing
 import webbrowser
 from itertools import zip_longest
 from pathlib import Path
@@ -42,7 +41,6 @@ from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
     QApplication,
     QWidget,
-    QHBoxLayout,
     QPushButton,
     QLineEdit,
     QScrollArea,
@@ -51,7 +49,6 @@ from PySide6.QtWidgets import (
     QMenu,
     QMenuBar,
     QComboBox,
-    QTreeWidget,
 )
 from humanfriendly import format_timespan
 
@@ -128,6 +125,7 @@ class QtDriver(QObject):
         self.args = args
         self.frame_content = []
         self.filter = FilterState()
+        self.pages_count = 0
 
         self.scrollbar_pos = 0
         self.thumb_size = 128
@@ -586,14 +584,6 @@ class QtDriver(QObject):
 
         QApplication.quit()
 
-    def update_filter(self, **kwargs):
-        render = kwargs.pop("render", False)
-        for key, value in kwargs.items():
-            setattr(self.filter, key, value)
-
-        if render:
-            self.filter_items()
-
     def save_library(self, show_status=True):
         logger.info(f"Saving Library...")
         if show_status:
@@ -896,12 +886,15 @@ class QtDriver(QObject):
 
         sb: QScrollArea = self.main_window.scrollArea
         sb_pos = sb.verticalScrollBar().value()
+
         if page_id is not None:
             page_index = page_id
         else:
             page_index = self.filter.page_index + delta
 
-        self.update_filter(page_index=page_index)
+        page_index = max(0, min(page_index, self.pages_count - 1))
+
+        self.filter.page_index = page_index
         self.filter_items()
 
     def purge_item_from_navigation(self, idx: int):
@@ -1085,6 +1078,7 @@ class QtDriver(QObject):
         assert self.lib.engine
 
         self.filter = filter or self.filter
+        # self.filter = dataclasses.replace(self.filter, **dataclasses.asdict(filter))
 
         self.main_window.statusbar.showMessage(
             f'Searching Library: "{self.filter.summary}"'
@@ -1111,9 +1105,9 @@ class QtDriver(QObject):
         self.update_thumbs()
 
         # update pagination
-        pages_count = math.ceil(query_count / self.filter.page_size)
+        self.pages_count = math.ceil(query_count / self.filter.page_size)
         self.main_window.pagination.update_buttons(
-            pages_count, self.filter.page_index, emit=False
+            self.pages_count, self.filter.page_index, emit=False
         )
 
     def set_search_type(self, mode: SearchMode = SearchMode.AND):
