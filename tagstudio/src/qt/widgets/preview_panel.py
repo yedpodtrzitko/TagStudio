@@ -27,10 +27,15 @@ from PySide6.QtWidgets import (
 )
 from humanfriendly import format_size
 
-from src.core.enums import SettingItems, Theme, FieldID
+from src.core.enums import SettingItems, Theme
 from src.core.constants import VIDEO_TYPES, IMAGE_TYPES, RAW_IMAGE_TYPES, TS_FOLDER_NAME
 from src.core.library.alchemy.enums import FilterState
-from src.core.library.alchemy.fields import TextField, TagBoxField, DatetimeField
+from src.core.library.alchemy.fields import (
+    TextField,
+    TagBoxField,
+    DatetimeField,
+    FieldID,
+)
 from src.qt.helpers.file_opener import FileOpenerLabel, FileOpenerHelper, open_file
 from src.qt.modals.add_field import AddFieldModal
 from src.qt.widgets.thumb_renderer import ThumbRenderer
@@ -48,35 +53,7 @@ from src.core.library.alchemy.library import Library
 if typing.TYPE_CHECKING:
     from src.qt.ts_qt import QtDriver
 
-ERROR = "[ERROR]"
-WARNING = "[WARNING]"
-INFO = "[INFO]"
-
 logger = structlog.get_logger(__name__)
-
-FIELDS_ORDER: list[FieldID] = (
-    [FieldID.TITLE]
-    + [FieldID.AUTHOR, FieldID.ARTIST]
-    + [
-        FieldID.COLLATION,
-        FieldID.BOOK,
-        FieldID.COMIC,
-        FieldID.SERIES,
-        FieldID.MANGA,
-    ]
-    + [FieldID.META_TAGS, FieldID.CONTENT_TAGS, FieldID.TAGS]
-    + [FieldID.DESCRIPTION]
-    + [FieldID.URL, FieldID.SOURCE]
-    + [
-        FieldID.DATE,
-        FieldID.DATE_PUBLISHED,
-        FieldID.DATE_CREATED,
-        FieldID.DATE_MODIFIED,
-        FieldID.DATE_TAKEN,
-        FieldID.DATE_UPLOADED,
-    ]
-    + [FieldID.NOTES]
-)
 
 
 def update_selected_entry(driver: "QtDriver"):
@@ -633,7 +610,7 @@ class PreviewPanel(QWidget):
                 if self.preview_img.is_connected:
                     self.preview_img.clicked.disconnect()
                 self.preview_img.clicked.connect(
-                    lambda checked=False, filepath=filepath: open_file(filepath)
+                    lambda checked=False, pth=filepath: open_file(pth)
                 )
                 self.preview_img.is_connected = True
 

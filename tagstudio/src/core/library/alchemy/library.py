@@ -21,8 +21,8 @@ from .fields import (
     TagBoxField,
     TagBoxTypes,
     TextField,
-    DefaultFields,
     DefaultField,
+    FieldID,
 )
 from .joins import TagSubtag, TagField
 from .models import Entry, Preferences, Tag, TagAlias
@@ -541,16 +541,14 @@ class Library:
         self,
         entry: Entry,
         field_id: int | None = None,
-        field: DefaultFields | None = None,
+        field: FieldID | None = None,
     ) -> bool:
         # TODO - improve this
         default_field: DefaultField
         if field:
             default_field = field.value
         elif field_id is not None:
-            default_field = [x.value for x in DefaultFields if x.value.id == field_id][
-                0
-            ]
+            default_field = [x.value for x in FieldID if x.value.id == field_id][0]
         else:
             raise ValueError("missing field identifier")
 

@@ -14,13 +14,13 @@ import xml.etree.ElementTree as ET
 import structlog
 import ujson
 
-from enum import Enum, IntEnum
+from enum import Enum
 from pathlib import Path
 from typing import cast, Generator
 from typing_extensions import Self
 
 from .fields import DEFAULT_FIELDS
-from src.core.enums import FieldID, OpenStatus
+from src.core.enums import OpenStatus
 from src.core.utils.str import strip_punctuation
 from src.core.utils.web import strip_web_protocol
 from src.core.constants import (

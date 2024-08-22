@@ -19,18 +19,13 @@ from PySide6.QtWidgets import (
 )
 from src.core.library import Tag, Library
 from src.core.library.alchemy.enums import TagColor
-from src.core.library.alchemy.fields import TagBoxTypes, DefaultFields
+from src.core.library.alchemy.fields import TagBoxTypes, FieldID
 from src.core.palette import ColorType, get_tag_color
 from src.qt.flowlayout import FlowLayout
-from src.qt.widgets.preview_panel import logger
 
 # Only import for type checking/autocompletion, will not be imported at runtime.
 if typing.TYPE_CHECKING:
     from src.qt.ts_qt import QtDriver
-
-ERROR = "[ERROR]"
-WARNING = "[WARNING]"
-INFO = "[INFO]"
 
 logger = structlog.get_logger(__name__)
 
@@ -125,7 +120,7 @@ def generate_preview_data(library) -> dict:
         branch = add_folders_to_tree(folders)
         if branch:
             # add tag field to Entry
-            library.add_field_to_entry(entry, field=DefaultFields.TAGS)
+            library.add_field_to_entry(entry, field=FieldID.TAGS)
 
             # TODO - verify this is intended behaviour
             library.add_field_tag(entry, branch["tag"].name, TagBoxTypes.tag_box)
