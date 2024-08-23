@@ -614,7 +614,9 @@ class Library:
                 session.rollback()
                 return None
 
-    def add_field_tag(self, entry: Entry, tag: Tag, field_type: TagBoxTypes) -> bool:
+    def add_field_tag(
+        self, entry: Entry, tag: Tag, field_type: TagBoxTypes, add_field: bool = False
+    ) -> bool:
         with Session(self.engine) as session:
             # find field matching entry and field_type
             field = session.scalars(
@@ -626,11 +628,18 @@ class Library:
                 )
             ).first()
 
-            if not field:
+            if not field and not add_field:
                 logger.error("no field found", entry=entry, field_type=field_type)
                 return False
 
             try:
+                if not field:
+                    field = TagBoxField(
+                        name="Tag Box",
+                        type=field_type,
+                        entry_id=entry.id,
+                    )
+
                 field.tags = field.tags | {tag}
                 session.add(field)
                 session.commit()

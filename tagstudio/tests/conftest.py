@@ -12,7 +12,7 @@ sys.path.insert(0, str(CWD.parent))
 from src.core.library import Library, Tag
 from src.core.library.alchemy.enums import TagColor
 from src.core.library.alchemy.fields import TagBoxField, TagBoxTypes
-from tests.alchemy.test_library import generate_entry
+from tests.test_library import generate_entry
 from src.core.library import alchemy as backend
 from src.qt.ts_qt import QtDriver
 
@@ -49,7 +49,7 @@ def library():
         ),
     ]
 
-    entry2 = generate_entry(path=pathlib.Path("bar.md"))
+    entry2 = generate_entry(path=pathlib.Path("one/two/bar.md"))
     entry2.tag_box_fields = [
         TagBoxField(
             name="meta_box",

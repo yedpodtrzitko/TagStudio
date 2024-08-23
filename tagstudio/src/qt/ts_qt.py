@@ -442,7 +442,7 @@ class QtDriver(QObject):
 
         folders_to_tags_action = QAction("Folders to Tags", menu_bar)
         ftt_modal = FoldersToTagsModal(self.lib, self)
-        folders_to_tags_action.triggered.connect(lambda: ftt_modal.show())
+        folders_to_tags_action.triggered.connect(ftt_modal.show)
         macros_menu.addAction(folders_to_tags_action)
 
         # Help Menu ==========================================================

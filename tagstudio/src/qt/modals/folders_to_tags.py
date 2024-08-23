@@ -5,6 +5,7 @@
 
 import math
 import typing
+from dataclasses import dataclass, field
 
 import structlog
 from PySide6.QtCore import Qt
@@ -18,56 +19,62 @@ from PySide6.QtWidgets import (
     QFrame,
 )
 from src.core.library import Tag, Library
-from src.core.library.alchemy.enums import TagColor
 from src.core.library.alchemy.fields import TagBoxTypes, FieldID
 from src.core.palette import ColorType, get_tag_color
 from src.qt.flowlayout import FlowLayout
 
-# Only import for type checking/autocompletion, will not be imported at runtime.
 if typing.TYPE_CHECKING:
     from src.qt.ts_qt import QtDriver
 
 logger = structlog.get_logger(__name__)
 
 
+@dataclass
+class BranchData:
+    # make default value empty dict
+    dirs: dict[str, "BranchData"] = field(default_factory=dict)
+    files: list[str] = field(default_factory=list)
+    tag: Tag | None = None
+
+
+def add_folders_to_tree(
+    library: Library | None, tree, items: tuple[str, ...]
+) -> BranchData:
+    branch: BranchData = tree
+    for folder in items:
+        if folder not in branch.dirs:
+            # TODO - subtags
+            new_tag = Tag(name=folder)
+            if library:
+                library.add_tag(new_tag)
+            branch.dirs[folder] = BranchData(tag=new_tag)
+        branch = branch.dirs[folder]
+    return branch
+
+
 def folders_to_tags(library: Library):
     logger.info("Converting folders to Tags")
-    tree: dict = dict(dirs={})
+    tree = BranchData()
 
     def add_tag_to_tree(items: list[Tag]):
         branch = tree
         for tag in items:
-            if tag.name not in branch["dirs"]:
-                branch["dirs"][tag.name] = dict(dirs={}, tag=tag)
-            branch = branch["dirs"][tag.name]
-
-    def add_folders_to_tree(items: list[str]) -> Tag:
-        branch: dict = tree
-        logger.info("add_folders_to_tree", branch=branch)
-        for folder in items:
-            if folder not in branch["dirs"]:
-                new_tag = Tag(
-                    name=folder,
-                    # TODO - subtags
-                    # ([branch["tag"].id] if "tag" in branch else []),
-                )
-                library.add_tag(new_tag)
-                branch["dirs"][folder] = dict(dirs={}, tag=new_tag)
-            branch = branch["dirs"][folder]
-        return branch.get("tag")
+            if tag.name not in branch.dirs:
+                branch.dirs[tag.name] = BranchData()
+            branch = branch.dirs[tag.name]
 
     for tag in library.tags:
         reversed_tag = reverse_tag(library, tag, None)
         add_tag_to_tree(reversed_tag)
 
     for entry in library.entries:
-        folders = list(entry.path.parts)
-        if folders == [""]:
+        folders = entry.path.parts[1:-1]
+        if not folders:
             continue
 
-        tag = add_folders_to_tree(folders)
+        tag = add_folders_to_tree(library, tree, folders).tag
         if tag and not entry.has_tag(tag):
-            library.add_field_tag(entry, tag, TagBoxTypes.tag_box)
+            library.add_field_tag(entry, tag, TagBoxTypes.tag_box, add_field=True)
 
     logger.info("Done")
 
@@ -88,70 +95,60 @@ def reverse_tag(library: Library, tag: Tag, items: list[Tag] | None) -> list[Tag
 # =========== UI ===========
 
 
-def generate_preview_data(library) -> dict:
-    tree: dict = dict(dirs={}, files=[])
+def generate_preview_data(library: Library) -> BranchData:
+    tree = BranchData()
 
     def add_tag_to_tree(items: list):
         branch = tree
         for tag in items:
-            if tag.name not in branch["dirs"]:
-                branch["dirs"][tag.name] = dict(dirs={}, tag=tag, files=[])
-            branch = branch["dirs"][tag.name]
-
-    def add_folders_to_tree(items: list[str]) -> dict:
-        branch = tree
-        for folder in items:
-            if folder not in branch["dirs"]:
-                new_tag = Tag(name=folder, color=TagColor.GREEN)
-                branch["dirs"][folder] = dict(dirs={}, tag=new_tag, files=[])
-            branch = branch["dirs"][folder]
-        return branch
+            if tag.name not in branch.dirs:
+                branch.dirs[tag.name] = BranchData()
+            branch = branch.dirs[tag.name]
 
     for tag in library.tags:
         reversed_tag = reverse_tag(library, tag, None)
         add_tag_to_tree(reversed_tag)
 
     for entry in library.entries:
-        folders = list(entry.path.parts)
-        print("folders", folders)
-        if folders == [""]:
+        folders = entry.path.parts[1:-1]
+        if not folders:
+            print("no folders")
             continue
 
-        branch = add_folders_to_tree(folders)
+        branch = add_folders_to_tree(None, tree, folders)
         if branch:
-            # add tag field to Entry
             library.add_field_to_entry(entry, field=FieldID.TAGS)
 
             # TODO - verify this is intended behaviour
-            library.add_field_tag(entry, branch["tag"].name, TagBoxTypes.tag_box)
+            library.add_field_tag(entry, branch.tag, TagBoxTypes.tag_box)
 
             has_tag = False
             index: int
             for index in []:  # field_indexes:
-                content = library.get_field_attr(entry.fields[index], "content")
+                content: typing.Any = []  # library.get_field_attr(entry.fields[index], "content")
                 for tag_id in content:
                     tag = library.get_tag(tag_id)
-                    if tag.name == branch["tag"].name:
+                    if tag.name == branch.tag.name:
                         has_tag = True
                         break
 
             if not has_tag:
-                branch["files"].append(entry.filename)
+                branch.files.append(entry.path.name)
 
-    def cut_branches_adding_nothing(branch: dict) -> bool:
-        folders = set(branch["dirs"].keys())
+    def cut_branches_adding_nothing(branch: BranchData) -> bool:
+        folders = set(branch.dirs.keys())
         for folder in folders:
-            cut = cut_branches_adding_nothing(branch["dirs"][folder])
+            cut = cut_branches_adding_nothing(branch.dirs[folder])
             if cut:
-                branch["dirs"].pop(folder)
+                branch.dirs.pop(folder)
 
-        if "tag" not in branch:
+        if not branch.tag:
             return False
 
-        if branch["tag"].id == -1 or branch["files"]:  # Needs to be first
+        if not branch.tag.id or branch.files:  # Needs to be first
             return False
 
-        if not branch["dirs"]:
+        if not branch.dirs:
             return True
 
         return False  # I guess?
@@ -246,7 +243,7 @@ class FoldersToTagsModal(QWidget):
 
         data = generate_preview_data(self.library)
 
-        for folder in data["dirs"].values():
+        for folder in data.dirs.values():
             test = TreeItem(folder, None)
             self.scroll_layout.addWidget(test)
 
@@ -258,7 +255,7 @@ class FoldersToTagsModal(QWidget):
 
 
 class TreeItem(QWidget):
-    def __init__(self, data: dict, parentTag: Tag):
+    def __init__(self, data: BranchData, parentTag: Tag):
         super().__init__()
 
         self.setStyleSheet("QLabel{font-size: 13px}")
@@ -274,7 +271,7 @@ class TreeItem(QWidget):
 
         self.label = QLabel()
         self.tag_layout.addWidget(self.label)
-        self.tag_widget = ModifiedTagWidget(data["tag"], parentTag)
+        self.tag_widget = ModifiedTagWidget(data.tag, parentTag)
         self.tag_widget.bg_button.clicked.connect(lambda: self.hide_show())
         self.tag_layout.addWidget(self.tag_widget)
 
@@ -288,19 +285,19 @@ class TreeItem(QWidget):
         self.children_widget.setHidden(not self.children_widget.isHidden())
         self.label.setText(">" if self.children_widget.isHidden() else "v")
 
-    def populate(self, data: dict):
-        for folder in data["dirs"].values():
-            item = TreeItem(folder, data["tag"])
+    def populate(self, data: BranchData):
+        for folder in data.dirs.values():
+            item = TreeItem(folder, data.tag)
             self.children_layout.addWidget(item)
-        for file in data["files"]:
+        for file in data.files:
             label = QLabel()
             label.setText("    ->  " + str(file))
             self.children_layout.addWidget(label)
 
-        if len(data["files"]) == 0 and len(data["dirs"].values()) == 0:
-            self.hide_show()
-        else:
+        if data.files or data.dirs:
             self.label.setText("v")
+        else:
+            self.hide_show()
 
     def set_all_branches(self, hidden: bool):
         for i in reversed(range(self.children_layout.count())):
