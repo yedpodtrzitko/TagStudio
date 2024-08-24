@@ -60,7 +60,7 @@ class FilterState:
     """Represent a state of the Library grid view."""
 
     page_index: int = 0
-    page_size: int = 100
+    page_size: int = 500
     name: str | None = None
     id: int | None = None
     tag_id: int | None = None

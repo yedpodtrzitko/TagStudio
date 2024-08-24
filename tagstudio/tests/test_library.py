@@ -208,3 +208,8 @@ def test_search_filter_extensions(library, is_exclude):
 
     entry = items[0]
     assert (entry.path.suffix == ".txt") == is_exclude
+
+
+def test_preferences(library):
+    for pref in LibraryPrefs:
+        assert library.prefs(pref) == pref.value
