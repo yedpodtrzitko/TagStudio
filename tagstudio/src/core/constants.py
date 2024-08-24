@@ -1,5 +1,4 @@
-from enum import Enum, StrEnum
-
+from enum import Enum
 
 VERSION: str = "9.3.2"  # Major.Minor.Patch
 VERSION_BRANCH: str = ""  # Usually "" or "Pre-Release"
@@ -132,5 +131,6 @@ TAG_ARCHIVED = 0
 
 
 class LibraryPrefs(Enum):
-    IS_EXCLUDE_LIST = False
-    EXTENSION_LIST: list[str] = []
+    IS_EXCLUDE_LIST = True
+    EXTENSION_LIST: list[str] = [".json", ".xmp", ".aae"]
+    PAGE_SIZE: int = 500

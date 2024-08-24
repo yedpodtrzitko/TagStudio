@@ -114,7 +114,7 @@ class Library:
                     session.add(Preferences(key=pref.name, value=pref.value))
                     session.commit()
                 except IntegrityError:
-                    logger.error("pref already exists", pref=pref)
+                    logger.debug("preference already exists", pref=pref)
                     session.rollback()
 
     def delete_item(self, item):
@@ -274,7 +274,7 @@ class Library:
             relative_path = path.relative_to(self.library_dir)
             # TODO - load these in batch somehow
             if not self.has_item(path=relative_path):
-                logger.info("item not in library yet", path=relative_path)
+                logger.debug("item not in library yet", path=relative_path)
                 self.files_not_in_library.append(relative_path)
 
             end_time = time.time()

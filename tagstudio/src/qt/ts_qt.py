@@ -8,6 +8,7 @@
 """A Qt driver for TagStudio."""
 
 import ctypes
+import dataclasses
 import math
 import os
 import sys
@@ -59,6 +60,7 @@ from src.core.constants import (
     TS_FOLDER_NAME,
     VERSION_BRANCH,
     VERSION,
+    LibraryPrefs,
 )
 from src.core.library.alchemy.enums import SearchMode, FilterState, ItemType
 from src.core.utils.web import strip_web_protocol
@@ -1077,8 +1079,8 @@ class QtDriver(QObject):
     def filter_items(self, filter: FilterState | None = None) -> None:
         assert self.lib.engine
 
-        self.filter = filter or self.filter
-        # self.filter = dataclasses.replace(self.filter, **dataclasses.asdict(filter))
+        if filter:
+            self.filter = dataclasses.replace(self.filter, **dataclasses.asdict(filter))
 
         self.main_window.statusbar.showMessage(
             f'Searching Library: "{self.filter.summary}"'
@@ -1162,6 +1164,9 @@ class QtDriver(QObject):
             self.save_library()
 
         self.lib.open_library(path)
+
+        self.filter.page_size = self.lib.prefs(LibraryPrefs.PAGE_SIZE)
+
         # TODO - make this call optional
         self.add_new_files_callback()
 
