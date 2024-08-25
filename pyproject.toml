@@ -63,16 +63,19 @@ numpy="1.26.4"
 rawpy="0.21.0"
 pillow-heif="0.16.0"
 chardet="5.2.0"
+structlog = "24.2.0"
+sqlalchemy = "2.0.32"
 
 [tool.poetry.group.dev]
 optional = true
 [tool.poetry.group.dev.dependencies]
-ruff="0.4.2"
+ruff="0.6.2"
 pre-commit="3.7.0"
 pytest="8.2.0"
 Pyinstaller="6.6.0"
-mypy="1.10.0"
+mypy="1.11.1"
 syrupy="4.6.1"
+pytest-qt = "4.4.0"
 
 
 [build-system]
