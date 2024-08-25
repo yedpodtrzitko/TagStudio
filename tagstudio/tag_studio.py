@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (C) 2024 Travis Abendshien (CyanVoxel).
 # Licensed under the GPL-3.0 License.
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
@@ -9,6 +8,13 @@ import structlog
 import logging
 
 from src.qt.ts_qt import QtDriver
+import os
+import sys
+
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__)))
+)  # add this so that `poetry run tagstudio` works
+
 import argparse
 import traceback
 
@@ -25,13 +31,8 @@ def main():
     # Parse arguments.
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--open",
-        dest="open",
-        type=str,
-        help="Path to a TagStudio Library folder to open on start.",
-    )
-    parser.add_argument(
         "-o",
+        "--open",
         dest="open",
         type=str,
         help="Path to a TagStudio Library folder to open on start.",
