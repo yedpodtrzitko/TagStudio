@@ -1,6 +1,8 @@
 # Copyright (C) 2024 Travis Abendshien (CyanVoxel).
 # Licensed under the GPL-3.0 License.
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
+import sys
+from collections.abc import Callable
 from pathlib import Path
 import time
 import typing
@@ -35,6 +37,7 @@ from src.core.library.alchemy.fields import (
     TagBoxField,
     DatetimeField,
     FieldID,
+    TextFieldTypes,
 )
 from src.qt.helpers.file_opener import FileOpenerLabel, FileOpenerHelper, open_file
 from src.qt.modals.add_field import AddFieldModal
@@ -731,6 +734,7 @@ class PreviewPanel(QWidget):
         else:
             container = self.containers[index]  # type: ignore
 
+        callback: typing.Any
         if isinstance(field, TagBoxField):
             container.set_title(field.name)
             container.set_inline(False)
@@ -763,7 +767,6 @@ class PreviewPanel(QWidget):
                 # inner_container.field = field
                 inner_container.updated.connect(
                     lambda: (
-                        print("inner_container updated emitted", inner_container),
                         self.write_container(index, field),
                         self.update_widgets(),
                     )
@@ -793,13 +796,12 @@ class PreviewPanel(QWidget):
 
             self.tags_updated.emit()
             # self.dynamic_widgets.append(inner_container)
-        elif isinstance(field, TextField):  # TODO - formerly text_line
-            # logger.info(f'WRITING TEXTLINE FOR ITEM {item.id}')
+        elif field.type == TextFieldTypes.text_line:
             container.set_title(field.name)
             # container.set_editable(True)
             container.set_inline(False)
             # Normalize line endings in any text content.
-            if not is_mixed:
+            if not is_mixed and field.value:
                 text = field.value.replace("\r", "\n")
             else:
                 text = "<i>Mixed Data</i>"
@@ -819,10 +821,13 @@ class PreviewPanel(QWidget):
                         )
                     ),
                 )
+                if "pytest" in sys.modules:
+                    # for better testability
+                    container.modal = modal  # type: ignore
+
                 container.set_edit_callback(modal.show)
                 prompt = f'Are you sure you want to remove this "{field.name}" field?'
                 callback = lambda: (
-                    print("remove field 2"),
                     self.remove_field(field),
                     self.update_widgets(),
                 )
@@ -836,13 +841,12 @@ class PreviewPanel(QWidget):
                 container.set_remove_callback(None)
             # container.set_remove_callback(lambda: (self.lib.get_entry(item.id).fields.pop(index), self.update_widgets(item)))
 
-        elif isinstance(field, TextField):  # formerly text_box
-            # logger.info(f'WRITING TEXTBOX FOR ITEM {item.id}')
+        elif field.type == TextFieldTypes.text_box:
             container.set_title(field.name)
             # container.set_editable(True)
             container.set_inline(False)
             # Normalize line endings in any text content.
-            if not is_mixed:
+            if not is_mixed and field.value:
                 text = field.value.replace("\r", "\n")
             else:
                 text = "<i>Mixed Data</i>"
@@ -858,7 +862,7 @@ class PreviewPanel(QWidget):
                     window_title=f"Edit {field.name}",
                     save_callback=(
                         lambda content: (
-                            self.update_field(field, content),
+                            self.update_field(field, content),  # type: ignore
                             self.update_widgets(),
                         )
                     ),
@@ -866,7 +870,6 @@ class PreviewPanel(QWidget):
                 container.set_edit_callback(modal.show)
                 prompt = f'Are you sure you want to remove this "{field.name}" field?'
                 callback = lambda: (
-                    print("remove field 3"),
                     self.remove_field(field),
                     self.update_widgets(),
                 )
@@ -902,7 +905,6 @@ class PreviewPanel(QWidget):
                 # container.set_remove_callback(lambda: (self.lib.get_entry(item.id).fields.pop(index), self.update_widgets(item)))
                 prompt = f'Are you sure you want to remove this "{field.name}" field?'
                 callback = lambda: (
-                    print("remove field 4"),
                     self.remove_field(field),
                     self.update_widgets(),
                 )
@@ -930,7 +932,6 @@ class PreviewPanel(QWidget):
             # container.set_remove_callback(lambda: (self.lib.get_entry(item.id).fields.pop(index), self.update_widgets(item)))
             prompt = f'Are you sure you want to remove this "{field.name}" field?'
             callback = lambda: (
-                print("remove field 5"),
                 self.remove_field(field),
                 self.update_widgets(),
             )
@@ -976,20 +977,17 @@ class PreviewPanel(QWidget):
                     "Tried to remove field from Entry that never had it", entry=entry
                 )
 
-    def update_field(self, field, content) -> None:
+    def update_field(self, field: TextField, content: str) -> None:
         """Remove a field from all selected Entries, given a field object."""
-        field = dict(field)
+        # TODO - update all fields via single query
+        entry_ids = []
         for grid_idx in self.selected:
             entry = self.driver.frame_content[grid_idx]
-            try:
-                index = entry.fields.index(field)
-                self.lib.update_field(index, content, [entry.id], "replace")
-            except ValueError:
-                logger.exception(
-                    "Tried to update field from Entry that never had it", entry=entry
-                )
+            entry_ids.append(entry.id)
 
-    def remove_message_box(self, prompt: str, callback: typing.Callable) -> None:
+        self.lib.update_field(field, content, entry_ids)
+
+    def remove_message_box(self, prompt: str, callback: Callable) -> None:
         remove_mb = QMessageBox()
         remove_mb.setText(prompt)
         remove_mb.setWindowTitle("Remove Field")
@@ -1005,5 +1003,5 @@ class PreviewPanel(QWidget):
         remove_mb.setEscapeButton(cancel_button)
         result = remove_mb.exec_()
         # logger.info(result)
-        if result == 3:
+        if result == 3:  # TODO - what is this magic number?
             callback()

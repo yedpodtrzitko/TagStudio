@@ -25,7 +25,7 @@ class TextFieldTypes(Enum):
 class TagBoxTypes(Enum):
     meta_tag_box = "Meta Tags"
     tag_box = "Tags"
-    tag_content_box = "Content Tags"
+    content_tag_box = "Content Tags"
 
 
 class DateTimeTypes(Enum):
@@ -242,7 +242,7 @@ class FieldID(Enum):
     )
     TAGS = DefaultField(id=6, name="Tags", class_=TagBoxField, type=TagBoxTypes.tag_box)
     TAGS_CONTENT = DefaultField(
-        id=7, name="Content Tags", class_=TagBoxField, type=TagBoxTypes.tag_content_box
+        id=7, name="Content Tags", class_=TagBoxField, type=TagBoxTypes.content_tag_box
     )
     TAGS_META = DefaultField(
         id=8, name="Meta Tags", class_=TagBoxField, type=TagBoxTypes.meta_tag_box

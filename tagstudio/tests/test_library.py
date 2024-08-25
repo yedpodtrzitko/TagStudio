@@ -135,8 +135,8 @@ def test_add_field_to_entry(library):
     # Given
     item_path = Path("xxx")
     entry = generate_entry(path=item_path)
-    # meta tags present
-    assert len(entry.tag_box_fields) == 1
+    # meta tags + content tags
+    assert len(entry.tag_box_fields) == 2
 
     library.add_entries([entry])
 
@@ -146,7 +146,7 @@ def test_add_field_to_entry(library):
     # Then
     entry = [x for x in library.entries if x.path == item_path][0]
     # meta tags and tags field present
-    assert len(entry.tag_box_fields) == 2
+    assert len(entry.tag_box_fields) == 3
 
 
 def test_add_field_tag(library, generate_tag):

@@ -1,12 +1,19 @@
 from pathlib import Path
 from typing import Any, Optional
 
-from sqlalchemy import JSON, ForeignKey, Sequence, Integer
+from sqlalchemy import JSON, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
 from .enums import TagColor
-from .fields import DatetimeField, Field, TagBoxField, TagBoxTypes, TextField
+from .fields import (
+    DatetimeField,
+    Field,
+    TagBoxField,
+    TagBoxTypes,
+    TextField,
+    TextFieldTypes,
+)
 from .joins import TagSubtag
 
 
@@ -156,6 +163,20 @@ class Entry(Base):
             TagBoxField(
                 name="Meta Tags",
                 type=TagBoxTypes.meta_tag_box,
+            )
+        )
+
+        self.tag_box_fields.append(
+            TagBoxField(
+                name="Content Tags",
+                type=TagBoxTypes.content_tag_box,
+            )
+        )
+
+        self.text_fields.append(
+            TextField(
+                name="Title",
+                type=TextFieldTypes.text_line,
             )
         )
 

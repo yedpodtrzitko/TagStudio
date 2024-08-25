@@ -1,10 +1,10 @@
 import datetime
 import time
 from pathlib import Path
-from typing import Iterator, Literal, Any
+from typing import Iterator, Any
 
 import structlog
-from sqlalchemy import and_, or_, select, create_engine, Engine, func
+from sqlalchemy import and_, or_, select, create_engine, Engine, func, update
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.orm import (
     Session,
@@ -519,23 +519,22 @@ class Library:
         field: Field,
         content: str | datetime.datetime | set[Tag],
         entry_ids: list[int],
-        mode: Literal["replace", "append", "remove"],
+        # mode: Literal["replace", "append", "remove"],
     ):
         with Session(self.engine) as session:
-            fields = session.scalars(
-                select(field.__class__).where(
+            update_stmt = (
+                update(field.__class__)
+                .where(
                     and_(
                         field.__class__.name == field.name,
                         field.__class__.entry_id.in_(entry_ids),
                     )
                 )
+                .values(value=content)
             )
-            for field_ in fields:
-                if mode == "replace":
-                    # TODO
-                    field_.value = content  # type: ignore
-                else:
-                    raise NotImplementedError
+
+            session.execute(update_stmt)
+            session.commit()
 
     def add_field_to_entry(
         self,

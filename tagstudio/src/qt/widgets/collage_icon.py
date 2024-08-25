@@ -50,7 +50,7 @@ class CollageIconRenderer(QObject):
                         if isinstance(field.type, TagBoxTypes):
                             if field.tags:
                                 has_any_tags = True
-                                if field.type == TagBoxTypes.tag_content_box:
+                                if field.type == TagBoxTypes.content_tag_box:
                                     has_content_tags = True
                                 elif field.id == TagBoxTypes.meta_tag_box:
                                     has_meta_tags = True
