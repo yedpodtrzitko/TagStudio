@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any, Optional
 
-from sqlalchemy import JSON, ForeignKey
+from sqlalchemy import JSON, ForeignKey, Sequence, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -31,8 +31,9 @@ class TagAlias(Base):
 
 class Tag(Base):
     __tablename__ = "tags"
+    __table_args__ = {"sqlite_autoincrement": True}
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     name: Mapped[str] = mapped_column(unique=True)
     shorthand: Mapped[str | None]

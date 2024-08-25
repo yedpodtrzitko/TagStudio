@@ -58,6 +58,9 @@ def test_create_tag(library, generate_tag):
     assert tag
     assert tag.id == 123
 
+    tag_inc = library.add_tag(generate_tag("yyy"))
+    assert tag_inc.id == 1002
+
 
 def test_library_search(library, generate_tag):
     entries = library.entries
