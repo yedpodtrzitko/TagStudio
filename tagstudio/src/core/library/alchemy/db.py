@@ -1,5 +1,4 @@
-from pathlib import Path
-from typing import Any
+from pathlib import Path, PurePath
 
 import structlog
 from sqlalchemy import Dialect, Engine, String, TypeDecorator, create_engine, text
@@ -12,12 +11,12 @@ class PathType(TypeDecorator):
     impl = String
     cache_ok = True
 
-    def process_bind_param(self, value: Any, dialect: Dialect):
+    def process_bind_param(self, value: Path, dialect: Dialect):
         if value is not None:
-            return str(value)
+            return Path(value).as_posix()
         return None
 
-    def process_result_value(self, value: Any, dialect: Dialect):
+    def process_result_value(self, value: str, dialect: Dialect):
         if value is not None:
             return Path(value)
         return None

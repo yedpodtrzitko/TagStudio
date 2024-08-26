@@ -1,10 +1,10 @@
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Any, Optional
 
 from sqlalchemy import JSON, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .db import Base
+from .db import Base, PathType
 from .enums import TagColor
 from .fields import (
     DatetimeField,
@@ -105,7 +105,7 @@ class Entry(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
-    path: Mapped[Path] = mapped_column(unique=True)
+    path: Mapped[Path] = mapped_column(PathType, unique=True)
 
     text_fields: Mapped[list[TextField]] = relationship(
         back_populates="entry",

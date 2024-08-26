@@ -298,10 +298,9 @@ class Library:
 
     def add_entries(self, items: list[Entry]) -> list[int]:
         """Add multiple Entry records to the Library."""
-        if not items:
-            return []
+        assert items
 
-        with Session(self.engine) as session, session.begin():
+        with Session(self.engine) as session:
             # add all items
             session.add_all(items)
             session.flush()
@@ -614,7 +613,11 @@ class Library:
                 return None
 
     def add_field_tag(
-        self, entry: Entry, tag: Tag, field_type: TagBoxTypes, add_field: bool = False
+        self,
+        entry: Entry,
+        tag: Tag,
+        field_type: TagBoxTypes = TagBoxTypes.tag_box,
+        create_field: bool = False,
     ) -> bool:
         with Session(self.engine) as session:
             # find field matching entry and field_type
@@ -627,7 +630,7 @@ class Library:
                 )
             ).first()
 
-            if not field and not add_field:
+            if not field and not create_field:
                 logger.error("no field found", entry=entry, field_type=field_type)
                 return False
 
