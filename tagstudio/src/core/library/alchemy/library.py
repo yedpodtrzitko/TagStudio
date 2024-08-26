@@ -367,8 +367,8 @@ class Library:
                     .join(TagBoxField.tags)
                     .where(
                         or_(
-                            Tag.name == search.name,
-                            Tag.shorthand == search.name,
+                            Tag.name.ilike(search.name),
+                            Tag.shorthand.ilike(search.name),
                         )
                     )
                 )
@@ -435,8 +435,8 @@ class Library:
             if search.name:
                 query = query.where(
                     or_(
-                        Tag.name == search.name,
-                        Tag.shorthand == search.name,
+                        Tag.name.ilike(search.name),
+                        Tag.shorthand.ilike(search.name),
                         # Tag.id == search.query,
                     )
                 )

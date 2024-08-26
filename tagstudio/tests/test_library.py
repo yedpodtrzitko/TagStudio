@@ -88,7 +88,11 @@ def test_tag_search(library):
     tag = library.tags[0]
 
     assert library.search_tags(
-        FilterState(name=tag.name),
+        FilterState(name=tag.name.lower()),
+    )
+
+    assert library.search_tags(
+        FilterState(name=tag.name.upper()),
     )
 
     assert not library.search_tags(
@@ -211,6 +215,26 @@ def test_search_filter_extensions(library, is_exclude):
 
     entry = items[0]
     assert (entry.path.suffix == ".txt") == is_exclude
+
+
+def test_search_library_case_insensitive(library):
+    # Given
+    entries = library.entries
+    assert len(entries) == 2, entries
+
+    entry = entries[0]
+    tag = list(entry.tags)[0]
+
+    # When
+    query_count, items = library.search_library(
+        FilterState(name=tag.name.upper()),
+    )
+
+    # Then
+    assert query_count == 1
+    assert len(items) == 1
+
+    assert items[0].id == entry.id
 
 
 def test_preferences(library):
