@@ -27,7 +27,10 @@ def test_update_widgets_single_selected(qt_driver, library):
 
 def test_update_widgets_multiple_selected(qt_driver, library):
     # entry with no tag fields
-    entry = generate_entry(fields=[TextField(type_key=_FieldID.TITLE.name)])
+    entry = generate_entry(
+        folder=library.folder,
+        fields=[TextField(type_key=_FieldID.TITLE.name)],
+    )
 
     assert not entry.tag_box_fields
 
