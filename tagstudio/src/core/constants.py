@@ -9,6 +9,8 @@ BACKUP_FOLDER_NAME: str = "backups"
 COLLAGE_FOLDER_NAME: str = "collages"
 LIBRARY_FILENAME: str = "ts_library.json"
 
+TS_FOLDER_NOINDEX: str = ".ts_noindex"
+
 # TODO: Turn this whitelist into a user-configurable blacklist.
 IMAGE_TYPES: list[str] = [
     ".png",
