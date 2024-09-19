@@ -15,7 +15,6 @@ from sqlalchemy import (
     and_,
     create_engine,
     delete,
-    exists,
     func,
     or_,
     select,
@@ -372,10 +371,11 @@ class Library:
             session.query(Entry).where(Entry.id.in_(entry_ids)).delete()
             session.commit()
 
-    def has_path_entry(self, path: Path) -> bool:
+    def has_path_entry(self, path: Path) -> Entry | None:
         """Check if item with given path is in library already."""
         with Session(self.engine) as session:
-            return session.query(exists().where(Entry.path == path)).scalar()
+            # select id from Entry with matching path
+            return session.scalar(select(Entry).where(Entry.path == path))
 
     def search_library(
         self,

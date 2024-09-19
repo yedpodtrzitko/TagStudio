@@ -7,6 +7,7 @@ VERSION_BRANCH: str = ""  # Usually "" or "Pre-Release"
 TS_FOLDER_NAME: str = ".TagStudio"
 BACKUP_FOLDER_NAME: str = "backups"
 COLLAGE_FOLDER_NAME: str = "collages"
+TS_FOLDER_NOINDEX: str = ".ts_noindex"
 
 # TODO: Turn this whitelist into a user-configurable blacklist.
 IMAGE_TYPES: list[str] = [
