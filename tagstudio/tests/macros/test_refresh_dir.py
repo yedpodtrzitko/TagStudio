@@ -14,7 +14,7 @@ CWD = pathlib.Path(__file__).parent
 def test_refresh_new_files(library, exclude_mode):
     # Given
     library.set_prefs(LibraryPrefs.IS_EXCLUDE_LIST, exclude_mode)
-    library.set_prefs(LibraryPrefs.EXTENSION_LIST, [".md"])
+    library.set_prefs(LibraryPrefs.EXTENSION_LIST, ["md"])
     registry = RefreshDirTracker(library=library)
     (library.library_dir / "FOO.MD").touch()
 

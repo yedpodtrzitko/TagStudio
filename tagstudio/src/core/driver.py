@@ -36,5 +36,5 @@ class DriverMixin:
 
         return LibraryStatus(
             success=True,
-            library_path=library_path,
+            storage_path=library_path,
         )

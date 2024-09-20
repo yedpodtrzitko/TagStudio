@@ -6,7 +6,6 @@ from datetime import UTC, datetime
 from os import makedirs
 from pathlib import Path
 from typing import Any, Iterator, Type
-from uuid import uuid4
 
 import structlog
 from sqlalchemy import (
@@ -33,7 +32,6 @@ from ...constants import (
     TAG_ARCHIVED,
     TAG_FAVORITE,
     TS_FOLDER_NAME,
-    TS_FOLDER_NOINDEX,
     LibraryPrefs,
 )
 from .db import make_tables
@@ -118,7 +116,7 @@ class LibraryStatus:
     """Keep status of library opening operation."""
 
     success: bool
-    library_path: Path | None = None
+    storage_path: Path | None = None
     message: str | None = None
 
 
@@ -139,19 +137,20 @@ class Library:
         self.storage_path = None
         self.folder = None
 
-    def open_library(self, library_dir: Path, storage_path: str | None = None) -> LibraryStatus:
+    def open_library(self, storage_path: Path, library_name: str | None = None) -> LibraryStatus:
         if storage_path == ":memory:":
             self.storage_path = storage_path
         else:
-            self.verify_ts_folders(library_dir)
-            self.storage_path = library_dir / TS_FOLDER_NAME / self.FILENAME
+            self.storage_path = storage_path / self.FILENAME
 
         connection_string = URL.create(
             drivername="sqlite",
             database=str(self.storage_path),
         )
 
-        logger.info("opening library", library_dir=library_dir, connection_string=connection_string)
+        logger.info(
+            "opening library", storage_path=storage_path, connection_string=connection_string
+        )
         self.engine = create_engine(connection_string)
         with Session(self.engine) as session:
             make_tables(self.engine)
@@ -207,6 +206,7 @@ class Library:
                     ),
                 )
 
+            """
             # check if folder matching current path exists already
             self.folder = session.scalar(select(Folder).where(Folder.path == library_dir))
             if not self.folder:
@@ -219,10 +219,11 @@ class Library:
 
                 session.commit()
                 self.folder = folder
+            """
 
         # everything is fine, set the library path
-        self.library_dir = library_dir
-        return LibraryStatus(success=True, library_path=library_dir)
+        self.storage_path = storage_path
+        return LibraryStatus(success=True, storage_path=storage_path)
 
     @property
     def default_fields(self) -> list[BaseField]:
@@ -332,21 +333,6 @@ class Library:
                 session.expunge(tag)
 
         return list(tags_list)
-
-    def verify_ts_folders(self, library_dir: Path) -> None:
-        """Verify/create folders required by TagStudio."""
-        if library_dir is None:
-            raise ValueError("No path set.")
-
-        if not library_dir.exists():
-            raise ValueError("Invalid library directory.")
-
-        full_ts_path = library_dir / TS_FOLDER_NAME
-        if not full_ts_path.exists():
-            logger.info("creating library directory", dir=full_ts_path)
-            full_ts_path.mkdir(parents=True, exist_ok=True)
-            # create noindex file to ignore the folder
-            (full_ts_path / TS_FOLDER_NOINDEX).touch()
 
     def add_entries(self, items: list[Entry]) -> list[int]:
         """Add multiple Entry records to the Library."""

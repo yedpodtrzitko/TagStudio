@@ -132,3 +132,4 @@ class LibraryPrefs(Enum):
     PAGE_SIZE: int = 500
     # increase in case of db breaking change (for now)
     DB_VERSION: int = 2
+    LIBRARY_NAME: str = "TS Library"

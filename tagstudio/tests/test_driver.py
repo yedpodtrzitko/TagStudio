@@ -48,7 +48,7 @@ def test_evaluate_path_last_lib_not_exists():
     result = driver.evaluate_path(None)
 
     # Then
-    assert result == LibraryStatus(success=True, library_path=None, message=None)
+    assert result == LibraryStatus(success=True, storage_path=None, message=None)
 
 
 def test_evaluate_path_last_lib_present():
@@ -63,4 +63,4 @@ def test_evaluate_path_last_lib_present():
         result = driver.evaluate_path(None)
 
         # Then
-        assert result == LibraryStatus(success=True, library_path=Path(tmpdir))
+        assert result == LibraryStatus(success=True, storage_path=Path(tmpdir))

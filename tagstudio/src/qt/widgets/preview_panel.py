@@ -192,12 +192,20 @@ class PreviewPanel(QWidget):
         self.libs_layout = QVBoxLayout()
         self.fill_libs_widget(self.libs_layout)
 
+        self.lib_dirs_container: QWidget = QWidget()
+        self.lib_dirs_container.setObjectName("libraryDirs")
+        self.lib_dirs_container.setLayout(self.libs_layout)
+        self.lib_dirs_container.setSizePolicy(
+            QSizePolicy.Policy.Preferred,
+            QSizePolicy.Policy.Maximum,
+        )
+
         self.libs_flow_container: QWidget = QWidget()
         self.libs_flow_container.setObjectName("librariesList")
         self.libs_flow_container.setLayout(self.libs_layout)
         self.libs_flow_container.setSizePolicy(
-            QSizePolicy.Preferred,  # type: ignore
-            QSizePolicy.Maximum,  # type: ignore
+            QSizePolicy.Policy.Preferred,
+            QSizePolicy.Policy.Maximum,
         )
 
         # set initial visibility based on settings

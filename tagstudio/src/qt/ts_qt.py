@@ -59,6 +59,7 @@ from PySide6.QtWidgets import (
 from src.core.constants import (
     TAG_ARCHIVED,
     TAG_FAVORITE,
+    TS_FOLDER_NOINDEX,
     VERSION,
     VERSION_BRANCH,
     LibraryPrefs,
@@ -85,9 +86,11 @@ from src.qt.modals.file_extension import FileExtensionModal
 from src.qt.modals.fix_dupes import FixDupeFilesModal
 from src.qt.modals.fix_unlinked import FixUnlinkedEntriesModal
 from src.qt.modals.folders_to_tags import FoldersToTagsModal
+from src.qt.modals.library_name import LibraryNameDialog
 from src.qt.modals.tag_database import TagDatabasePanel
 from src.qt.resource_manager import ResourceManager
 from src.qt.widgets.item_thumb import BadgeType, ItemThumb
+from src.qt.widgets.landing import KBShortcut, get_kb_shortcut
 from src.qt.widgets.panel import PanelModal
 from src.qt.widgets.preview_panel import PreviewPanel
 from src.qt.widgets.progress import ProgressWidget
@@ -185,14 +188,23 @@ class QtDriver(DriverMixin, QObject):
                 self.thumb_threads.append(thread)
                 thread.start()
 
+    def create_library_from_dialog(self):
+        newlib_window = LibraryNameDialog()
+        if newlib_window.exec():
+            storage_dir = newlib_window.get_storage_path()
+            self.create_library(storage_dir, newlib_window.get_library_name())
+
     def open_library_from_dialog(self):
+        user_home = str(Path.home())
+
         dir = QFileDialog.getExistingDirectory(
             None,
-            "Open/Create Library",
-            "/",
+            "Open Library",
+            user_home,
             QFileDialog.Option.ShowDirsOnly,
         )
-        if dir not in (None, ""):
+
+        if dir:
             self.open_library(Path(dir))
 
     def signal_handler(self, sig, frame):
@@ -275,15 +287,26 @@ class QtDriver(DriverMixin, QObject):
         # file_menu.addAction(QAction('&New Library', menu_bar))
         # file_menu.addAction(QAction('&Open Library', menu_bar))
 
-        open_library_action = QAction("&Open/Create Library", menu_bar)
-        open_library_action.triggered.connect(lambda: self.open_library_from_dialog())
+        create_library_action = QAction("&New Library", menu_bar)
+        create_library_action.triggered.connect(self.create_library_from_dialog)
+        create_library_action.setShortcut(
+            QtCore.QKeyCombination(
+                QtCore.Qt.KeyboardModifier(QtCore.Qt.KeyboardModifier.ControlModifier),
+                QtCore.Qt.Key.Key_N,
+            )
+        )
+        create_library_action.setToolTip(get_kb_shortcut(KBShortcut.CREATE_LIB))
+        file_menu.addAction(create_library_action)
+
+        open_library_action = QAction("&Open Library", menu_bar)
+        open_library_action.triggered.connect(self.open_library_from_dialog)
         open_library_action.setShortcut(
             QtCore.QKeyCombination(
                 QtCore.Qt.KeyboardModifier(QtCore.Qt.KeyboardModifier.ControlModifier),
                 QtCore.Qt.Key.Key_O,
             )
         )
-        open_library_action.setToolTip("Ctrl+O")
+        open_library_action.setToolTip(get_kb_shortcut(KBShortcut.OPEN_LIB))
         file_menu.addAction(open_library_action)
 
         save_library_backup_action = QAction("&Save Library Backup", menu_bar)
@@ -409,6 +432,19 @@ class QtDriver(DriverMixin, QObject):
         )
         macros_menu.addAction(self.autofill_action)
 
+        show_folders = QAction("Show Library Dirs", menu_bar)
+        show_folders.setCheckable(True)
+        show_folders.setChecked(
+            bool(self.settings.value(SettingItems.WINDOW_SHOW_DIRS, defaultValue=True, type=bool))
+        )
+        show_folders.triggered.connect(
+            lambda checked: (
+                self.settings.setValue(SettingItems.WINDOW_SHOW_DIRS, checked),
+                self.toggle_lib_dirs(checked),
+            )
+        )
+        window_menu.addAction(show_folders)
+
         show_libs_list_action = QAction("Show Recent Libraries", menu_bar)
         show_libs_list_action.setCheckable(True)
         show_libs_list_action.setChecked(
@@ -462,13 +498,13 @@ class QtDriver(DriverMixin, QObject):
 
         path_result = self.evaluate_path(self.args.open)
         # check status of library path evaluating
-        if path_result.success and path_result.library_path:
+        if path_result.success and path_result.storage_path:
             self.splash.showMessage(
-                f'Opening Library "{path_result.library_path}"...',
+                f'Opening Library "{path_result.storage_path}"...',
                 int(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignHCenter),
                 QColor("#9782ff"),
             )
-            self.open_library(path_result.library_path)
+            self.open_library(path_result.storage_path)
 
         app.exec()
         self.shutdown()
@@ -526,6 +562,13 @@ class QtDriver(DriverMixin, QObject):
 
         self.splash.finish(self.main_window)
         self.preview_panel.update_widgets()
+
+    def toggle_lib_dirs(self, value: bool):
+        if value:
+            self.preview_panel.lib_dirs_container.show()
+        else:
+            self.preview_panel.lib_dirs_container.hide()
+        self.preview_panel.update()
 
     def toggle_libs_list(self, value: bool):
         if value:
@@ -1064,14 +1107,29 @@ class QtDriver(DriverMixin, QObject):
         self.settings.endGroup()
         self.settings.sync()
 
-    def open_library(self, path: Path) -> LibraryStatus:
+    def create_library(self, storage_dir: Path, library_name: str) -> LibraryStatus:
+        """Verify/create folders required by TagStudio."""
+        if storage_dir is None:
+            raise ValueError("No path set.")
+
+        if not storage_dir.exists():
+            storage_dir.mkdir()
+            (storage_dir / TS_FOLDER_NOINDEX).touch()
+
+        lib_status = self.open_library(storage_dir)
+        if lib_status.success:
+            self.lib.set_prefs(LibraryPrefs.LIBRARY_NAME, library_name)
+
+        return lib_status
+
+    def open_library(self, storage_path: Path) -> LibraryStatus:
         """Open a TagStudio library."""
-        open_message: str = f'Opening Library "{str(path)}"...'
+        open_message: str = f'Opening Library "{str(storage_path)}"...'
         self.main_window.landing_widget.set_status_label(open_message)
         self.main_window.statusbar.showMessage(open_message, 3)
         self.main_window.repaint()
 
-        open_status = self.lib.open_library(path)
+        open_status = self.lib.open_library(storage_path)
         if not open_status.success:
             self.show_error_message(open_status.message or "Error opening library.")
             return open_status
@@ -1080,15 +1138,15 @@ class QtDriver(DriverMixin, QObject):
 
         self.filter.page_size = self.lib.prefs(LibraryPrefs.PAGE_SIZE)
 
-        # TODO - make this call optional
-        self.add_new_files_callback()
-
-        self.update_libs_list(path)
-        title_text = f"{self.base_title} - Library '{self.lib.library_dir}'"
+        self.update_libs_list(storage_path)
+        title_text = f"{self.base_title} - Library '{self.lib.prefs(LibraryPrefs.LIBRARY_NAME)}'"
         self.main_window.setWindowTitle(title_text)
 
         self.selected.clear()
         self.preview_panel.update_widgets()
+
+        # TODO - make this call optional
+        # self.add_new_files_callback()
 
         # page (re)rendering, extract eventually
         self.filter_items()

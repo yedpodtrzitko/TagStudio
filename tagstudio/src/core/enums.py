@@ -8,6 +8,7 @@ class SettingItems(str, enum.Enum):
     LAST_LIBRARY = "last_library"
     LIBS_LIST = "libs_list"
     WINDOW_SHOW_LIBS = "window_show_libs"
+    WINDOW_SHOW_DIRS = "window_show_dirs"
     AUTOPLAY = "autoplay_videos"
 
 
