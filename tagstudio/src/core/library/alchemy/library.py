@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from os import makedirs
 from pathlib import Path
 from typing import Any, Iterator, Type
+from uuid import uuid4
 
 import structlog
 from sqlalchemy import (
@@ -123,19 +124,15 @@ class LibraryStatus:
 class Library:
     """Class for the Library object, and all CRUD operations made upon it."""
 
-    library_dir: Path | None = None
-    storage_path: Path | str | None
+    storage_path: Path | str | None = None
     engine: Engine | None
-    folder: Folder | None
 
     FILENAME: str = "ts_library.sqlite"
 
     def close(self):
         if self.engine:
             self.engine.dispose()
-        self.library_dir = None
         self.storage_path = None
-        self.folder = None
 
     def open_library(self, storage_path: Path, library_name: str | None = None) -> LibraryStatus:
         if storage_path == ":memory:":
@@ -289,6 +286,24 @@ class Library:
             make_transient(entry)
             return entry
 
+    def add_folder(self, path: Path) -> Folder:
+        with Session(self.engine) as session:
+            folder = Folder(path=path, uuid=str(uuid4()))
+            session.add(folder)
+
+            # TODO - try-except this
+            session.commit()
+
+            session.expunge(folder)
+            return folder
+
+    def get_folders(self) -> list[Folder]:
+        with Session(self.engine) as session:
+            folders = list(session.scalars(select(Folder)))
+            session.expunge_all()
+
+            return folders
+
     @property
     def entries_count(self) -> int:
         with Session(self.engine) as session:
@@ -304,6 +319,7 @@ class Library:
                     stmt.outerjoin(Entry.text_fields)
                     .outerjoin(Entry.datetime_fields)
                     .outerjoin(Entry.tag_box_fields)
+                    .outerjoin(Entry.folder)
                 )
                 stmt = stmt.options(
                     contains_eager(Entry.text_fields),
@@ -420,6 +436,7 @@ class Library:
                     statement = statement.where(Entry.suffix.in_(extensions))
 
             statement = statement.options(
+                selectinload(Entry.folder),
                 selectinload(Entry.text_fields),
                 selectinload(Entry.datetime_fields),
                 selectinload(Entry.tag_box_fields)

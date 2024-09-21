@@ -36,7 +36,7 @@ class CollageIconRenderer(QObject):
         keep_aspect,
     ):
         entry = self.lib.get_entry(entry_id)
-        filepath = self.lib.library_dir / entry.path
+        filepath = entry.absolute_path
         color: str = ""
 
         try:
@@ -76,7 +76,7 @@ class CollageIconRenderer(QObject):
 
                 if filepath.suffix.lower() in IMAGE_TYPES:
                     try:
-                        with Image.open(str(self.lib.library_dir / entry.path)) as pic:
+                        with Image.open(str(entry.absolute_path)) as pic:
                             if keep_aspect:
                                 pic.thumbnail(size)
                             else:

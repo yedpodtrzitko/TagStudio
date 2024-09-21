@@ -97,7 +97,7 @@ class TagStudioCore:
         """Match defined conditions against a file to add Entry data."""
         # TODO - what even is this file format?
         # TODO: Make this stored somewhere better instead of temporarily in this JSON file.
-        cond_file = lib.library_dir / TS_FOLDER_NAME / "conditions.json"
+        cond_file = lib.storage_path / TS_FOLDER_NAME / "conditions.json"
         if not cond_file.is_file():
             return False
 

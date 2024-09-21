@@ -19,7 +19,7 @@ def test_refresh_new_files(library, exclude_mode):
     (library.library_dir / "FOO.MD").touch()
 
     # When
-    list(registry.refresh_dir(library.library_dir))
+    list(registry.refresh_dirs(library.library_dir))
 
     # Then
     assert registry.files_not_in_library == [pathlib.Path("FOO.MD")]
@@ -50,7 +50,7 @@ def test_refresh_removes_noindex_content(library):
     (library.library_dir / "root.txt").touch()
 
     # When
-    list(registry.refresh_dir(library.library_dir))
+    list(registry.refresh_dirs(library.library_dir))
 
     # Then
     # file in noindex folder should be removed

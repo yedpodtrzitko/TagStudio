@@ -44,6 +44,7 @@ from src.qt.helpers.file_opener import FileOpenerHelper, FileOpenerLabel, open_f
 from src.qt.helpers.qbutton_wrapper import QPushButtonWrapper
 from src.qt.modals.add_field import AddFieldModal
 from src.qt.widgets.fields import FieldContainer
+from src.qt.widgets.library_dirs import LibraryDirsWidget
 from src.qt.widgets.panel import PanelModal
 from src.qt.widgets.tag_box import TagBoxWidget
 from src.qt.widgets.text import TextWidget
@@ -187,18 +188,12 @@ class PreviewPanel(QWidget):
         info_layout.addWidget(self.dimensions_label)
         info_layout.addWidget(scroll_area)
 
+        self.lib_dirs_container = LibraryDirsWidget(library, driver)
+
         # keep list of rendered libraries to avoid needless re-rendering
         self.render_libs: set = set()
         self.libs_layout = QVBoxLayout()
         self.fill_libs_widget(self.libs_layout)
-
-        self.lib_dirs_container: QWidget = QWidget()
-        self.lib_dirs_container.setObjectName("libraryDirs")
-        self.lib_dirs_container.setLayout(self.libs_layout)
-        self.lib_dirs_container.setSizePolicy(
-            QSizePolicy.Policy.Preferred,
-            QSizePolicy.Policy.Maximum,
-        )
 
         self.libs_flow_container: QWidget = QWidget()
         self.libs_flow_container.setObjectName("librariesList")
@@ -210,7 +205,7 @@ class PreviewPanel(QWidget):
 
         # set initial visibility based on settings
         if not self.driver.settings.value(
-            SettingItems.WINDOW_SHOW_LIBS, defaultValue=True, type=bool
+            SettingItems.WINDOW_SHOW_LIBS, defaultValue=False, type=bool
         ):
             self.libs_flow_container.hide()
 
@@ -228,6 +223,7 @@ class PreviewPanel(QWidget):
 
         splitter.addWidget(self.image_container)
         splitter.addWidget(info_section)
+        splitter.addWidget(self.lib_dirs_container)
         splitter.addWidget(self.libs_flow_container)
         splitter.setStretchFactor(1, 2)
 
@@ -448,6 +444,8 @@ class PreviewPanel(QWidget):
         # update list of libraries
         self.fill_libs_widget(self.libs_layout)
 
+        self.lib_dirs_container.refresh()
+
         if not self.driver.selected:
             if self.selected or not self.initialized:
                 self.file_label.setText("No Items Selected")
@@ -508,7 +506,7 @@ class PreviewPanel(QWidget):
 
             # If a new selection is made, update the thumbnail and filepath.
             if not self.selected or self.selected != self.driver.selected:
-                filepath = self.lib.library_dir / item.path
+                filepath = item.absolute_path
                 self.file_label.set_file_path(filepath)
                 ratio = self.devicePixelRatio()
                 self.thumb_renderer.render(

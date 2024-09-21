@@ -384,8 +384,7 @@ class ItemThumb(FlowWidget):
         self.assign_badge(BadgeType.FAVORITE, entry.is_favorited)
 
     def set_item_id(self, entry: Entry):
-        filepath = self.lib.library_dir / entry.path
-        self.opener.set_filepath(filepath)
+        self.opener.set_filepath(entry.absolute_path)
         self.item_id = entry.id
 
     def assign_badge(self, badge_type: BadgeType, value: bool) -> None:

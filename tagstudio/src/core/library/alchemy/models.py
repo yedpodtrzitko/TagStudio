@@ -136,6 +136,10 @@ class Entry(Base):
     )
 
     @property
+    def absolute_path(self) -> Path:
+        return self.folder.path / self.path
+
+    @property
     def fields(self) -> list[BaseField]:
         fields: list[BaseField] = []
         fields.extend(self.tag_box_fields)

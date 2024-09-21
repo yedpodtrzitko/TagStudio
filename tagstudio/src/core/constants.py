@@ -1,6 +1,6 @@
 from enum import Enum
 
-VERSION: str = "9.3.2"  # Major.Minor.Patch
+VERSION: str = "9.5.0"  # Major.Minor.Patch
 VERSION_BRANCH: str = ""  # Usually "" or "Pre-Release"
 
 # The folder & file names where TagStudio keeps its data relative to a library.

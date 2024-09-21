@@ -74,6 +74,7 @@ from src.core.library.alchemy.enums import (
 )
 from src.core.library.alchemy.fields import _FieldID
 from src.core.library.alchemy.library import LibraryStatus
+from src.core.library.alchemy.models import Folder
 from src.core.ts_core import TagStudioCore
 from src.core.utils.refresh_dir import RefreshDirTracker
 from src.core.utils.web import strip_web_protocol
@@ -448,7 +449,7 @@ class QtDriver(DriverMixin, QObject):
         show_libs_list_action = QAction("Show Recent Libraries", menu_bar)
         show_libs_list_action.setCheckable(True)
         show_libs_list_action.setChecked(
-            bool(self.settings.value(SettingItems.WINDOW_SHOW_LIBS, defaultValue=True, type=bool))
+            bool(self.settings.value(SettingItems.WINDOW_SHOW_LIBS, defaultValue=False, type=bool))
         )
         show_libs_list_action.triggered.connect(
             lambda checked: (
@@ -579,7 +580,7 @@ class QtDriver(DriverMixin, QObject):
 
     def callback_library_needed_check(self, func):
         """Check if loaded library has valid path before executing the button function."""
-        if self.lib.library_dir:
+        if self.lib.storage_path:
             func()
 
     def handle_sigterm(self):
@@ -600,7 +601,7 @@ class QtDriver(DriverMixin, QObject):
         QApplication.quit()
 
     def close_library(self, is_shutdown: bool = False):
-        if not self.lib.library_dir:
+        if not self.lib.storage_path:
             logger.info("No Library to Close")
             return
 
@@ -608,7 +609,7 @@ class QtDriver(DriverMixin, QObject):
         self.main_window.statusbar.showMessage("Closing Library...")
         start_time = time.time()
 
-        self.settings.setValue(SettingItems.LAST_LIBRARY, str(self.lib.library_dir))
+        self.settings.setValue(SettingItems.LAST_LIBRARY, str(self.lib.storage_path))
         self.settings.sync()
 
         self.lib.close()
@@ -695,7 +696,7 @@ class QtDriver(DriverMixin, QObject):
         self.modal.saved.connect(lambda: (panel.save(), self.filter_items()))
         self.modal.show()
 
-    def add_new_files_callback(self):
+    def add_new_files_callback(self, folders: list[Folder] | None = None):
         """Run when user initiates adding new files to the Library."""
         tracker = RefreshDirTracker(self.lib)
 
@@ -708,7 +709,10 @@ class QtDriver(DriverMixin, QObject):
         )
         pw.show()
 
-        iterator = FunctionIterator(lambda: tracker.refresh_dir(self.lib.library_dir))
+        if not folders:
+            folders = self.lib.get_folders()
+
+        iterator = FunctionIterator(lambda: tracker.refresh_dirs(folders))
         iterator.value.connect(
             lambda x: (
                 pw.update_progress(x + 1),
@@ -807,7 +811,6 @@ class QtDriver(DriverMixin, QObject):
     def run_macro(self, name: MacroID, grid_idx: int):
         """Run a specific Macro on an Entry given a Macro name."""
         entry = self.frame_content[grid_idx]
-        ful_path = self.lib.library_dir / entry.path
         source = entry.path.parts[0]
 
         logger.info(
@@ -825,7 +828,7 @@ class QtDriver(DriverMixin, QObject):
                 self.run_macro(macro_id, entry.id)
 
         elif name == MacroID.SIDECAR:
-            parsed_items = TagStudioCore.get_gdl_sidecar(ful_path, source)
+            parsed_items = TagStudioCore.get_gdl_sidecar(entry.absolute_path, source)
             for field_id, value in parsed_items.items():
                 self.lib.add_entry_field_type(
                     entry.id,
@@ -974,7 +977,6 @@ class QtDriver(DriverMixin, QObject):
                 item_thumb.hide()
                 continue
 
-            filepath = self.lib.library_dir / entry.path
             item_thumb = self.item_thumbs[idx]
             item_thumb.set_mode(ItemType.ENTRY)
             item_thumb.set_item_id(entry)
@@ -1014,7 +1016,7 @@ class QtDriver(DriverMixin, QObject):
             self.thumb_job_queue.put(
                 (
                     item_thumb.renderer.render,
-                    (time.time(), filepath, base_size, ratio, False, True),
+                    (time.time(), entry.absolute_path, base_size, ratio, False, True),
                 )
             )
 

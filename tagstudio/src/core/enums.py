@@ -1,7 +1,7 @@
 import enum
 
 
-class SettingItems(str, enum.Enum):
+class SettingItems(enum.StrEnum):
     """List of setting item names."""
 
     START_LOAD_LAST = "start_load_last"
@@ -18,12 +18,6 @@ class Theme(str, enum.Enum):
     COLOR_PRESSED = "#65EEEEEE"
     COLOR_DISABLED = "#65F39CAA"
     COLOR_DISABLED_BG = "#65440D12"
-
-
-class OpenStatus(enum.IntEnum):
-    NOT_FOUND = 0
-    SUCCESS = 1
-    CORRUPTED = 2
 
 
 class MacroID(enum.Enum):
