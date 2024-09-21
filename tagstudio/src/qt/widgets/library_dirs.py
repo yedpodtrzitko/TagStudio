@@ -100,7 +100,8 @@ class LibraryDirsWidget(QWidget):
 
     def create_item(self, item: Folder):
         def toggle_folder():
-            self.driver.filter.exclude_folders ^= item.id
+            self.driver.filter.exclude_folders ^= {item.id}
+            self.driver.filter_items()
 
         button_toggle = QCheckBox()
         button_toggle.setCursor(Qt.CursorShape.PointingHandCursor)

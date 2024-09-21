@@ -435,6 +435,9 @@ class Library:
                 elif extensions:
                     statement = statement.where(Entry.suffix.in_(extensions))
 
+                if search.exclude_folders:
+                    statement = statement.where(Entry.folder_id.notin_(search.exclude_folders))
+
             statement = statement.options(
                 selectinload(Entry.folder),
                 selectinload(Entry.text_fields),
