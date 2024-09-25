@@ -50,10 +50,11 @@ class SearchMode(enum.IntEnum):
     OR = 1
 
 
-class ItemType(enum.Enum):
-    ENTRY = 0
-    COLLATION = 1
-    TAG_GROUP = 2
+class ItemType(enum.IntEnum):
+    NONE = 0
+    ENTRY = 1
+    COLLATION = 2
+    TAG_GROUP = 3
 
 
 @dataclass

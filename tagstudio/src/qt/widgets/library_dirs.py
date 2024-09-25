@@ -75,7 +75,11 @@ class LibraryDirsWidget(QWidget):
         self.layout().addWidget(button)
 
     def add_folder(self):
-        # open QT dialog to select a folder
+        """Open QT dialog to select a folder to add into library."""
+        if not self.library.storage_path:
+            # no library open, dont do anything
+            return
+
         directory = QFileDialog.getExistingDirectory(self, "Select Directory")
         if directory:
             folder = self.library.add_folder(Path(directory))

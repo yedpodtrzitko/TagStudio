@@ -78,6 +78,7 @@ from src.core.library.alchemy.models import Folder
 from src.core.ts_core import TagStudioCore
 from src.core.utils.refresh_dir import RefreshDirTracker
 from src.core.utils.web import strip_web_protocol
+from src.qt.enums import WindowContent
 from src.qt.flowlayout import FlowLayout
 from src.qt.helpers.custom_runnable import CustomRunnable
 from src.qt.helpers.function_iterator import FunctionIterator
@@ -557,7 +558,7 @@ class QtDriver(DriverMixin, QObject):
         # or implementing some clever loading tricks.
         self.main_window.show()
         self.main_window.activateWindow()
-        self.main_window.toggle_landing_page(enabled=True)
+        self.main_window.set_main_content(WindowContent.LANDING_PAGE)
 
         self.main_window.pagination.index.connect(lambda i: self.page_move(page_id=i))
 
@@ -622,10 +623,11 @@ class QtDriver(DriverMixin, QObject):
 
         self.selected = []
         self.frame_content = []
-        [x.set_mode(None) for x in self.item_thumbs]
+        for thumb in self.item_thumbs:
+            thumb.set_mode(ItemType.NONE)
 
         self.preview_panel.update_widgets()
-        self.main_window.toggle_landing_page(enabled=True)
+        self.main_window.set_main_content(WindowContent.LANDING_PAGE)
 
         self.main_window.pagination.setHidden(True)
 
@@ -892,7 +894,7 @@ class QtDriver(DriverMixin, QObject):
         # TODO - init after library is loaded, it can have different page_size
         for grid_idx in range(self.filter.page_size):
             item_thumb = ItemThumb(
-                None, self.lib, self, (self.thumb_size, self.thumb_size), grid_idx
+                ItemType.NONE, self.lib, self, (self.thumb_size, self.thumb_size), grid_idx
             )
             layout.addWidget(item_thumb)
             self.item_thumbs.append(item_thumb)
@@ -1153,5 +1155,9 @@ class QtDriver(DriverMixin, QObject):
         # page (re)rendering, extract eventually
         self.filter_items()
 
-        self.main_window.toggle_landing_page(enabled=False)
+        if not self.lib.get_folders():
+            self.main_window.set_main_content(WindowContent.LIBRARY_EMPTY)
+        else:
+            self.main_window.set_main_content(WindowContent.LIBRARY_CONTENT)
+
         return open_status
