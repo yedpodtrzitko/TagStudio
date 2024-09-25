@@ -5,7 +5,7 @@ class SettingItems(enum.StrEnum):
     """List of setting item names."""
 
     START_LOAD_LAST = "start_load_last"
-    LAST_LIBRARY = "last_library"
+    LAST_LIBRARY = "last_storage"
     LIBS_LIST = "libs_list"
     WINDOW_SHOW_LIBS = "window_show_libs"
     WINDOW_SHOW_DIRS = "window_show_dirs"

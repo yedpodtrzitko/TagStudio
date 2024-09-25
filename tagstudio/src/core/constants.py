@@ -4,7 +4,6 @@ VERSION: str = "9.5.0"  # Major.Minor.Patch
 VERSION_BRANCH: str = ""  # Usually "" or "Pre-Release"
 
 # The folder & file names where TagStudio keeps its data relative to a library.
-TS_FOLDER_NAME: str = ".TagStudio"
 BACKUP_FOLDER_NAME: str = "backups"
 COLLAGE_FOLDER_NAME: str = "collages"
 TS_FOLDER_NOINDEX: str = ".ts_noindex"

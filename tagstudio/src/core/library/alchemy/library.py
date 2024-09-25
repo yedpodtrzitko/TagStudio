@@ -32,7 +32,6 @@ from ...constants import (
     BACKUP_FOLDER_NAME,
     TAG_ARCHIVED,
     TAG_FAVORITE,
-    TS_FOLDER_NAME,
     LibraryPrefs,
 )
 from .db import make_tables
@@ -801,15 +800,15 @@ class Library:
                 return False
 
     def save_library_backup_to_disk(self) -> Path:
-        assert isinstance(self.library_dir, Path)
-        makedirs(str(self.library_dir / TS_FOLDER_NAME / BACKUP_FOLDER_NAME), exist_ok=True)
+        assert isinstance(self.storage_path, Path)
+        makedirs(str(self.storage_path / BACKUP_FOLDER_NAME), exist_ok=True)
 
         filename = f'ts_library_backup_{datetime.now(UTC).strftime("%Y_%m_%d_%H%M%S")}.sqlite'
 
-        target_path = self.library_dir / TS_FOLDER_NAME / BACKUP_FOLDER_NAME / filename
+        target_path = self.storage_path / BACKUP_FOLDER_NAME / filename
 
         shutil.copy2(
-            self.library_dir / TS_FOLDER_NAME / self.FILENAME,
+            self.storage_path / self.FILENAME,
             target_path,
         )
 

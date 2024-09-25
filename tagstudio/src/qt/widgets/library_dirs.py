@@ -64,9 +64,9 @@ class LibraryDirsWidget(QWidget):
 
         row_layout = QHBoxLayout()
         row_layout.addWidget(label)
-        self.layout().addLayout(row_layout)
+        self.layout().addChildLayout(row_layout)
 
-        self.layout().addLayout(self.items_layout)
+        self.layout().addChildLayout(self.items_layout)
 
         # add a button which will open a library folder dialog
         button = QPushButton("Add Folder")
@@ -94,7 +94,7 @@ class LibraryDirsWidget(QWidget):
                 if child.widget() is not None:
                     child.widget().deleteLater()
                 elif child.layout() is not None:
-                    clear_layout(child.layout())
+                    clear_layout(child.layout())  # type: ignore
                     # remove any potential previous items
 
         clear_layout(self.items_layout)

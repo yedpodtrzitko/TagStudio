@@ -28,7 +28,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from src.core.constants import IMAGE_TYPES, RAW_IMAGE_TYPES, TS_FOLDER_NAME, VIDEO_TYPES
+from src.core.constants import IMAGE_TYPES, RAW_IMAGE_TYPES, VIDEO_TYPES
 from src.core.enums import SettingItems, Theme
 from src.core.library.alchemy.enums import FilterState
 from src.core.library.alchemy.fields import (
@@ -322,7 +322,7 @@ class PreviewPanel(QWidget):
             button.setObjectName(f"path{item_key}")
 
             lib = Path(full_val)
-            if not lib.exists() or not (lib / TS_FOLDER_NAME).exists():
+            if not lib.exists():
                 button.setDisabled(True)
                 button.setToolTip("Location is missing")
 

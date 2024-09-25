@@ -11,6 +11,12 @@ from PySide6.QtWidgets import (
 )
 
 
+class LABELS:
+    NO_FOLDER = "No folder selected."
+    CHOOSE_NAME = "Choose Library Name"
+    SELECT_FOLDER = "Select Metadata Folder"
+
+
 class LibraryNameDialog(QDialog):
     chosen_path: Path | None
 
@@ -21,23 +27,26 @@ class LibraryNameDialog(QDialog):
 
         self.chosen_path = None
 
-        self.setWindowTitle("Choose Library Name")
+        self.setWindowTitle(LABELS.CHOOSE_NAME)
 
         layout = QVBoxLayout()
 
-        label = QLabel("Choose Library Name")
+        label = QLabel(LABELS.CHOOSE_NAME)
         layout.addWidget(label)
 
         self.library_name_input = QLineEdit(self)
         self.library_name_input.textChanged.connect(self.update_storage_label)
         layout.addWidget(self.library_name_input)
 
-        self.directory_label = QLabel("No directory selected")
-        layout.addWidget(self.directory_label)
+        self.storage_explanation = QLabel("Select a folder where library metadata will be stored.")
+        layout.addWidget(self.storage_explanation)
 
-        choose_directory_button = QPushButton("Choose Library Storage", self)
+        choose_directory_button = QPushButton(LABELS.SELECT_FOLDER, self)
         choose_directory_button.clicked.connect(self.choose_directory)
         layout.addWidget(choose_directory_button)
+
+        self.directory_label = QLabel(LABELS.NO_FOLDER)
+        layout.addWidget(self.directory_label)
 
         cancel_button = QPushButton("Cancel", self)
         cancel_button.clicked.connect(self.reject)
@@ -61,13 +70,13 @@ class LibraryNameDialog(QDialog):
 
     def choose_directory(self):
         """Open a dialog to choose a directory and display the selected path."""
-        directory = QFileDialog.getExistingDirectory(self, "Select Directory")
+        directory = QFileDialog.getExistingDirectory(self, LABELS.SELECT_FOLDER)
         if directory:
             self.chosen_path = Path(directory)
             self.update_storage_label()
 
     def update_storage_label(self):
         if self.chosen_path:
-            self.directory_label.setText(f"Selected Directory: {self.get_storage_path()}")
+            self.directory_label.setText(f"Metadata Storage Folder: {self.get_storage_path()}")
         else:
-            self.directory_label.setText("No directory selected")
+            self.directory_label.setText(LABELS.NO_FOLDER)
