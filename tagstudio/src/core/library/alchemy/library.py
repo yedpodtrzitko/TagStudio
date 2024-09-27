@@ -110,13 +110,16 @@ class SearchResult:
         """Allow to access items via index directly on the wrapper."""
         return self.items[index]
 
+    def __iter__(self):
+        return iter(self.items)
+
 
 @dataclass
 class LibraryStatus:
     """Keep status of library opening operation."""
 
     success: bool
-    storage_path: Path | None = None
+    storage_path: Path | str | None = None
     message: str | None = None
 
 
@@ -133,11 +136,13 @@ class Library:
             self.engine.dispose()
         self.storage_path = None
 
-    def open_library(self, storage_path: Path, library_name: str | None = None) -> LibraryStatus:
+    def open_library(
+        self, storage_path: Path | str, library_name: str | None = None
+    ) -> LibraryStatus:
+        if isinstance(storage_path, Path):
+            self.storage_path = storage_path / self.FILENAME
         if storage_path == ":memory:":
             self.storage_path = storage_path
-        else:
-            self.storage_path = storage_path / self.FILENAME
 
         connection_string = URL.create(
             drivername="sqlite",
@@ -285,7 +290,11 @@ class Library:
             make_transient(entry)
             return entry
 
-    def add_folder(self, path: Path) -> Folder:
+    def add_folder(self, path: Path | str) -> Folder:
+        assert path
+        if isinstance(path, str):
+            path = Path(path)
+
         with Session(self.engine) as session:
             folder = Folder(path=path, uuid=str(uuid4()))
             session.add(folder)
@@ -365,6 +374,7 @@ class Library:
                 return []
 
             new_ids = [item.id for item in items]
+
             session.expunge_all()
 
         return new_ids
@@ -434,8 +444,8 @@ class Library:
                 elif extensions:
                     statement = statement.where(Entry.suffix.in_(extensions))
 
-                if search.exclude_folders:
-                    statement = statement.where(Entry.folder_id.notin_(search.exclude_folders))
+                if search.folders:
+                    statement = statement.where(Entry.folder_id.in_(search.folders))
 
             statement = statement.options(
                 selectinload(Entry.folder),

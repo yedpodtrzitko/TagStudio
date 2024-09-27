@@ -1,5 +1,5 @@
 import enum
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -62,7 +62,7 @@ class FilterState:
     """Represent a state of the Library grid view."""
 
     # these should remain
-    exclude_folders: set[int] = field(default_factory=set)  # folders to exclude
+    folders: set[int] | None = None
     page_index: int | None = None
     page_size: int | None = None
     search_mode: SearchMode = SearchMode.AND  # TODO - actually implement this
@@ -82,6 +82,11 @@ class FilterState:
 
     # a generic query to be parsed
     query: str | None = None
+
+    def toggle_folder(self, folder_id: int):
+        if self.folders is None:
+            self.folders = set()
+        self.folders ^= {folder_id}
 
     def __post_init__(self):
         # strip values automatically

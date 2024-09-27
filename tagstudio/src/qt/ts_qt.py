@@ -1126,7 +1126,7 @@ class QtDriver(DriverMixin, QObject):
 
         return lib_status
 
-    def open_library(self, storage_path: Path) -> LibraryStatus:
+    def open_library(self, storage_path: Path | str) -> LibraryStatus:
         """Open a TagStudio library."""
         open_message: str = f'Opening Library "{str(storage_path)}"...'
         self.main_window.landing_widget.set_status_label(open_message)

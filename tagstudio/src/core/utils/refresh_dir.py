@@ -46,6 +46,9 @@ class RefreshDirTracker:
         - Keep track of files which are not in library.
         - Remove files from library which are in ignored dirs.
         """
+        if isinstance(folders, Folder):
+            folders = [folders]
+
         start_time_total = time()
 
         self.files_not_in_library = []

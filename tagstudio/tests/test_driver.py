@@ -1,9 +1,7 @@
-from os import makedirs
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from PySide6.QtCore import QSettings
-from src.core.constants import TS_FOLDER_NAME
 from src.core.driver import DriverMixin
 from src.core.enums import SettingItems
 from src.core.library.alchemy.library import LibraryStatus
@@ -56,11 +54,11 @@ def test_evaluate_path_last_lib_present():
     settings = QSettings()
     with TemporaryDirectory() as tmpdir:
         settings.setValue(SettingItems.LAST_LIBRARY, tmpdir)
-        makedirs(Path(tmpdir) / TS_FOLDER_NAME)
+        storage_path = Path(tmpdir)
         driver = TestDriver(settings)
 
         # When
         result = driver.evaluate_path(None)
 
         # Then
-        assert result == LibraryStatus(success=True, storage_path=Path(tmpdir))
+        assert result == LibraryStatus(success=True, storage_path=storage_path)
