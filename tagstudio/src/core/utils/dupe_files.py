@@ -49,7 +49,7 @@ class DupeRegistry:
                         path_relative = file_path.relative_to(folder.path)
                         results = self.library.search_library(
                             FilterState(
-                                folders={folder.id},
+                                include_folders={folder.id},
                                 path=path_relative,
                             ),
                         )

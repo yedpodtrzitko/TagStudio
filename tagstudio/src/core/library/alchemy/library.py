@@ -444,8 +444,10 @@ class Library:
                 elif extensions:
                     statement = statement.where(Entry.suffix.in_(extensions))
 
-                if search.folders:
-                    statement = statement.where(Entry.folder_id.in_(search.folders))
+                if search.exclude_folders:
+                    statement = statement.where(Entry.folder_id.notin_(search.exclude_folders))
+                elif search.include_folders:
+                    statement = statement.where(Entry.folder_id.in_(search.include_folders))
 
             statement = statement.options(
                 selectinload(Entry.folder),

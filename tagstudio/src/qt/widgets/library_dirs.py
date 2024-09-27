@@ -27,10 +27,10 @@ class LibraryDirsWidget(QWidget):
     def __init__(self, library: Library, driver: QtDriver):
         super().__init__()
 
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
 
-        self.setLayout(layout)
+        self.setLayout(self.layout)
         self.setSizePolicy(
             QSizePolicy.Policy.Preferred,
             QSizePolicy.Policy.Maximum,
@@ -38,9 +38,13 @@ class LibraryDirsWidget(QWidget):
 
         self.driver = driver
         self.library = library
-        self.items_layout = QVBoxLayout()
 
+        # label and button
         self.create_panel()
+
+        # actual library dirs
+        self.items_layout = QVBoxLayout()
+        self.layout.addLayout(self.items_layout)
 
         self.library_dirs = []
         # check if library is open
@@ -64,15 +68,13 @@ class LibraryDirsWidget(QWidget):
 
         row_layout = QHBoxLayout()
         row_layout.addWidget(label)
-        self.layout().addChildLayout(row_layout)
-
-        self.layout().addChildLayout(self.items_layout)
+        self.layout.addLayout(row_layout)
 
         # add a button which will open a library folder dialog
         button = QPushButton("Add Folder")
         button.setCursor(Qt.CursorShape.PointingHandCursor)
         button.clicked.connect(self.add_folder)
-        self.layout().addWidget(button)
+        self.layout.addWidget(button)
 
     def add_folder(self):
         """Open QT dialog to select a folder to add into library."""
@@ -102,9 +104,9 @@ class LibraryDirsWidget(QWidget):
         for folder in folders:
             self.create_item(folder)
 
-    def create_item(self, item: Folder):
+    def create_item(self, folder: Folder):
         def toggle_folder():
-            self.driver.filter.toggle_folder(item.id)
+            self.driver.filter.toggle_folder(folder.id)
             self.driver.filter_items()
 
         button_toggle = QCheckBox()
@@ -115,7 +117,7 @@ class LibraryDirsWidget(QWidget):
 
         button_toggle.clicked.connect(toggle_folder)
 
-        folder_label = QLabel(item.path.name)
+        folder_label = QLabel(folder.path.name)
 
         row_layout = QHBoxLayout()
         row_layout.addWidget(button_toggle)
