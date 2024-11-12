@@ -1093,9 +1093,8 @@ class ThumbRenderer(QObject):
                         # Large (Full Alphabet) Preview
                         image = self._font_long_thumb(_filepath, adj_size)
                 # Audio ========================================================
-                elif MediaCategories.is_ext_in_category(
-                    ext, MediaCategories.AUDIO_TYPES, mime_fallback=True
-                ):
+                elif False:
+                    # MediaCategories.is_ext_in_category(ext, MediaCategories.AUDIO_TYPES, mime_fallback=True):
                     image = self._audio_album_thumb(_filepath, ext)
                     if image is None:
                         image = self._audio_waveform_thumb(_filepath, ext, adj_size, pixel_ratio)
