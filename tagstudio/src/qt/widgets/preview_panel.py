@@ -108,8 +108,6 @@ class PreviewPanel(QWidget):
         )
 
         self.image_container = QWidget()
-        image_layout = QHBoxLayout(self.image_container)
-        image_layout.setContentsMargins(0, 0, 0, 0)
 
         file_label_style = "font-size: 12px"
         properties_style = (
@@ -162,12 +160,15 @@ class PreviewPanel(QWidget):
             )
         )
 
+        image_layout = QHBoxLayout(self.image_container)
+        image_layout.setContentsMargins(0, 0, 0, 0)
         image_layout.addWidget(self.preview_img)
         image_layout.setAlignment(self.preview_img, Qt.AlignmentFlag.AlignCenter)
         image_layout.addWidget(self.preview_gif)
         image_layout.setAlignment(self.preview_gif, Qt.AlignmentFlag.AlignCenter)
         image_layout.addWidget(self.preview_vid)
         image_layout.setAlignment(self.preview_vid, Qt.AlignmentFlag.AlignCenter)
+
         self.image_container.setMinimumSize(*self.img_button_size)
         self.file_label = FileOpenerLabel("filename")
         self.file_label.setTextFormat(Qt.TextFormat.RichText)
@@ -197,11 +198,6 @@ class PreviewPanel(QWidget):
         scroll_container.setObjectName("entryScrollContainer")
         scroll_container.setLayout(self.scroll_layout)
 
-        info_section = QWidget()
-        info_layout = QVBoxLayout(info_section)
-        info_layout.setContentsMargins(0, 0, 0, 0)
-        info_layout.setSpacing(6)
-
         scroll_area = QScrollArea()
         scroll_area.setObjectName("entryScrollArea")
         scroll_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -229,6 +225,14 @@ class PreviewPanel(QWidget):
         date_layout.addWidget(self.date_created_label)
         date_layout.addWidget(self.date_modified_label)
 
+        self.info_section = QWidget()
+        self.info_section.setSizePolicy(
+            QSizePolicy.Preferred,  # type: ignore
+            QSizePolicy.Minimum,  # type: ignore
+        )
+        info_layout = QVBoxLayout(self.info_section)
+        info_layout.setContentsMargins(0, 0, 0, 0)
+        info_layout.setSpacing(6)
         info_layout.addWidget(self.file_label)
         info_layout.addWidget(date_container)
         info_layout.addWidget(self.dimensions_label)
@@ -253,9 +257,9 @@ class PreviewPanel(QWidget):
         if not self.driver.settings.value(
             SettingItems.WINDOW_SHOW_LIBS, defaultValue=False, type=bool
         ):
-            self.libs_flow_container.hide()
+            self.toggle_libs()
 
-        splitter = QSplitter()
+        self.splitter = splitter = QSplitter()
         splitter.setOrientation(Qt.Orientation.Vertical)
         splitter.setHandleWidth(12)
         splitter.splitterMoved.connect(
@@ -268,7 +272,7 @@ class PreviewPanel(QWidget):
         )
 
         splitter.addWidget(self.image_container)
-        splitter.addWidget(info_section)
+        splitter.addWidget(self.info_section)
         splitter.addWidget(self.lib_dirs_container)
         splitter.addWidget(self.libs_flow_container)
         splitter.setStretchFactor(1, 2)
@@ -293,8 +297,54 @@ class PreviewPanel(QWidget):
         root_layout.setContentsMargins(0, 0, 0, 0)
         root_layout.addWidget(splitter)
 
+        self.add_sidebar_buttons(self.driver.main_window.horizontalLayout)
+
     def remove_field_prompt(self, name: str) -> str:
         return f'Are you sure you want to remove field "{name}"?'
+
+    def toggle_thumbnail(self):
+        # TODO - skip rendering when hidden
+        self.image_container.setVisible(not self.image_container.isVisible())
+
+    def toggle_libs(self):
+        self.libs_flow_container.setVisible(not self.libs_flow_container.isVisible())
+
+    def toggle_props(self):
+        self.info_section.setVisible(not self.info_section.isVisible())
+
+    def toggle_folders(self):
+        self.lib_dirs_container.setVisible(not self.lib_dirs_container.isVisible())
+
+    def add_sidebar_buttons(self, parent_layout: QHBoxLayout):
+        sidebar = QVBoxLayout()
+        sidebar.setContentsMargins(0, 0, 0, 0)
+        sidebar.setAlignment(Qt.AlignTop)  # type: ignore
+
+        sidebar_preview = QPushButton("🖼️")
+        sidebar_preview.setFixedWidth(32)
+        sidebar_preview.pressed.connect(self.toggle_thumbnail)
+        sidebar_preview.setToolTip("Toggle Thumbnail")
+        sidebar.addWidget(sidebar_preview)
+
+        sidebar_props = QPushButton("⚙️️")
+        sidebar_props.setFixedWidth(32)
+        sidebar_props.pressed.connect(self.toggle_props)
+        sidebar_props.setToolTip("Toggle Properties")
+        sidebar.addWidget(sidebar_props)
+
+        sidebar_folders = QPushButton("📁")
+        sidebar_folders.setFixedWidth(32)
+        sidebar_folders.pressed.connect(self.toggle_folders)
+        sidebar_folders.setToolTip("Toggle Folders")
+        sidebar.addWidget(sidebar_folders)
+
+        sidebar_libs = QPushButton("🗃️️")
+        sidebar_libs.setFixedWidth(32)
+        sidebar_libs.pressed.connect(self.toggle_libs)
+        sidebar_libs.setToolTip("Toggle Libraries")
+        sidebar.addWidget(sidebar_libs)
+
+        parent_layout.addLayout(sidebar)
 
     def fill_libs_widget(self, layout: QVBoxLayout):
         settings = self.driver.settings

@@ -127,7 +127,7 @@ class DefaultField:
 class _FieldID(Enum):
     """Only for bootstrapping content of DB table."""
 
-    TITLE = DefaultField(id=0, name="Title", type=FieldTypeEnum.TEXT_LINE, is_default=True)
+    TITLE = DefaultField(id=0, name="Title", type=FieldTypeEnum.TEXT_LINE)
     AUTHOR = DefaultField(id=1, name="Author", type=FieldTypeEnum.TEXT_LINE)
     ARTIST = DefaultField(id=2, name="Artist", type=FieldTypeEnum.TEXT_LINE)
     URL = DefaultField(id=3, name="URL", type=FieldTypeEnum.TEXT_LINE)
