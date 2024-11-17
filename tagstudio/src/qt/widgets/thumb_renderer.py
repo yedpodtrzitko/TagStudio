@@ -5,6 +5,7 @@
 
 import math
 import struct
+import sys
 import zipfile
 from copy import deepcopy
 from io import BytesIO
@@ -45,9 +46,11 @@ from PySide6.QtGui import QGuiApplication, QImage, QPainter, QPixmap
 from PySide6.QtPdf import QPdfDocument, QPdfDocumentRenderOptions
 from PySide6.QtSvg import QSvgRenderer
 from src.core.constants import FONT_SAMPLE_SIZES, FONT_SAMPLE_TEXT
+from src.core.library import Entry, Library
 from src.core.media_types import MediaCategories, MediaType
 from src.core.palette import ColorType, UiColor, get_ui_color
 from src.core.utils.encoding import detect_char_encoding
+from src.qt.enums import ThumbSize
 from src.qt.helpers.blender_thumbnailer import blend_thumb
 from src.qt.helpers.color_overlay import theme_fg_overlay
 from src.qt.helpers.file_tester import is_readable_video
@@ -66,6 +69,12 @@ logger = structlog.get_logger(__name__)
 register_heif_opener()
 register_avif_opener()
 
+THEME_COLOR: UiColor = (
+    UiColor.THEME_LIGHT
+    if QGuiApplication.styleHints().colorScheme() == Qt.ColorScheme.Light
+    else UiColor.THEME_DARK
+)
+
 
 class ThumbRenderer(QObject):
     """A class for rendering image and file thumbnails."""
@@ -74,7 +83,7 @@ class ThumbRenderer(QObject):
     updated = Signal(float, QPixmap, QSize, str)
     updated_ratio = Signal(float)
 
-    def __init__(self) -> None:
+    def __init__(self, library: Library | None) -> None:
         """Initialize the class."""
         super().__init__()
 
@@ -83,6 +92,7 @@ class ThumbRenderer(QObject):
         #      (Ex. (512, 512, 1.25, 4))
         self.thumb_masks: dict = {}
         self.raised_edges: dict = {}
+        self.library = library
 
         # Key: ("name", UiColor, 512, 512, 1.25)
         self.icons: dict = {}
@@ -781,29 +791,29 @@ class ThumbRenderer(QObject):
             logger.error("Couldn't render thumbnail", filepath=filepath, error=e)
         return im
 
-    def _image_thumb(self, filepath: Path) -> Image.Image:
+    def _image_thumb(self, filepath: Path) -> Image.Image | None:
         """Render a thumbnail for a standard image type.
 
         Args:
             filepath (Path): The path of the file.
         """
-        im: Image.Image = None
         try:
             im = Image.open(filepath)
             if im.mode != "RGB" and im.mode != "RGBA":
                 im = im.convert(mode="RGBA")
+
             if im.mode == "RGBA":
                 new_bg = Image.new("RGB", im.size, color="#1e1e1e")
                 new_bg.paste(im, mask=im.getchannel(3))
                 im = new_bg
 
-            im = ImageOps.exif_transpose(im)
+            return ImageOps.exif_transpose(im)
         except (
             UnidentifiedImageError,
             DecompressionBombError,
         ) as e:
             logger.error("Couldn't render thumbnail", filepath=filepath, error=e)
-        return im
+            return None
 
     @classmethod
     def _image_vector_thumb(cls, filepath: Path, size: int) -> Image.Image:
@@ -875,21 +885,20 @@ class ThumbRenderer(QObject):
         return im
 
     @classmethod
-    def _pdf_thumb(cls, filepath: Path, size: int) -> Image.Image:
+    def _pdf_thumb(cls, filepath: Path, size: int) -> Image.Image | None:
         """Render a thumbnail for a PDF file.
 
         filepath (Path): The path of the file.
             size (int): The size of the icon.
         """
-        im: Image.Image = None
-
         file: QFile = QFile(filepath)
         success: bool = file.open(
             QIODeviceBase.OpenModeFlag.ReadOnly, QFileDevice.Permission.ReadUser
         )
         if not success:
             logger.error("Couldn't render thumbnail", filepath=filepath)
-            return im
+            return None
+
         document: QPdfDocument = QPdfDocument()
         document.load(file)
         # Transform page_size in points to pixels with proper aspect ratio
@@ -916,10 +925,10 @@ class ThumbRenderer(QObject):
         try:
             qimage.save(buffer, "PNG")
             im = Image.open(BytesIO(buffer.buffer().data()))
+            # Replace transparent pixels with white (otherwise Background defaults to transparent)
+            return replace_transparent_pixels(im)
         finally:
             buffer.close()
-        # Replace transparent pixels with white (otherwise Background defaults to transparent)
-        return replace_transparent_pixels(im)
 
     def _text_thumb(self, filepath: Path) -> Image.Image:
         """Render a thumbnail for a plaintext file.
@@ -1002,7 +1011,7 @@ class ThumbRenderer(QObject):
     def render(
         self,
         timestamp: float,
-        filepath: str | Path,
+        entry: Entry | None,
         base_size: tuple[int, int],
         pixel_ratio: float,
         is_loading: bool = False,
@@ -1012,8 +1021,8 @@ class ThumbRenderer(QObject):
         """Render a thumbnail or preview image.
 
         Args:
-            timestamp (float): The timestamp for which this this job was dispatched.
-            filepath (str | Path): The path of the file to render a thumbnail for.
+            timestamp (float): The timestamp for which this job was dispatched.
+            entry (Path | None): The path of the file to render a thumbnail for.
             base_size (tuple[int,int]): The unmodified base size of the thumbnail.
             pixel_ratio (float): The screen pixel ratio.
             is_loading (bool): Is this a loading graphic?
@@ -1023,25 +1032,21 @@ class ThumbRenderer(QObject):
 
         """
         adj_size = math.ceil(max(base_size[0], base_size[1]) * pixel_ratio)
-        image: Image.Image = None
         pixmap: QPixmap = None
-        final: Image.Image = None
-        _filepath: Path = Path(filepath)
-        resampling_method = Image.Resampling.BILINEAR
+        image = None
 
-        theme_color: UiColor = (
-            UiColor.THEME_LIGHT
-            if QGuiApplication.styleHints().colorScheme() == Qt.ColorScheme.Light
-            else UiColor.THEME_DARK
-        )
+        _filepath = entry.absolute_path if entry else None
 
-        # Initialize "Loading" thumbnail
-        loading_thumb: Image.Image = self._get_icon(
-            "thumb_loading", theme_color, (adj_size, adj_size), pixel_ratio
-        )
+        ext = _filepath.suffix.lower() if _filepath else None
 
-        if is_loading:
-            final = loading_thumb.resize((adj_size, adj_size), resample=Image.Resampling.BILINEAR)
+        has_thumbnail, final = self.library.get_thumbnail(entry, size=ThumbSize.MEDIUM)
+        if has_thumbnail:
+            qim = ImageQt.ImageQt(final)
+            pixmap = QPixmap.fromImage(qim)
+            pixmap.setDevicePixelRatio(pixel_ratio)
+
+        elif is_loading:
+            final = LOADING_THUMB
             qim = ImageQt.ImageQt(final)
             pixmap = QPixmap.fromImage(qim)
             pixmap.setDevicePixelRatio(pixel_ratio)
@@ -1049,7 +1054,6 @@ class ThumbRenderer(QObject):
                 self.updated_ratio.emit(1)
         elif _filepath:
             try:
-                ext: str = _filepath.suffix.lower()
                 # Images =======================================================
                 if MediaCategories.is_ext_in_category(
                     ext, MediaCategories.IMAGE_TYPES, mime_fallback=True
@@ -1145,7 +1149,6 @@ class ThumbRenderer(QObject):
                     else Image.Resampling.BILINEAR
                 )
                 image = image.resize((new_x, new_y), resample=resampling_method)
-                mask: Image.Image = None
                 if is_grid_thumb:
                     mask = self._get_mask((adj_size, adj_size), pixel_ratio)
                     edge: tuple[Image.Image, Image.Image] = self._get_edge(
@@ -1161,7 +1164,7 @@ class ThumbRenderer(QObject):
                     final.paste(image, mask=mask.getchannel(0))
 
             except FileNotFoundError as e:
-                logger.error("Couldn't render thumbnail", filepath=filepath, error=e)
+                logger.error("Couldn't render thumbnail", filepath=_filepath, error=e)
                 if update_on_ratio_change:
                     self.updated_ratio.emit(1)
                 final = self._get_icon(
@@ -1176,18 +1179,21 @@ class ThumbRenderer(QObject):
                 ValueError,
                 ChildProcessError,
             ) as e:
-                logger.error("Couldn't render thumbnail", filepath=filepath, error=e)
+                logger.error("Couldn't render thumbnail", filepath=_filepath, error=e)
 
                 if update_on_ratio_change:
                     self.updated_ratio.emit(1)
                 final = self._get_icon(
                     name=self._get_resource_id(_filepath),
-                    color=theme_color,
+                    color=THEME_COLOR,
                     size=(adj_size, adj_size),
                     pixel_ratio=pixel_ratio,
                 )
+
             qim = ImageQt.ImageQt(final)
             if image:
+                if not has_thumbnail:
+                    self.library.save_thumbnail(entry, ThumbSize.MEDIUM, final)
                 image.close()
             pixmap = QPixmap.fromImage(qim)
             pixmap.setDevicePixelRatio(pixel_ratio)
@@ -1200,8 +1206,24 @@ class ThumbRenderer(QObject):
                     math.ceil(adj_size / pixel_ratio),
                     math.ceil(final.size[1] / pixel_ratio),
                 ),
-                _filepath.suffix.lower(),
+                ext,
             )
 
         else:
-            self.updated.emit(timestamp, QPixmap(), QSize(*base_size), _filepath.suffix.lower())
+            self.updated.emit(timestamp, QPixmap(), QSize(*base_size), ext)
+
+
+def get_loading_thumb() -> Image.Image:
+    renderer = ThumbRenderer(library=None)
+    # get device pixel ratio
+
+    # TODO - get proper pixel ratio
+    pixel_ratio = 1.0
+    if sys.platform == "darwin":
+        pixel_ratio = 2.0
+
+    loading_thumb = renderer._get_icon("thumb_loading", THEME_COLOR, (512, 512), pixel_ratio)
+    return loading_thumb
+
+
+LOADING_THUMB = get_loading_thumb()

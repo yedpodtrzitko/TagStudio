@@ -145,7 +145,7 @@ class PreviewPanel(QWidget):
 
         self.preview_vid = VideoPlayer(driver)
         self.preview_vid.hide()
-        self.thumb_renderer = ThumbRenderer()
+        self.thumb_renderer = ThumbRenderer(library=library)
         self.thumb_renderer.updated.connect(lambda ts, i, s: (self.preview_img.setIcon(i)))
         self.thumb_renderer.updated_ratio.connect(
             lambda ratio: (
@@ -575,7 +575,7 @@ class PreviewPanel(QWidget):
                 ratio = self.devicePixelRatio()
                 self.thumb_renderer.render(
                     time.time(),
-                    "",
+                    None,
                     (512, 512),
                     ratio,
                     is_loading=True,
@@ -629,7 +629,7 @@ class PreviewPanel(QWidget):
                 ratio = self.devicePixelRatio()
                 self.thumb_renderer.render(
                     time.time(),
-                    filepath,
+                    item,
                     (512, 512),
                     ratio,
                     update_on_ratio_change=True,
@@ -823,7 +823,7 @@ class PreviewPanel(QWidget):
                 ratio = self.devicePixelRatio()
                 self.thumb_renderer.render(
                     time.time(),
-                    "",
+                    None,
                     (512, 512),
                     ratio,
                     is_loading=True,

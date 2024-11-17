@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from src.core.library.alchemy.models import Folder
 from src.qt.widgets.progress import ProgressWidget
 
 if TYPE_CHECKING:
@@ -42,12 +43,13 @@ class DuplicateChoice(enum.StrEnum):
 class DropImportModal(QWidget):
     DUPE_NAME_LIMT: int = 5
 
+    target_folder: Folder
+
     def __init__(self, driver: "QtDriver", urls: list[QUrl]):
         super().__init__()
 
         self.driver: QtDriver = driver
 
-        self.target_folder = None
         self.urls = urls
 
         # Widget ======================
@@ -148,6 +150,7 @@ class DropImportModal(QWidget):
 
     def collect_files_to_import(self, urls: list[QUrl]):
         """Collect one or more files from drop event urls."""
+        assert self.target_folder
         for url in urls:
             if not url.isLocalFile():
                 continue

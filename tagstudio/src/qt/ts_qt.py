@@ -1013,7 +1013,7 @@ class QtDriver(DriverMixin, QObject):
             self.thumb_job_queue.put(
                 (
                     item_thumb.renderer.render,
-                    (sys.float_info.max, "", base_size, ratio, True, True),
+                    (sys.float_info.max, None, base_size, ratio, True, True),
                 )
             )
 
@@ -1042,7 +1042,7 @@ class QtDriver(DriverMixin, QObject):
             self.thumb_job_queue.put(
                 (
                     item_thumb.renderer.render,
-                    (time.time(), entry.absolute_path, base_size, ratio, False, True),
+                    (time.time(), entry, base_size, ratio, False, True),
                 )
             )
 

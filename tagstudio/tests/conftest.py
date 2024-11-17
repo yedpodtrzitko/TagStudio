@@ -54,11 +54,23 @@ def library(request):
 
     folder = lib.add_folder(folder_path)
 
+    all_fields = lib.field_types
+    default_fields = [
+        f.as_field
+        for (key, f) in all_fields.items()
+        if key
+        in {
+            _FieldID.TITLE.name,
+            _FieldID.TAGS_CONTENT.name,
+            _FieldID.TAGS_META.name,
+        }
+    ]
+
     # default item with deterministic name
     entry = Entry(
         folder=folder,
         path=pathlib.Path("foo.txt"),
-        fields=lib.default_fields,
+        fields=default_fields,
     )
 
     entry.tag_box_fields = [
@@ -69,10 +81,22 @@ def library(request):
         ),
     ]
 
+    all_fields = lib.field_types
+    default_fields = [
+        f.as_field
+        for (key, f) in all_fields.items()
+        if key
+        in {
+            _FieldID.TITLE.name,
+            _FieldID.TAGS_CONTENT.name,
+            _FieldID.TAGS_META.name,
+        }
+    ]
+
     entry2 = Entry(
         folder=folder,
         path=pathlib.Path("one/two/bar.md"),
-        fields=lib.default_fields,
+        fields=default_fields,
     )
     entry2.tag_box_fields = [
         TagBoxField(

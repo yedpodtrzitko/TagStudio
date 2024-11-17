@@ -42,7 +42,7 @@ def test_refresh_removes_noindex_content(library):
     entry = Entry(
         path=pathlib.Path("subdir/FOO.MD"),
         folder=library.get_folders()[0],
-        fields=library.default_fields,
+        fields=[],
     )
 
     # create its file in noindex directory

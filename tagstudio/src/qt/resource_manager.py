@@ -2,11 +2,11 @@
 # Licensed under the GPL-3.0 License.
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
+import json
 from pathlib import Path
 from typing import Any
 
 import structlog
-import ujson
 from PIL import Image
 
 logger = structlog.get_logger(__name__)
@@ -24,7 +24,7 @@ class ResourceManager:
         # Load JSON resource map
         if not ResourceManager._initialized:
             with open(Path(__file__).parent / "resources.json", encoding="utf-8") as f:
-                ResourceManager._map = ujson.load(f)
+                ResourceManager._map = json.load(f)
                 logger.info("resources registered", count=len(ResourceManager._map.items()))
             ResourceManager._initialized = True
 

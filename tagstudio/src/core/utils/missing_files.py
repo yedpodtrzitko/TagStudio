@@ -7,6 +7,7 @@ from src.core.library import Entry, Library
 
 IGNORE_ITEMS = [
     "$recycle.bin",
+    ".DS_Store",
 ]
 
 logger = structlog.get_logger()

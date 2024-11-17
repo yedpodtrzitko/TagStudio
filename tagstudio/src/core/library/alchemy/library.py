@@ -11,6 +11,7 @@ from uuid import uuid4
 import structlog
 from alembic import command
 from alembic.config import Config
+from PIL import Image
 from sqlalchemy import (
     URL,
     Engine,
@@ -30,6 +31,7 @@ from sqlalchemy.orm import (
     make_transient,
     selectinload,
 )
+from src.qt.enums import ThumbSize
 
 from ...constants import (
     BACKUP_FOLDER_NAME,
@@ -144,6 +146,33 @@ class Library:
         alembic_cfg.set_main_option("sqlalchemy.url", db_url)
         command.stamp(alembic_cfg, "head")
         command.upgrade(alembic_cfg, "head")
+
+    def get_thumbnail(self, entry: Entry, size: ThumbSize) -> tuple[bool, Image.Image | None]:
+        """Return thumbnail for given Entry."""
+        logger.info("get_thumbnail", entry=entry, size=size, storage_path=self.storage_path)
+
+        if not entry or not isinstance(self.storage_path, Path):
+            return False, None
+
+        thumb_path = self.get_thumbnail_path(entry, size)
+        if thumb_path.exists():
+            return True, Image.open(thumb_path)
+
+        return False, None
+
+    def get_thumbnail_path(self, entry: Entry, size: ThumbSize) -> Path:
+        """Return path to thumbnail for given Entry."""
+        assert isinstance(self.storage_path, Path)
+        return (
+            self.storage_path / "thumbnails" / str(entry.folder_id) / size.name / f"{entry.id}.png"
+        )
+
+    def save_thumbnail(self, entry: Entry, size: ThumbSize, image: Image.Image) -> None:
+        """Save thumbnail for given Entry."""
+        thumb_path = self.get_thumbnail_path(entry, size)
+        logger.info("save_thumbnail", entry=entry, size=size, thumb_path=thumb_path)
+        makedirs(thumb_path.parent, exist_ok=True)
+        image.save(thumb_path)
 
     def open_library(
         self, storage_path: Path | str, library_name: str | None = None

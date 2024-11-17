@@ -7,7 +7,6 @@ from functools import partial
 from pathlib import Path
 
 import pytest
-from PIL import Image
 from src.qt.widgets.thumb_renderer import ThumbRenderer
 from syrupy.extensions.image import PNGImageSnapshotExtension
 
@@ -39,7 +38,7 @@ from syrupy.extensions.image import PNGImageSnapshotExtension
 )
 def test_preview_render(cwd, fixture_file, thumbnailer, snapshot):
     file_path: Path = cwd / "fixtures" / fixture_file
-    img: Image.Image = thumbnailer(file_path)
+    img = thumbnailer(file_path)
 
     img_bytes = io.BytesIO()
     img.save(img_bytes, format="PNG")

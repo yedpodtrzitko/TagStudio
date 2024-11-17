@@ -11,9 +11,10 @@ import os
 import time
 import traceback
 import xml.etree.ElementTree as ET
+from json import JSONDecodeError
 
 import structlog
-import ujson
+import json
 
 from enum import Enum
 from pathlib import Path
@@ -456,7 +457,7 @@ class Library:
                     "r",
                     encoding="utf-8",
                 ) as file:
-                    json_dump = ujson.load(file)
+                    json_dump = json.load(file)
                     self.library_dir = Path(_path)
                     self.verify_ts_folders()
                     major, minor, patch = json_dump["ts-version"].split(".")
@@ -664,7 +665,7 @@ class Library:
                         )
 
                     return_code = OpenStatus.SUCCESS
-            except ujson.JSONDecodeError:
+            except JSONDecodeError:
                 logger.info("[LIBRARY][ERROR]: Empty JSON file!")
 
         # If the Library is loaded, continue other processes.
@@ -741,7 +742,7 @@ class Library:
 
         with open(self.library_dir / TS_FOLDER_NAME / filename, "w", encoding="utf-8") as outfile:
             outfile.flush()
-            ujson.dump(
+            json.dump(
                 self.to_json(),
                 outfile,
                 ensure_ascii=False,
@@ -767,7 +768,7 @@ class Library:
             encoding="utf-8",
         ) as outfile:
             outfile.flush()
-            ujson.dump(
+            json.dump(
                 self.to_json(),
                 outfile,
                 ensure_ascii=False,

@@ -185,7 +185,7 @@ class ItemThumb(FlowWidget):
         self.base_layout.addWidget(self.bottom_container)
 
         self.thumb_button = ThumbButton(self, thumb_size)
-        self.renderer = ThumbRenderer()
+        self.renderer = ThumbRenderer(library=library)
         self.renderer.updated.connect(
             lambda ts, i, s, ext: (
                 self.update_thumb(ts, image=i),
@@ -502,7 +502,7 @@ class ItemThumb(FlowWidget):
             if not entry:
                 continue
 
-            url = QUrl.fromLocalFile(Path(self.lib.library_dir) / entry.path)
+            url = QUrl.fromLocalFile(entry.absolute_path)
             paths.append(url)
 
         mimedata.setUrls(paths)
