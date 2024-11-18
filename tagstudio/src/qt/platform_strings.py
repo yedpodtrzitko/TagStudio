@@ -4,13 +4,28 @@
 
 """A collection of platform-dependant strings."""
 
-import platform
+import sys
 
 
-class PlatformStrings:
+class BaseStrings:
     open_file_str: str = "Open in file explorer"
 
-    if platform.system() == "Windows":
-        open_file_str = "Open in Explorer"
-    elif platform.system() == "Darwin":
-        open_file_str = "Reveal in Finder"
+
+class MacOSStrings(BaseStrings):
+    open_file_str: str = "Reveal in Finder"
+
+
+class WindowsStrings(BaseStrings):
+    open_file_str = "Open in Explorer"
+
+
+def get_translation_class():
+    if sys.platform == "darwin":
+        return MacOSStrings
+    elif sys.platform == "win32":
+        return WindowsStrings
+
+    return BaseStrings
+
+
+PlatformStrings = get_translation_class()
