@@ -149,7 +149,7 @@ class Library:
 
     def get_thumbnail(self, entry: Entry, size: ThumbSize) -> tuple[bool, Image.Image | None]:
         """Return thumbnail for given Entry."""
-        logger.info("get_thumbnail", entry=entry, size=size, storage_path=self.storage_path)
+        # logger.info("get_thumbnail", entry=entry, size=size, storage_path=self.storage_path)
 
         if not entry or not isinstance(self.storage_path, Path):
             return False, None
@@ -429,6 +429,13 @@ class Library:
         """Check if item with given path is in library already."""
         with Session(self.engine) as session:
             return session.scalar(select(Entry).where(Entry.path == path))
+
+    def get_paths(self, glob: str | None = None) -> list[str]:
+        with Session(self.engine) as session:
+            paths = session.scalars(select(Entry.path)).unique()
+
+        path_strings: list[str] = list(map(lambda x: x.as_posix(), paths))
+        return path_strings
 
     def search_library(
         self,

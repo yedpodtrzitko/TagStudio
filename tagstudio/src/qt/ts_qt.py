@@ -99,6 +99,7 @@ from src.qt.widgets.landing import KBShortcut, get_kb_shortcut
 from src.qt.widgets.panel import PanelModal
 from src.qt.widgets.preview_panel import PreviewPanel
 from src.qt.widgets.progress import ProgressWidget
+from src.qt.widgets.search_autocomplete import SearchAutoFill
 from src.qt.widgets.thumb_renderer import ThumbRenderer
 
 # SIGQUIT is not defined on Windows
@@ -478,6 +479,9 @@ class QtDriver(DriverMixin, QObject):
         menu_bar.addMenu(window_menu)
         menu_bar.addMenu(help_menu)
 
+        search_autofill = SearchAutoFill(self.main_window.search_field_model, self.lib)
+        self.main_window.searchField.textChanged.connect(search_autofill.update_completions_list)
+
         self.preview_panel = PreviewPanel(self.lib, self)
         splitter = self.main_window.splitter
         splitter.addWidget(self.preview_panel)
@@ -525,6 +529,9 @@ class QtDriver(DriverMixin, QObject):
         # Show the message box
         msg_box.exec()
 
+    def on_search_input_submit(self):
+        self.filter_items(FilterState(query=self.main_window.searchField.text()))
+
     def init_library_window(self):
         # self._init_landing_page() # Taken care of inside the widget now
 
@@ -540,10 +547,7 @@ class QtDriver(DriverMixin, QObject):
         )
         # Search Field
         search_field: QLineEdit = self.main_window.searchField
-        search_field.returnPressed.connect(
-            # TODO - parse search field for filters
-            lambda: self.filter_items(FilterState(query=self.main_window.searchField.text()))
-        )
+        search_field.returnPressed.connect(self.on_search_input_submit)
         # Search Type Selector
         search_type_selector: QComboBox = self.main_window.comboBox_2
         search_type_selector.currentIndexChanged.connect(

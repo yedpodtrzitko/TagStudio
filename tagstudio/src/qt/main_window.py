@@ -6,13 +6,12 @@
 import typing
 
 import structlog
-from PySide6.QtCore import (QCoreApplication, QMetaObject, QRect, QSize, Qt)
+from PySide6.QtCore import (QCoreApplication, QMetaObject, QRect, QSize, Qt, QStringListModel)
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (QComboBox, QFrame, QGridLayout,
                                QHBoxLayout, QVBoxLayout, QLayout, QLineEdit, QMainWindow,
                                QPushButton, QScrollArea, QSizePolicy,
-                               QStatusBar, QWidget, QSplitter, QCheckBox,
-                               QSpacerItem, QLabel)
+                               QStatusBar, QWidget, QSplitter, QSpacerItem, QCompleter)
 
 from src.qt.enums import WindowContent
 from src.qt.pagination import Pagination
@@ -58,15 +57,15 @@ class Ui_MainWindow(QMainWindow):
         self.gridLayout.setObjectName(u"gridLayout")
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-  
+
         # ComboBox group for search type and thumbnail size
         self.horizontalLayout_3 = QHBoxLayout()
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
 
         # left side spacer
-        spacerItem = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        spacerItem = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self.horizontalLayout_3.addItem(spacerItem)
-  
+
         # Search type selector
         self.comboBox_2 = QComboBox(self.centralwidget)
         self.comboBox_2.setMinimumSize(QSize(165, 0))
@@ -78,7 +77,7 @@ class Ui_MainWindow(QMainWindow):
         # Thumbnail Size placeholder
         self.thumb_size_combobox = QComboBox(self.centralwidget)
         self.thumb_size_combobox.setObjectName(u"thumbSizeComboBox")
-        sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(
@@ -165,6 +164,11 @@ class Ui_MainWindow(QMainWindow):
         font2.setBold(False)
         self.searchField.setFont(font2)
 
+        self.search_field_model = QStringListModel()
+        self.search_field_completer = QCompleter(self.search_field_model, self.searchField)
+        self.search_field_completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self.searchField.setCompleter(self.search_field_completer)
+
         self.horizontalLayout_2.addWidget(self.searchField)
 
         self.searchButton = QPushButton(self.centralwidget)
@@ -179,7 +183,7 @@ class Ui_MainWindow(QMainWindow):
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(
@@ -190,8 +194,6 @@ class Ui_MainWindow(QMainWindow):
         self.retranslateUi(MainWindow)
 
         QMetaObject.connectSlotsByName(MainWindow)
-
-    # setupUi
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate(
@@ -212,12 +214,10 @@ class Ui_MainWindow(QMainWindow):
         self.comboBox_2.setItemText(0, QCoreApplication.translate("MainWindow", "And (Includes All Tags)"))
         self.comboBox_2.setItemText(1, QCoreApplication.translate("MainWindow", "Or (Includes Any Tag)"))
         self.thumb_size_combobox.setCurrentText("")
-  
+
         # Thumbnail size selector
         self.thumb_size_combobox.setPlaceholderText(
             QCoreApplication.translate("MainWindow", u"Thumbnail Size", None))
-
-    # retranslateUi
 
     def moveEvent(self, event) -> None:
         # time.sleep(0.02)  # sleep for 20ms
