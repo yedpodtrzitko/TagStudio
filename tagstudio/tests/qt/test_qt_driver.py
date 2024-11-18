@@ -1,7 +1,6 @@
 from unittest.mock import Mock
 
-from src.core.library.alchemy.enums import FilterState
-from src.core.library.json.library import ItemType
+from src.core.library.alchemy.enums import FilterState, ItemType
 from src.qt.widgets.item_thumb import ItemThumb
 
 
