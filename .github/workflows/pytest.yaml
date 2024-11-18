@@ -46,8 +46,10 @@ jobs:
           uv pip install --system -r requirements-dev.txt
 
       - name: Run pytest
-        run: |
-          xvfb-run pytest --cov-report xml --cov=tagstudio
+        run: >-
+          xvfb-run pytest
+          --cov-report xml:coverage.xml
+          --cov=tagstudio
 
       - name: Store coverage
         uses: actions/upload-artifact@v4
