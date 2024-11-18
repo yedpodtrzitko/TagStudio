@@ -13,6 +13,6 @@ def test_badge_visual_state(library, qt_driver, entry_min, new_value):
 
     thumb.badges[BadgeType.FAVORITE].setChecked(new_value)
     assert thumb.badges[BadgeType.FAVORITE].isChecked() == new_value
-    # TODO
+
     # assert thumb.favorite_badge.isHidden() == initial_state
     assert thumb.is_favorite == new_value
