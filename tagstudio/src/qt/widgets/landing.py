@@ -3,7 +3,6 @@
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
 
-import sys
 import typing
 from enum import IntEnum
 from pathlib import Path
@@ -14,6 +13,7 @@ from PySide6.QtCore import QEasingCurve, QPoint, QPropertyAnimation, Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 from src.qt.helpers.color_overlay import gradient_overlay, theme_fg_overlay
+from src.qt.platform_strings import PlatformStrings
 from src.qt.widgets.clickable_label import ClickableLabel
 
 # Only import for type checking/autocompletion, will not be imported at runtime.
@@ -29,17 +29,12 @@ class KBShortcut(IntEnum):
 
 
 def get_kb_shortcut(shortcut: KBShortcut) -> str:
-    match (shortcut, sys.platform):
-        case (KBShortcut.OPEN_LIB, "darwin"):
-            return "(⌘+O)"
-        case (KBShortcut.OPEN_LIB, _):
-            return "(Ctrl+O)"
-        case (KBShortcut.CREATE_LIB, "darwin"):
-            return "(⌘+N)"
-        case (KBShortcut.CREATE_LIB, _):
-            return "(Ctrl+N)"
+    if shortcut == KBShortcut.OPEN_LIB:
+        return f"({PlatformStrings.keybind_open_lib})"
+    if shortcut == KBShortcut.CREATE_LIB:
+        return f"({PlatformStrings.keybind_new_lib})"
 
-    logger.error("unknown keyboard shortcut", platform=sys.platform, shortcut=shortcut)
+    logger.error("unknown keyboard shortcut", shortcut=shortcut)
     return ""
 
 

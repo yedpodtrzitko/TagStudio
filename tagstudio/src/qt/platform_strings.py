@@ -8,11 +8,15 @@ import sys
 
 
 class BaseStrings:
-    open_file_str: str = "Open in file explorer"
+    open_file_str = "Open in file explorer"
+    keybind_open_lib = "Ctrl+O"
+    keybind_new_lib = "Ctrl+N"
 
 
 class MacOSStrings(BaseStrings):
-    open_file_str: str = "Reveal in Finder"
+    open_file_str = "Reveal in Finder"
+    keybind_open_lib = "⌘+O"
+    keybind_new_lib = "⌘+N"
 
 
 class WindowsStrings(BaseStrings):
