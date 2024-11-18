@@ -855,7 +855,7 @@ class QtDriver(DriverMixin, QObject):
         spacing_divisor: int = 10
         min_spacing: int = 12
         # Index 2 is the default (Medium)
-        if index < len(self.thumb_sizes) and index >= 0:
+        if 0 <= index < len(self.thumb_sizes):
             self.thumb_size = self.thumb_sizes[index][1]
         else:
             logger.error(f"ERROR: Invalid thumbnail size index ({index}). Defaulting to 128px.")

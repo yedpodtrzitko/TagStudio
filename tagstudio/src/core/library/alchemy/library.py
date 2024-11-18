@@ -167,8 +167,11 @@ class Library:
             self.storage_path / "thumbnails" / str(entry.folder_id) / size.name / f"{entry.id}.png"
         )
 
-    def save_thumbnail(self, entry: Entry, size: ThumbSize, image: Image.Image) -> None:
+    def save_thumbnail(self, entry: Entry, size: ThumbSize, image: Image.Image):
         """Save thumbnail for given Entry."""
+        if not (entry and self.storage_path):
+            return
+
         thumb_path = self.get_thumbnail_path(entry, size)
         logger.info("save_thumbnail", entry=entry, size=size, thumb_path=thumb_path)
         makedirs(thumb_path.parent, exist_ok=True)

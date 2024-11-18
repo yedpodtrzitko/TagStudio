@@ -385,7 +385,7 @@ class _AudioSegment:
         else:
             return self._spawn(data=self._data * arg)
 
-    def _spawn(self, data, overrides={}):  # noqa: B006
+    def _spawn(self, data, overrides=None):
         """Create a new audio segment using the metadata from the current one & the data passed in.
 
         Should be used whenever an AudioSegment is being returned by an operation that would alters
@@ -413,7 +413,7 @@ class _AudioSegment:
             "frame_width": self.frame_width,
             "channels": self.channels,
         }
-        metadata.update(overrides)
+        metadata.update(overrides or {})
         return self.__class__(data=data, metadata=metadata)
 
     @classmethod
