@@ -24,7 +24,6 @@ from PIL import (
     ImageEnhance,
     ImageFile,
     ImageFont,
-    ImageOps,
     ImageQt,
     UnidentifiedImageError,
 )
@@ -33,17 +32,12 @@ from pillow_heif import register_avif_opener, register_heif_opener
 from pydub import exceptions
 from PySide6.QtCore import (
     QBuffer,
-    QFile,
-    QFileDevice,
-    QIODeviceBase,
     QObject,
     QSize,
-    QSizeF,
     Qt,
     Signal,
 )
 from PySide6.QtGui import QGuiApplication, QImage, QPainter, QPixmap
-from PySide6.QtPdf import QPdfDocument, QPdfDocumentRenderOptions
 from PySide6.QtSvg import QSvgRenderer
 from src.core.constants import FONT_SAMPLE_SIZES, FONT_SAMPLE_TEXT
 from src.core.library import Entry, Library
@@ -55,12 +49,12 @@ from src.qt.helpers.blender_thumbnailer import blend_thumb
 from src.qt.helpers.color_overlay import theme_fg_overlay
 from src.qt.helpers.file_tester import is_readable_video
 from src.qt.helpers.gradient import four_corner_gradient
-from src.qt.helpers.image_effects import replace_transparent_pixels
 from src.qt.helpers.text_wrapper import wrap_full_text
 from src.qt.helpers.vendored.pydub.audio_segment import (  # type: ignore
     _AudioSegment as AudioSegment,
 )
 from src.qt.resource_manager import ResourceManager
+from src.qt.thumbnailers import get_thumbnailer
 from vtf2img import Parser
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -791,30 +785,6 @@ class ThumbRenderer(QObject):
             logger.error("Couldn't render thumbnail", filepath=filepath, error=e)
         return im
 
-    def _image_thumb(self, filepath: Path) -> Image.Image | None:
-        """Render a thumbnail for a standard image type.
-
-        Args:
-            filepath (Path): The path of the file.
-        """
-        try:
-            im = Image.open(filepath)
-            if im.mode != "RGB" and im.mode != "RGBA":
-                im = im.convert(mode="RGBA")
-
-            if im.mode == "RGBA":
-                new_bg = Image.new("RGB", im.size, color="#1e1e1e")
-                new_bg.paste(im, mask=im.getchannel(3))
-                im = new_bg
-
-            return ImageOps.exif_transpose(im)
-        except (
-            UnidentifiedImageError,
-            DecompressionBombError,
-        ) as e:
-            logger.error("Couldn't render thumbnail", filepath=filepath, error=e)
-            return None
-
     @classmethod
     def _image_vector_thumb(cls, filepath: Path, size: int) -> Image.Image:
         """Render a thumbnail for a vector image, such as SVG.
@@ -883,52 +853,6 @@ class ThumbRenderer(QObject):
         # im = Image.open(img_buf)
 
         return im
-
-    @classmethod
-    def _pdf_thumb(cls, filepath: Path, size: int) -> Image.Image | None:
-        """Render a thumbnail for a PDF file.
-
-        filepath (Path): The path of the file.
-            size (int): The size of the icon.
-        """
-        file: QFile = QFile(filepath)
-        success: bool = file.open(
-            QIODeviceBase.OpenModeFlag.ReadOnly, QFileDevice.Permission.ReadUser
-        )
-        if not success:
-            logger.error("Couldn't render thumbnail", filepath=filepath)
-            return None
-
-        document: QPdfDocument = QPdfDocument()
-        document.load(file)
-        # Transform page_size in points to pixels with proper aspect ratio
-        page_size: QSizeF = document.pagePointSize(0)
-        ratio_hw: float = page_size.height() / page_size.width()
-        if ratio_hw >= 1:
-            page_size *= size / page_size.height()
-        else:
-            page_size *= size / page_size.width()
-        # Enlarge image for antialiasing
-        scale_factor = 2.5
-        page_size *= scale_factor
-        # Render image with no anti-aliasing for speed
-        render_options: QPdfDocumentRenderOptions = QPdfDocumentRenderOptions()
-        render_options.setRenderFlags(
-            QPdfDocumentRenderOptions.RenderFlag.TextAliased
-            | QPdfDocumentRenderOptions.RenderFlag.ImageAliased
-            | QPdfDocumentRenderOptions.RenderFlag.PathAliased
-        )
-        # Convert QImage to PIL Image
-        qimage: QImage = document.render(0, page_size.toSize(), render_options)
-        buffer: QBuffer = QBuffer()
-        buffer.open(QBuffer.OpenModeFlag.ReadWrite)
-        try:
-            qimage.save(buffer, "PNG")
-            im = Image.open(BytesIO(buffer.buffer().data()))
-            # Replace transparent pixels with white (otherwise Background defaults to transparent)
-            return replace_transparent_pixels(im)
-        finally:
-            buffer.close()
 
     def _text_thumb(self, filepath: Path) -> Image.Image:
         """Render a thumbnail for a plaintext file.
@@ -1054,6 +978,10 @@ class ThumbRenderer(QObject):
                 self.updated_ratio.emit(1)
         elif _filepath:
             try:
+                thumbnailer = get_thumbnailer(_filepath)
+                if thumbnailer:
+                    image = thumbnailer.render(_filepath, adj_size)
+
                 # Images =======================================================
                 if MediaCategories.is_ext_in_category(
                     ext, MediaCategories.IMAGE_TYPES, mime_fallback=True
@@ -1068,9 +996,6 @@ class ThumbRenderer(QObject):
                         ext, MediaCategories.IMAGE_VECTOR_TYPES, mime_fallback=True
                     ):
                         image = self._image_vector_thumb(_filepath, adj_size)
-                    # Normal Images --------------------------------------------
-                    else:
-                        image = self._image_thumb(_filepath)
                 # Videos =======================================================
                 elif MediaCategories.is_ext_in_category(
                     ext, MediaCategories.VIDEO_TYPES, mime_fallback=True
@@ -1114,11 +1039,6 @@ class ThumbRenderer(QObject):
                     ext, MediaCategories.BLENDER_TYPES, mime_fallback=True
                 ):
                     image = self._blender(_filepath)
-                # PDF ==========================================================
-                elif MediaCategories.is_ext_in_category(
-                    ext, MediaCategories.PDF_TYPES, mime_fallback=True
-                ):
-                    image = self._pdf_thumb(_filepath, adj_size)
                 # VTF ==========================================================
                 elif MediaCategories.is_ext_in_category(
                     ext, MediaCategories.SOURCE_ENGINE_TYPES, mime_fallback=True

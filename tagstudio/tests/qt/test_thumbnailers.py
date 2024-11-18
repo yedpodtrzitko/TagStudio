@@ -3,11 +3,11 @@
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
 import io
-from functools import partial
 from pathlib import Path
 
 import pytest
-from src.qt.widgets.thumb_renderer import ThumbRenderer
+from src.qt.thumbnailers.image import Thumbnailer as ImageThumbnailer
+from src.qt.thumbnailers.pdf import Thumbnailer as PDFThumbnailer
 from syrupy.extensions.image import PNGImageSnapshotExtension
 
 
@@ -15,26 +15,18 @@ from syrupy.extensions.image import PNGImageSnapshotExtension
     ["fixture_file", "thumbnailer"],
     [
         (
-            "sample.odt",
-            ThumbRenderer._open_doc_thumb,
+            "sample.pdf",
+            PDFThumbnailer,
         ),
         (
-            "sample.ods",
-            ThumbRenderer._open_doc_thumb,
-        ),
-        (
-            "sample.epub",
-            ThumbRenderer._epub_cover,
-        ),
-        (
-            "sample.svg",
-            partial(ThumbRenderer._image_vector_thumb, size=200),
+            "sample.png",
+            ImageThumbnailer,
         ),
     ],
 )
 def test_preview_render(cwd, fixture_file, thumbnailer, snapshot):
     file_path: Path = cwd / "fixtures" / fixture_file
-    img = thumbnailer(file_path)
+    img = thumbnailer.render(file_path, size=200)
 
     img_bytes = io.BytesIO()
     img.save(img_bytes, format="PNG")
