@@ -62,3 +62,7 @@ ignore_errors = true
 [tool.pytest.ini_options]
 #addopts = "-m 'not qt'"
 qt_api = "pyside6"
+
+[tool.coverage.run]
+source = ['tagstudio']
+relative_files = true
