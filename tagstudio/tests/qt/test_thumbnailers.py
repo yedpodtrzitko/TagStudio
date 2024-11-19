@@ -1,13 +1,12 @@
-# Copyright (C) 2024 Travis Abendshien (CyanVoxel).
-# Licensed under the GPL-3.0 License.
-# Created for TagStudio: https://github.com/CyanVoxel/TagStudio
-
 import io
 from pathlib import Path
 
 import pytest
-from src.qt.thumbnailers.image import Thumbnailer as ImageThumbnailer
-from src.qt.thumbnailers.pdf import Thumbnailer as PDFThumbnailer
+from src.qt.thumbnailers.epub import EpubThumbnail
+from src.qt.thumbnailers.image import ImageThumbnail
+from src.qt.thumbnailers.image_vector import SVGThumbnail
+from src.qt.thumbnailers.opendoc import OpendocThumbnail
+from src.qt.thumbnailers.pdf import PDFThumbnail
 from syrupy.extensions.image import PNGImageSnapshotExtension
 
 
@@ -16,11 +15,27 @@ from syrupy.extensions.image import PNGImageSnapshotExtension
     [
         (
             "sample.pdf",
-            PDFThumbnailer,
+            PDFThumbnail,
         ),
         (
             "sample.png",
-            ImageThumbnailer,
+            ImageThumbnail,
+        ),
+        (
+            "sample.svg",
+            SVGThumbnail,
+        ),
+        (
+            "sample.odt",
+            OpendocThumbnail,
+        ),
+        (
+            "sample.ods",
+            OpendocThumbnail,
+        ),
+        (
+            "sample.epub",
+            EpubThumbnail,
         ),
     ],
 )

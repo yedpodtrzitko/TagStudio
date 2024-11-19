@@ -8,7 +8,7 @@ from ._base import ThumbnailBase
 logger = structlog.get_logger(__name__)
 
 
-class Thumbnailer(ThumbnailBase):
+class ImageThumbnail(ThumbnailBase):
     EXTENSIONS = ("jpg", "jpeg", "png", "gif", "bmp", "tiff", "webp")
 
     @classmethod
@@ -23,3 +23,6 @@ class Thumbnailer(ThumbnailBase):
             im = new_bg
 
         return ImageOps.exif_transpose(im)
+
+
+THUMBNAILER = ImageThumbnail
