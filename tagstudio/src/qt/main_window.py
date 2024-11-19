@@ -30,31 +30,18 @@ class Ui_MainWindow(QMainWindow):
     def __init__(self, driver: "QtDriver", parent=None) -> None:
         super().__init__(parent)
         self.driver: "QtDriver" = driver
-        self.setupUi(self)
+        self.setupUi()
 
-        # NOTE: These are old attempts to allow for a translucent/acrylic
-        # window effect. This may be attempted again in the future.
-        # self.setWindowFlag(Qt.WindowType.NoDropShadowWindowHint, True)
-        # self.setWindowFlag(Qt.WindowType.WindowTransparentForInput, False)
-        # # self.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)
-        # self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+    def setupUi(self, ):
+        if not self.objectName():
+            self.setObjectName(u"MainWindow")
+        self.resize(1300, 720)
 
-        # self.windowFX = WindowEffect()
-        # self.windowFX.setAcrylicEffect(self.winId(), isEnableShadow=False)
-
-        # # self.setStyleSheet(
-        # # 	'background:#EE000000;'
-        # # 	)
-
-    def setupUi(self, MainWindow):
-        if not MainWindow.objectName():
-            MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1300, 720)
-
-        self.centralwidget = QWidget(MainWindow)
+        self.centralwidget = QWidget(self)
         self.centralwidget.setObjectName(u"centralwidget")
         self.gridLayout = QGridLayout(self.centralwidget)
         self.gridLayout.setObjectName(u"gridLayout")
+
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
 
@@ -88,10 +75,6 @@ class Ui_MainWindow(QMainWindow):
         self.horizontalLayout_3.addWidget(self.thumb_size_combobox)
         self.gridLayout.addLayout(self.horizontalLayout_3, 5, 0, 1, 1)
 
-        self.splitter = QSplitter()
-        self.splitter.setObjectName(u"splitter")
-        self.splitter.setHandleWidth(12)
-
         self.frame_container = QWidget()
         self.frame_layout = QVBoxLayout(self.frame_container)
         self.frame_layout.setSpacing(0)
@@ -124,15 +107,26 @@ class Ui_MainWindow(QMainWindow):
         self.pagination = Pagination()
         self.frame_layout.addWidget(self.pagination)
 
-        self.horizontalLayout.addWidget(self.splitter)
+        self.splitter = QSplitter()
+        self.splitter.setObjectName("splitter")
+        self.splitter.setHandleWidth(12)
+
+        self.library_sidebar = QWidget()
+        self.library_sidebar_layout = QVBoxLayout(self.library_sidebar)
+
+        self.splitter.addWidget(self.library_sidebar)
+        self.splitter.setStretchFactor(0, 0)
+
         self.splitter.addWidget(self.frame_container)
-        self.splitter.setStretchFactor(0, 1)
+        self.splitter.setStretchFactor(1, 1)
+
+        self.horizontalLayout.addWidget(self.splitter)
 
         self.gridLayout.addLayout(self.horizontalLayout, 10, 0, 1, 1)
 
         self.horizontalLayout_2 = QHBoxLayout()
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.horizontalLayout_2.setSizeConstraint(QLayout.SetMinimumSize)
+        self.horizontalLayout_2.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
         self.backButton = QPushButton(self.centralwidget)
         self.backButton.setObjectName(u"backButton")
         self.backButton.setMinimumSize(QSize(0, 32))
@@ -180,23 +174,23 @@ class Ui_MainWindow(QMainWindow):
         self.gridLayout.addLayout(self.horizontalLayout_2, 3, 0, 1, 1)
         self.gridLayout_2.setContentsMargins(6, 6, 6, 6)
 
-        MainWindow.setCentralWidget(self.centralwidget)
-        self.statusbar = QStatusBar(MainWindow)
-        self.statusbar.setObjectName(u"statusbar")
+        self.setCentralWidget(self.centralwidget)
+
+        self.statusbar = QStatusBar(self)
+        self.statusbar.setObjectName("statusbar")
         sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(
-            self.statusbar.sizePolicy().hasHeightForWidth())
+        sizePolicy1.setHeightForWidth(self.statusbar.sizePolicy().hasHeightForWidth())
         self.statusbar.setSizePolicy(sizePolicy1)
-        MainWindow.setStatusBar(self.statusbar)
+        self.setStatusBar(self.statusbar)
 
-        self.retranslateUi(MainWindow)
+        self.retranslateUi()
 
-        QMetaObject.connectSlotsByName(MainWindow)
+        QMetaObject.connectSlotsByName(self)
 
-    def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate(
+    def retranslateUi(self):
+        self.setWindowTitle(QCoreApplication.translate(
             "MainWindow", u"MainWindow", None))
         # Navigation buttons
         self.backButton.setText(
