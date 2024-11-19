@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import structlog
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -21,9 +22,11 @@ from src.qt.enums import WindowContent
 if TYPE_CHECKING:
     from src.qt.ts_qt import QtDriver
 
+logger = structlog.get_logger()
+
 
 class LibraryDirsWidget(QWidget):
-    library_dirs: list[Folder]
+    library_dirs: dict[str, Folder]
 
     def __init__(self, library: Library, driver: QtDriver):
         super().__init__()
@@ -46,19 +49,25 @@ class LibraryDirsWidget(QWidget):
         self.items_layout = QVBoxLayout()
         self.root_layout.addLayout(self.items_layout)
 
-        self.library_dirs = []
+        self.library_dirs = {}
         # check if library is open
         self.refresh()
 
     def refresh(self):
         if not self.library.storage_path:
+            logger.info("library_dirs.refresh: no library open")
             return
 
         self.driver.main_window.set_main_content(WindowContent.LIBRARY_CONTENT)
 
-        library_dirs = self.library.get_folders()
-        if len(library_dirs) == len(self.library_dirs):
+        library_dirs = {x.uuid: x for x in self.library.get_folders()}
+        if library_dirs.keys() == self.library_dirs.keys():
             # most likely no reason to refresh
+            logger.info(
+                "library_dirs.refresh: no change in library dirs",
+                prev=self.library_dirs,
+                new=library_dirs,
+            )
             return
 
         self.library_dirs = library_dirs
@@ -81,6 +90,7 @@ class LibraryDirsWidget(QWidget):
     def add_folder(self):
         """Open QT dialog to select a folder to add into library."""
         if not self.library.storage_path:
+            logger.info("add_folder: no library open")
             # no library open, dont do anything
             return
 
@@ -90,7 +100,7 @@ class LibraryDirsWidget(QWidget):
             self.driver.filter_items()
             self.refresh()
 
-    def fill_dirs(self, folders: list[Folder]) -> None:
+    def fill_dirs(self, folders: dict[str, Folder]) -> None:
         def clear_layout(layout_item: QVBoxLayout):
             for i in reversed(range(layout_item.count())):
                 child = layout_item.itemAt(i)
@@ -102,7 +112,7 @@ class LibraryDirsWidget(QWidget):
 
         clear_layout(self.items_layout)
 
-        for folder in folders:
+        for folder in folders.values():
             self.create_item(folder)
 
     def create_item(self, folder: Folder):

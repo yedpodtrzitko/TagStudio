@@ -96,6 +96,7 @@ from src.qt.modals.tag_database import TagDatabasePanel
 from src.qt.resource_manager import ResourceManager
 from src.qt.widgets.item_thumb import BadgeType, ItemThumb
 from src.qt.widgets.landing import KBShortcut, get_kb_shortcut
+from src.qt.widgets.library_panel import LibraryPanel
 from src.qt.widgets.panel import PanelModal
 from src.qt.widgets.preview_panel import PreviewPanel
 from src.qt.widgets.progress import ProgressWidget
@@ -155,8 +156,6 @@ class QtDriver(DriverMixin, QObject):
 
         self.branch: str = (" (" + VERSION_BRANCH + ")") if VERSION_BRANCH else ""
         self.base_title: str = f"TagStudio Alpha {VERSION}{self.branch}"
-        # self.title_text: str = self.base_title
-        # self.buffer = {}
         self.thumb_job_queue: Queue = Queue()
         self.thumb_threads: list[Consumer] = []
         self.thumb_cutoff: float = time.time()
@@ -280,10 +279,6 @@ class QtDriver(DriverMixin, QObject):
         window_menu = QMenu("&Window", menu_bar)
         help_menu = QMenu("&Help", menu_bar)
 
-        # File Menu ============================================================
-        # file_menu.addAction(QAction('&New Library', menu_bar))
-        # file_menu.addAction(QAction('&Open Library', menu_bar))
-
         create_library_action = QAction("&New Library", menu_bar)
         create_library_action.triggered.connect(self.create_library_from_dialog)
         create_library_action.setShortcut(
@@ -324,8 +319,6 @@ class QtDriver(DriverMixin, QObject):
 
         file_menu.addSeparator()
 
-        # refresh_lib_action = QAction('&Refresh Directories', self.main_window)
-        # refresh_lib_action.triggered.connect(lambda: self.lib.refresh_dir())
         add_new_files_action = QAction("&Refresh Directories", menu_bar)
         add_new_files_action.triggered.connect(
             lambda: self.callback_library_needed_check(self.add_new_files_callback)
@@ -415,10 +408,6 @@ class QtDriver(DriverMixin, QObject):
         fix_dupe_files_action.triggered.connect(create_dupe_files_modal)
         tools_menu.addAction(fix_dupe_files_action)
 
-        # create_collage_action = QAction("Create Collage", menu_bar)
-        # create_collage_action.triggered.connect(lambda: self.create_collage())
-        # tools_menu.addAction(create_collage_action)
-
         # Macros Menu ==========================================================
         self.autofill_action = QAction("Autofill", menu_bar)
         self.autofill_action.triggered.connect(
@@ -482,6 +471,9 @@ class QtDriver(DriverMixin, QObject):
         search_autofill = SearchAutoFill(self.main_window.search_field_model, self.lib)
         self.main_window.searchField.textChanged.connect(search_autofill.update_completions_list)
 
+        self.library_panel = LibraryPanel(self.lib, self)
+        self.main_window.library_sidebar_layout.addWidget(self.library_panel)
+
         self.preview_panel = PreviewPanel(self.lib, self)
         splitter = self.main_window.splitter
         splitter.addWidget(self.preview_panel)
@@ -533,13 +525,6 @@ class QtDriver(DriverMixin, QObject):
         self.filter_items(FilterState(query=self.main_window.searchField.text()))
 
     def init_library_window(self):
-        # self._init_landing_page() # Taken care of inside the widget now
-
-        # TODO: Put this into its own method that copies the font file(s) into memory
-        # so the resource isn't being used, then store the specific size variations
-        # in a global dict for methods to access for different DPIs.
-        # adj_font_size = math.floor(12 * self.main_window.devicePixelRatio())
-
         # Search Button
         search_button: QPushButton = self.main_window.searchButton
         search_button.clicked.connect(
@@ -582,16 +567,16 @@ class QtDriver(DriverMixin, QObject):
 
     def toggle_lib_dirs(self, value: bool):
         if value:
-            self.preview_panel.lib_dirs_container.show()
+            self.library_panel.lib_dirs_container.show()
         else:
-            self.preview_panel.lib_dirs_container.hide()
+            self.library_panel.lib_dirs_container.hide()
         self.preview_panel.update()
 
     def toggle_libs_list(self, value: bool):
         if value:
-            self.preview_panel.libs_flow_container.show()
+            self.library_panel.libs_flow_container.show()
         else:
-            self.preview_panel.libs_flow_container.hide()
+            self.library_panel.libs_flow_container.hide()
         self.preview_panel.update()
 
     def callback_library_needed_check(self, func):
@@ -930,10 +915,10 @@ class QtDriver(DriverMixin, QObject):
         self.flow_container: QWidget = QWidget()
         self.flow_container.setObjectName("flowContainer")
         self.flow_container.setLayout(layout)
-        sa: QScrollArea = self.main_window.scrollArea
-        sa.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        sa.setWidgetResizable(True)
-        sa.setWidget(self.flow_container)
+        scroll_area: QScrollArea = self.main_window.scrollArea
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(self.flow_container)
 
     def select_item(self, grid_index: int, append: bool, bridge: bool):
         """Select one or more items in the Thumbnail Grid."""
@@ -1168,6 +1153,7 @@ class QtDriver(DriverMixin, QObject):
 
         self.init_workers()
 
+        # TODO - use signals for these things
         self.filter.page_size = self.lib.prefs(LibraryPrefs.PAGE_SIZE)
 
         self.update_libs_list(storage_path)
@@ -1177,6 +1163,7 @@ class QtDriver(DriverMixin, QObject):
 
         self.selected.clear()
         self.preview_panel.update_widgets()
+        self.library_panel.update_widgets()
 
         # TODO - make this call optional
         # self.add_new_files_callback()
