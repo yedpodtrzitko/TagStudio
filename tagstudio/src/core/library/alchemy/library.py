@@ -35,6 +35,7 @@ from src.qt.enums import ThumbSize
 
 from ...constants import (
     BACKUP_FOLDER_NAME,
+    PROJECT_ROOT,
     TAG_ARCHIVED,
     TAG_FAVORITE,
 )
@@ -142,9 +143,9 @@ class Library:
         self.storage_path = None
 
     def migrate(self, db_url: str):
-        alembic_cfg = Config(str(Path(__file__).parent.parent / "alembic/alembic.ini"))
+        config_path = PROJECT_ROOT / "alembic.ini"
+        alembic_cfg = Config(str(config_path))
         alembic_cfg.set_main_option("sqlalchemy.url", db_url)
-        command.stamp(alembic_cfg, "head")
         command.upgrade(alembic_cfg, "head")
 
     def get_thumbnail(self, entry: Entry, size: ThumbSize) -> tuple[bool, Image.Image | None]:
@@ -177,16 +178,34 @@ class Library:
         makedirs(thumb_path.parent, exist_ok=True)
         image.save(thumb_path)
 
+    def init_db(self, use_migrations: bool, connection_string: URL):
+        logger.info(
+            "initializing database",
+            storage_path=self.storage_path,
+            connection_string=connection_string,
+            use_migrations=use_migrations,
+        )
+
+        if not use_migrations:
+            make_tables(self.engine)
+        else:
+            self.migrate(connection_string.render_as_string(hide_password=False))
+
     def open_library(
-        self, storage_path: Path | str, library_name: str | None = None
+        self, storage_path: Path | str, library_name: str | None = None, use_migrations: bool = True
     ) -> LibraryStatus:
         if storage_path == ":memory:":
             self.storage_path = storage_path
             is_new = True
         else:
-            self.storage_path = Path(storage_path) / self.FILENAME
-            if is_new := not self.storage_path.exists():
-                self.storage_path.touch()
+            storage_path = Path(storage_path)
+            if storage_path.name == self.FILENAME:
+                self.storage_path = storage_path
+                is_new = False
+            else:
+                self.storage_path = Path(storage_path) / self.FILENAME
+                if is_new := not self.storage_path.exists():
+                    self.storage_path.touch()
 
         connection_string = URL.create(
             drivername="sqlite",
@@ -202,13 +221,8 @@ class Library:
 
         self.engine = create_engine(connection_string)
         with Session(self.engine) as session:
-            make_tables(self.engine)
-            logger.info(
-                "creating migrations",
-                storage_path=storage_path,
-                connection_string=connection_string,
-            )
-            self.migrate(connection_string.render_as_string(hide_password=False))
+            self.init_db(use_migrations, connection_string)
+
             tags = get_default_tags()
             try:
                 session.add_all(tags)

@@ -31,7 +31,6 @@ def make_engine(connection_string: str) -> Engine:
 
 
 def make_tables(engine: Engine) -> None:
-    logger.info("creating db tables")
     Base.metadata.create_all(engine)
 
     # tag IDs < 1000 are reserved

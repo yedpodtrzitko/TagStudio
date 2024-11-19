@@ -32,7 +32,7 @@ def library(request):
             folder_path = request.param
 
     lib = Library()
-    status = lib.open_library(":memory:", folder_path)
+    status = lib.open_library(":memory:", folder_path, use_migrations=False)
     assert status.success
 
     tag = Tag(
