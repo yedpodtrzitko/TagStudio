@@ -13,7 +13,7 @@ from ._base import ThumbnailBase
 logger = structlog.get_logger(__name__)
 
 
-class Thumbnailer(ThumbnailBase):
+class PDFThumbnail(ThumbnailBase):
     EXTENSIONS = ("pdf",)
 
     @classmethod
@@ -56,3 +56,6 @@ class Thumbnailer(ThumbnailBase):
             return replace_transparent_pixels(im)
         finally:
             buffer.close()
+
+
+THUMBNAILER = PDFThumbnail

@@ -6,7 +6,6 @@
 import math
 import struct
 import sys
-import zipfile
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
@@ -31,14 +30,12 @@ from PIL.Image import DecompressionBombError
 from pillow_heif import register_avif_opener, register_heif_opener
 from pydub import exceptions
 from PySide6.QtCore import (
-    QBuffer,
     QObject,
     QSize,
     Qt,
     Signal,
 )
-from PySide6.QtGui import QGuiApplication, QImage, QPainter, QPixmap
-from PySide6.QtSvg import QSvgRenderer
+from PySide6.QtGui import QGuiApplication, QPixmap
 from src.core.constants import FONT_SAMPLE_SIZES, FONT_SAMPLE_TEXT
 from src.core.library import Entry, Library
 from src.core.media_types import MediaCategories, MediaType
@@ -622,53 +619,6 @@ class ThumbRenderer(QObject):
                 logger.error("Couldn't render thumbnail", filepath=filepath, error=e)
         return im
 
-    @classmethod
-    def _open_doc_thumb(cls, filepath: Path) -> Image.Image:
-        """Extract and render a thumbnail for an OpenDocument file.
-
-        Args:
-            filepath (Path): The path of the file.
-        """
-        file_path_within_zip = "Thumbnails/thumbnail.png"
-        im: Image.Image = None
-        with zipfile.ZipFile(filepath, "r") as zip_file:
-            # Check if the file exists in the zip
-            if file_path_within_zip in zip_file.namelist():
-                # Read the specific file into memory
-                file_data = zip_file.read(file_path_within_zip)
-                thumb_im = Image.open(BytesIO(file_data))
-                if thumb_im:
-                    im = Image.new("RGB", thumb_im.size, color="#1e1e1e")
-                    im.paste(thumb_im)
-            else:
-                logger.error("Couldn't render thumbnail", filepath=filepath)
-
-        return im
-
-    @classmethod
-    def _epub_cover(cls, filepath: Path) -> Image.Image:
-        """Extracts and returns the first image found in the ePub file at the given filepath.
-
-        Args:
-            filepath (Path): The path to the ePub file.
-
-        Returns:
-            Image: The first image found in the ePub file, or None by default.
-        """
-        im: Image.Image = None
-        try:
-            with zipfile.ZipFile(filepath, "r") as zip_file:
-                for file_name in zip_file.namelist():
-                    if file_name.lower().endswith(
-                        (".png", ".jpg", ".jpeg", ".gif", ".bmp", ".svg")
-                    ):
-                        image_data = zip_file.read(file_name)
-                        im = Image.open(BytesIO(image_data))
-        except Exception as e:
-            logger.error("Couldn't render thumbnail", filepath=filepath, error=e)
-
-        return im
-
     def _font_short_thumb(self, filepath: Path, size: int) -> Image.Image:
         """Render a small font preview ("Aa") thumbnail from a font file.
 
@@ -783,43 +733,6 @@ class ThumbRenderer(QObject):
             rawpy._rawpy.LibRawFileUnsupportedError,
         ) as e:
             logger.error("Couldn't render thumbnail", filepath=filepath, error=e)
-        return im
-
-    @classmethod
-    def _image_vector_thumb(cls, filepath: Path, size: int) -> Image.Image:
-        """Render a thumbnail for a vector image, such as SVG.
-
-        Args:
-            filepath (Path): The path of the file.
-            size (tuple[int,int]): The size of the thumbnail.
-        """
-        im: Image.Image = None
-        # Create an image to draw the svg to and a painter to do the drawing
-        image: QImage = QImage(size, size, QImage.Format.Format_ARGB32)
-        image.fill("#1e1e1e")
-
-        # Create an svg renderer, then render to the painter
-        svg: QSvgRenderer = QSvgRenderer(str(filepath))
-
-        if not svg.isValid():
-            raise UnidentifiedImageError
-
-        painter: QPainter = QPainter(image)
-        svg.setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
-        svg.render(painter)
-        painter.end()
-
-        # Write the image to a buffer as png
-        buffer: QBuffer = QBuffer()
-        buffer.open(QBuffer.OpenModeFlag.ReadWrite)
-        image.save(buffer, "PNG")
-
-        # Load the image from the buffer
-        im = Image.new("RGB", (size, size), color="#1e1e1e")
-        im.paste(Image.open(BytesIO(buffer.data().data())))
-        im = im.convert(mode="RGB")
-
-        buffer.close()
         return im
 
     def _model_stl_thumb(self, filepath: Path, size: int) -> Image.Image:
@@ -991,21 +904,11 @@ class ThumbRenderer(QObject):
                         ext, MediaCategories.IMAGE_RAW_TYPES, mime_fallback=True
                     ):
                         image = self._image_raw_thumb(_filepath)
-                    # Vector Images --------------------------------------------
-                    elif MediaCategories.is_ext_in_category(
-                        ext, MediaCategories.IMAGE_VECTOR_TYPES, mime_fallback=True
-                    ):
-                        image = self._image_vector_thumb(_filepath, adj_size)
                 # Videos =======================================================
                 elif MediaCategories.is_ext_in_category(
                     ext, MediaCategories.VIDEO_TYPES, mime_fallback=True
                 ):
                     image = self._video_thumb(_filepath)
-                # OpenDocument/OpenOffice ======================================
-                elif MediaCategories.is_ext_in_category(
-                    ext, MediaCategories.OPEN_DOCUMENT_TYPES, mime_fallback=True
-                ):
-                    image = self._open_doc_thumb(_filepath)
                 # Plain Text ===================================================
                 elif MediaCategories.is_ext_in_category(
                     ext, MediaCategories.PLAINTEXT_TYPES, mime_fallback=True
@@ -1029,11 +932,6 @@ class ThumbRenderer(QObject):
                         image = self._audio_waveform_thumb(_filepath, ext, adj_size, pixel_ratio)
                         if image is not None:
                             image = self._apply_overlay_color(image, UiColor.GREEN)
-                # Ebooks =======================================================
-                elif MediaCategories.is_ext_in_category(
-                    ext, MediaCategories.EBOOK_TYPES, mime_fallback=True
-                ):
-                    image = self._epub_cover(_filepath)
                 # Blender ======================================================
                 elif MediaCategories.is_ext_in_category(
                     ext, MediaCategories.BLENDER_TYPES, mime_fallback=True
