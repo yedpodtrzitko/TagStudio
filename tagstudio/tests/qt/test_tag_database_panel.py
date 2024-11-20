@@ -3,7 +3,7 @@ from src.qt.modals.tag_database import TagDatabasePanel
 
 def test_panel_tag_search(qt_driver, library):
     # Given
-    panel = TagDatabasePanel(library, is_popup=False)
+    panel = TagDatabasePanel(library, driver=None, is_popup=False)
 
     # When
     tag = library.tags[0]

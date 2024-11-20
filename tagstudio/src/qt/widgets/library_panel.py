@@ -37,7 +37,7 @@ class LibraryPanel(QWidget):
         self.libs_layout = QVBoxLayout()
         self.fill_libs_widget(self.libs_layout)
 
-        self.tag_panel = TagDatabasePanel(library, is_popup=False)
+        self.tag_panel = TagDatabasePanel(library, driver, is_popup=False)
 
         self.lib_dirs_container = LibraryDirsWidget(library, driver)
 

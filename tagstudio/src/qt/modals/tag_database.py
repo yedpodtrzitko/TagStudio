@@ -23,11 +23,12 @@ logger = structlog.get_logger()
 class TagDatabasePanel(PanelWidget):
     tag_chosen = Signal(int)
 
-    def __init__(self, library: Library, is_popup: bool = True):
+    def __init__(self, library: Library, driver=None, is_popup: bool = True):
         super().__init__()
         self.lib = library
         self.tag_limit = 30
         self.is_popup = is_popup
+        self.driver = driver
 
         self.setMinimumSize(300, 400)
         self.root_layout = QVBoxLayout(self)
@@ -83,10 +84,22 @@ class TagDatabasePanel(PanelWidget):
             row.setSpacing(3)
             tag_widget = TagWidget(tag, has_edit=True, has_remove=False)
             tag_widget.on_edit.connect(lambda checked=False, t=tag: self.edit_tag(t))
+            tag_widget.on_click.connect(self.set_main_filter(tag))
             row.addWidget(tag_widget)
             self.scroll_layout.addWidget(container)
 
         self.search_field.setFocus()
+
+    def set_main_filter(self, tag: Tag):
+        def inner():
+            if not self.driver:
+                return
+
+            # TODO - make filter use the search field value automatically
+            self.driver.main_window.searchField.setText(f"tag_id:{tag.id}")
+            self.driver.filter_items(FilterState(tag_id=tag.id))
+
+        return inner
 
     def edit_tag(self, tag: Tag):
         build_tag_panel = BuildTagPanel(self.lib, tag=tag)
