@@ -82,7 +82,7 @@ class PreviewPanel(QWidget):
         self.tag_callback = None
         self.containers: list[FieldContainer] = []
 
-        self.img_button_size: tuple[int, int] = (266, 266)
+        self.img_button_size: tuple[int, int] = (240, 240)
         self.image_ratio: float = 1.0
 
         self.label_bg_color = (

@@ -39,6 +39,7 @@ from ...constants import (
     PROJECT_ROOT,
     TAG_ARCHIVED,
     TAG_FAVORITE,
+    TS_FOLDER_NOINDEX,
 )
 from ...enums import LibraryPrefs
 from .db import make_tables
@@ -137,6 +138,7 @@ class Library:
     engine: Engine | None
 
     FILENAME: str = "ts_library.sqlite"
+    DATADIR: str = ".TagStudio"
 
     def close(self):
         if self.engine:
@@ -166,7 +168,12 @@ class Library:
         """Return path to thumbnail for given Entry."""
         assert isinstance(self.storage_path, Path)
         return (
-            self.storage_path / "thumbnails" / str(entry.folder_id) / size.name / f"{entry.id}.png"
+            self.storage_path
+            / self.DATADIR
+            / "thumbnails"
+            / str(entry.folder_id)
+            / size.name
+            / f"{entry.id}.png"
         )
 
     def save_thumbnail(self, entry: Entry, size: ThumbSize, image: Image.Image):
@@ -209,14 +216,11 @@ class Library:
             self.storage_path = storage_path
             is_new = True
         else:
-            storage_path = Path(storage_path)
-            if storage_path.name == self.FILENAME:
-                self.storage_path = storage_path
-                is_new = False
-            else:
-                self.storage_path = Path(storage_path) / self.FILENAME
-                if is_new := not self.storage_path.exists():
-                    self.storage_path.touch()
+            self.storage_path = Path(storage_path) / self.DATADIR / self.FILENAME
+            if is_new := not self.storage_path.exists():
+                makedirs(self.storage_path.parent, exist_ok=True)
+                (self.storage_path.parent / TS_FOLDER_NOINDEX).touch()
+                self.storage_path.touch()
 
         connection_string = URL.create(
             drivername="sqlite",
@@ -899,10 +903,10 @@ class Library:
 
         filename = f'ts_library_backup_{datetime.now(UTC).strftime("%Y_%m_%d_%H%M%S")}.sqlite'
 
-        target_path = self.storage_path / BACKUP_FOLDER_NAME / filename
+        target_path = self.storage_path / self.DATADIR / BACKUP_FOLDER_NAME / filename
 
         shutil.copy2(
-            self.storage_path / self.FILENAME,
+            self.storage_path / self.DATADIR / self.FILENAME,
             target_path,
         )
 
