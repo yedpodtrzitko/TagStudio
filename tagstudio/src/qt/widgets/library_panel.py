@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 from src.core.enums import SettingItems, Theme
 from src.core.library import Library
 from src.qt.helpers.qbutton_wrapper import QPushButtonWrapper
+from src.qt.modals.tag_database import TagDatabasePanel
 from src.qt.widgets.library_dirs import LibraryDirsWidget
 
 if TYPE_CHECKING:
@@ -36,6 +37,8 @@ class LibraryPanel(QWidget):
         self.libs_layout = QVBoxLayout()
         self.fill_libs_widget(self.libs_layout)
 
+        self.tag_panel = TagDatabasePanel(library, is_popup=False)
+
         self.lib_dirs_container = LibraryDirsWidget(library, driver)
 
         self.libs_flow_container: QWidget = QWidget()
@@ -54,6 +57,7 @@ class LibraryPanel(QWidget):
 
         splitter = QSplitter(Qt.Orientation.Vertical)
         splitter.setHandleWidth(12)
+        splitter.addWidget(self.tag_panel)
         splitter.addWidget(self.lib_dirs_container)
         splitter.addWidget(self.libs_flow_container)
 
@@ -65,6 +69,7 @@ class LibraryPanel(QWidget):
         logger.info("library_panel.update_widgets")
         self.fill_libs_widget(self.libs_layout)
         self.lib_dirs_container.refresh()
+        self.tag_panel.update_tags()
 
     def toggle_folders(self):
         self.lib_dirs_container.setVisible(not self.lib_dirs_container.isVisible())

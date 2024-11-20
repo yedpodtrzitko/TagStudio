@@ -1,7 +1,7 @@
 # Copyright (C) 2024 Travis Abendshien (CyanVoxel).
 # Licensed under the GPL-3.0 License.
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
-
+import structlog
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtWidgets import (
     QFrame,
@@ -17,15 +17,17 @@ from src.qt.modals.build_tag import BuildTagPanel
 from src.qt.widgets.panel import PanelModal, PanelWidget
 from src.qt.widgets.tag import TagWidget
 
+logger = structlog.get_logger()
+
 
 class TagDatabasePanel(PanelWidget):
     tag_chosen = Signal(int)
 
-    def __init__(self, library: Library):
+    def __init__(self, library: Library, is_popup: bool = True):
         super().__init__()
-        self.lib: Library = library
-        self.first_tag_id = -1
+        self.lib = library
         self.tag_limit = 30
+        self.is_popup = is_popup
 
         self.setMinimumSize(300, 400)
         self.root_layout = QVBoxLayout(self)
@@ -54,23 +56,25 @@ class TagDatabasePanel(PanelWidget):
 
         self.root_layout.addWidget(self.search_field)
         self.root_layout.addWidget(self.scroll_area)
-        self.update_tags()
+        if self.lib.storage_path:
+            self.update_tags()
 
     def on_return(self, text: str):
-        if text and self.first_tag_id >= 0:
-            # callback(self.first_tag_id)
-            self.search_field.setText("")
-            self.update_tags()
+        if text:
+            # self.search_field.setText("")
+            self.update_tags(text)
         else:
             self.search_field.setFocus()
-            self.parentWidget().hide()
+            if self.is_popup:
+                self.parentWidget().hide()
 
     def update_tags(self, query: str | None = None):
         # TODO: Look at recycling rather than deleting and re-initializing
+        logger.info("updating tags", query=query)
         while self.scroll_layout.itemAt(0):
             self.scroll_layout.takeAt(0).widget().deleteLater()
 
-        tags = self.lib.search_tags(FilterState(path=query, page_size=self.tag_limit))
+        tags = self.lib.search_tags(FilterState(tag=query, page_size=self.tag_limit))
 
         for tag in tags:
             container = QWidget()
