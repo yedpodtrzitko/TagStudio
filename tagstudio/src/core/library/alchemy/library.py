@@ -21,6 +21,7 @@ from sqlalchemy import (
     func,
     or_,
     select,
+    text,
     update,
 )
 from sqlalchemy.exc import IntegrityError
@@ -178,18 +179,28 @@ class Library:
         makedirs(thumb_path.parent, exist_ok=True)
         image.save(thumb_path)
 
-    def init_db(self, use_migrations: bool, connection_string: URL):
+    def init_db(self, use_migrations: bool, connection_string: URL, is_new: bool):
         logger.info(
             "initializing database",
             storage_path=self.storage_path,
             connection_string=connection_string,
             use_migrations=use_migrations,
+            is_new=is_new,
         )
 
         if not use_migrations:
             make_tables(self.engine)
         else:
             self.migrate(connection_string.render_as_string(hide_password=False))
+
+        if is_new:
+            # tag IDs < 1000 are reserved
+            # create tag and delete it to bump the autoincrement sequence
+            # TODO - find a better way
+            with self.engine.connect() as conn:
+                conn.execute(text("INSERT INTO tags (id, name, color) VALUES (999, 'temp', 1)"))
+                conn.execute(text("DELETE FROM tags WHERE id = 999"))
+                conn.commit()
 
     def open_library(
         self, storage_path: Path | str, library_name: str | None = None, use_migrations: bool = True
@@ -221,7 +232,7 @@ class Library:
 
         self.engine = create_engine(connection_string)
         with Session(self.engine) as session:
-            self.init_db(use_migrations, connection_string)
+            self.init_db(use_migrations, connection_string, is_new)
 
             tags = get_default_tags()
             try:
