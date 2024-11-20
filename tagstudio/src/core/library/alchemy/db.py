@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import structlog
-from sqlalchemy import Dialect, Engine, String, TypeDecorator, create_engine, text
+from sqlalchemy import Dialect, Engine, String, TypeDecorator, create_engine
 from sqlalchemy.orm import DeclarativeBase
 
 logger = structlog.getLogger(__name__)
@@ -32,14 +32,6 @@ def make_engine(connection_string: str) -> Engine:
 
 def make_tables(engine: Engine) -> None:
     Base.metadata.create_all(engine)
-
-    # tag IDs < 1000 are reserved
-    # create tag and delete it to bump the autoincrement sequence
-    # TODO - find a better way
-    with engine.connect() as conn:
-        conn.execute(text("INSERT INTO tags (id, name, color) VALUES (999, 'temp', 1)"))
-        conn.execute(text("DELETE FROM tags WHERE id = 999"))
-        conn.commit()
 
 
 def drop_tables(engine: Engine) -> None:
