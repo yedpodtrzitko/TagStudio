@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLineEdit,
+    QPushButton,
     QScrollArea,
     QVBoxLayout,
     QWidget,
@@ -57,6 +58,13 @@ class TagDatabasePanel(PanelWidget):
 
         self.root_layout.addWidget(self.search_field)
         self.root_layout.addWidget(self.scroll_area)
+
+        if self.driver:
+            self.add_tag_btn = QPushButton()
+            self.add_tag_btn.setText("Add Tag")
+            self.add_tag_btn.clicked.connect(self.driver.add_tag_action_callback)
+            self.root_layout.addWidget(self.add_tag_btn)
+
         if self.lib.storage_path:
             self.update_tags()
 
