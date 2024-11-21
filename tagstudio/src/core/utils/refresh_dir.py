@@ -14,6 +14,13 @@ IGNORED_FILES = {
     ".DS_Store",
 }
 
+IGNORED_DIRS = {
+    ".GIT",
+    "$RECYCLE.BIN",
+    "NODE_MODULES",
+    ".TAGSTUDIO",
+}
+
 
 @dataclass
 class RefreshDirTracker:
@@ -72,14 +79,16 @@ class RefreshDirTracker:
     def _refresh_dir(self, folder: Folder) -> Iterator[int]:
         start_time_loop = time()
         folder_path = folder.path
-        for root, _, files in folder_path.walk():
-            if "$RECYCLE.BIN" in str(root).upper():
+        for root, subdirs, files in folder_path.walk():
+            if root.name.upper() in IGNORED_DIRS:
+                subdirs[:] = []
                 continue
 
             # - if directory contains file `.ts_noindex` then skip the directory
             if constants.TS_FOLDER_NOINDEX in files:
-                logger.info("TS Ignore File found, skipping", directory=root)
+                logger.info("TS Ignore File found, skipping", directory=root, subdirs=subdirs)
                 # however check if the ignored files aren't in the library; if so, remove them
+                subdirs[:] = []
                 entries_to_remove = []
                 for file in files:
                     file_path = root / file
