@@ -10,6 +10,10 @@ from src.core.library.alchemy.models import Folder
 
 logger = structlog.get_logger(__name__)
 
+IGNORED_FILES = {
+    ".DS_Store",
+}
+
 
 @dataclass
 class RefreshDirTracker:
@@ -92,8 +96,11 @@ class RefreshDirTracker:
                 self.library.remove_entries(entries_to_remove)
                 continue
 
-            for file in files:
-                path = root / file
+            for file_name in files:
+                if file_name in IGNORED_FILES:
+                    continue
+
+                path = root / file_name
                 self.dir_files_count += 1
 
                 relative_path = path.relative_to(folder_path)
