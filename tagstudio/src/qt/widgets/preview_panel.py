@@ -24,7 +24,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMessageBox,
-    QPushButton,
     QScrollArea,
     QSizePolicy,
     QSplitter,
@@ -263,8 +262,6 @@ class PreviewPanel(QWidget):
         root_layout.setContentsMargins(0, 0, 0, 0)
         root_layout.addWidget(splitter)
 
-        self.add_sidebar_buttons(self.driver.main_window.horizontalLayout)
-
     def update_selected_entry(self, driver: "QtDriver"):
         for grid_idx in driver.selected:
             entry = driver.frame_content[grid_idx]
@@ -286,25 +283,6 @@ class PreviewPanel(QWidget):
 
     def toggle_props(self):
         self.info_section.setVisible(not self.info_section.isVisible())
-
-    def add_sidebar_buttons(self, parent_layout: QHBoxLayout):
-        sidebar = QVBoxLayout()
-        sidebar.setContentsMargins(0, 0, 0, 0)
-        sidebar.setAlignment(Qt.AlignTop)  # type: ignore
-
-        sidebar_preview = QPushButton("🖼️")
-        sidebar_preview.setFixedWidth(32)
-        sidebar_preview.pressed.connect(self.toggle_thumbnail)
-        sidebar_preview.setToolTip("Toggle Thumbnail")
-        sidebar.addWidget(sidebar_preview)
-
-        sidebar_props = QPushButton("⚙️️")
-        sidebar_props.setFixedWidth(32)
-        sidebar_props.pressed.connect(self.toggle_props)
-        sidebar_props.setToolTip("Toggle Properties")
-        sidebar.addWidget(sidebar_props)
-
-        parent_layout.addLayout(sidebar)
 
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
         self.update_image_size(

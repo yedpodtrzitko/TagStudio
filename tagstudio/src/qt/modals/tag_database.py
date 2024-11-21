@@ -30,7 +30,7 @@ class TagDatabasePanel(PanelWidget):
         self.is_popup = is_popup
         self.driver = driver
 
-        self.setMinimumSize(300, 400)
+        self.setMinimumSize(200, 300)
         self.root_layout = QVBoxLayout(self)
         self.root_layout.setContentsMargins(6, 0, 6, 0)
 
