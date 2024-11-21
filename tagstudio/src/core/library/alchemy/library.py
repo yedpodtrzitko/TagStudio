@@ -496,7 +496,7 @@ class Library:
                         )
                     )
                 )
-            elif search.tag_id:
+            elif search.tag_id is not None:
                 statement = (
                     statement.join(Entry.tag_box_fields)
                     .join(TagBoxField.tags)
