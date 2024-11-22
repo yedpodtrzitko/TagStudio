@@ -7,6 +7,9 @@ class WindowContent(enum.Enum):
     LIBRARY_CONTENT = 2
 
 
-class ThumbSize(enum.Enum):
-    MEDIUM = (256, 256)
-    LARGE = (512, 512)
+class ThumbSize(enum.IntEnum):
+    MINI = 76
+    SMALL = 96
+    MEDIUM = 128
+    LARGE = 192
+    X_LARGE = 256

@@ -28,6 +28,7 @@ from src.core.library import Entry, ItemType, Library
 from src.core.library.alchemy.enums import FilterState
 from src.core.library.alchemy.fields import _FieldID
 from src.core.media_types import MediaCategories, MediaType
+from src.qt.enums import ThumbSize
 from src.qt.flowlayout import FlowWidget
 from src.qt.helpers.file_opener import FileOpenerHelper
 from src.qt.platform_strings import PlatformStrings
@@ -116,7 +117,7 @@ class ItemThumb(FlowWidget):
         mode: ItemType,
         library: Library,
         driver: "QtDriver",
-        thumb_size: tuple[int, int],
+        thumb_size: ThumbSize,
         grid_idx: int,
     ):
         super().__init__()
@@ -125,9 +126,9 @@ class ItemThumb(FlowWidget):
         self.mode: ItemType = mode
         self.driver = driver
         self.item_id: int | None = None
-        self.thumb_size: tuple[int, int] = thumb_size
-        self.setMinimumSize(*thumb_size)
-        self.setMaximumSize(*thumb_size)
+        self.thumb_size: ThumbSize = thumb_size
+        self.setMinimumSize(thumb_size.value, thumb_size.value)
+        self.setMaximumSize(thumb_size.value, thumb_size.value)
         self.setMouseTracking(True)
         check_size = 24
 
