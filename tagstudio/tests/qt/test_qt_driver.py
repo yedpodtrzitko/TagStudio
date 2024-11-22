@@ -1,6 +1,7 @@
 from unittest.mock import Mock
 
 from src.core.library.alchemy.enums import FilterState, ItemType
+from src.qt.enums import ThumbSize
 from src.qt.widgets.item_thumb import ItemThumb
 
 
@@ -14,7 +15,7 @@ def test_update_thumbs(qt_driver, entry_full):
                 mode=ItemType.ENTRY,
                 library=qt_driver.lib,
                 driver=qt_driver,
-                thumb_size=(100, 100),
+                thumb_size=ThumbSize.MEDIUM,
                 grid_idx=i,
             )
         )
@@ -61,7 +62,7 @@ def test_select_item_bridge(qt_driver, entry_min):
 def test_library_state_update(qt_driver):
     # Given
     for idx, entry in enumerate(qt_driver.lib.get_entries(with_joins=True)):
-        thumb = ItemThumb(ItemType.ENTRY, qt_driver.lib, qt_driver, (100, 100), idx)
+        thumb = ItemThumb(ItemType.ENTRY, qt_driver.lib, qt_driver, ThumbSize.MEDIUM, idx)
         qt_driver.item_thumbs.append(thumb)
         qt_driver.frame_content.append(entry)
 
@@ -105,3 +106,18 @@ def test_close_library(qt_driver):
     # close library again to see there's no error
     qt_driver.close_library()
     qt_driver.close_library(is_shutdown=True)
+
+
+def test_thumb_size_callback(qt_driver):
+    # Given
+    qt_driver.frame_content = []
+
+    # qt_driver.main_window.setup_thumb_size_combobox()
+    assert qt_driver.thumb_size == ThumbSize.MEDIUM
+
+    # When
+    qt_driver.main_window.thumb_size_combobox.itemData.return_value = ThumbSize.LARGE
+    qt_driver.thumb_size_callback(1)
+
+    # Then
+    assert qt_driver.thumb_size == ThumbSize.LARGE

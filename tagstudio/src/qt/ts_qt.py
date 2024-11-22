@@ -80,7 +80,7 @@ from src.core.library.alchemy.models import Entry, Folder
 from src.core.ts_core import TagStudioCore
 from src.core.utils.refresh_dir import RefreshDirTracker
 from src.core.utils.web import strip_web_protocol
-from src.qt.enums import WindowContent
+from src.qt.enums import ThumbSize, WindowContent
 from src.qt.flowlayout import FlowLayout
 from src.qt.helpers.custom_runnable import CustomRunnable
 from src.qt.helpers.function_iterator import FunctionIterator
@@ -151,7 +151,6 @@ class QtDriver(DriverMixin, QObject):
         self.pages_count = 0
 
         self.scrollbar_pos = 0
-        self.thumb_size = 128
         self.spacing = None
 
         self.branch: str = (" (" + VERSION_BRANCH + ")") if VERSION_BRANCH else ""
@@ -162,6 +161,8 @@ class QtDriver(DriverMixin, QObject):
 
         # grid indexes of selected items
         self.selected: list[int] = []
+
+        self.thumb_size: ThumbSize = ThumbSize.MEDIUM
 
         self.SIGTERM.connect(self.handle_sigterm)
 
@@ -482,13 +483,6 @@ class QtDriver(DriverMixin, QObject):
             str(Path(__file__).parents[2] / "resources/qt/fonts/Oxanium-Bold.ttf")
         )
 
-        self.thumb_sizes: list[tuple[str, int]] = [
-            ("Extra Large Thumbnails", 256),
-            ("Large Thumbnails", 192),
-            ("Medium Thumbnails", 128),
-            ("Small Thumbnails", 96),
-            ("Mini Thumbnails", 76),
-        ]
         self.item_thumbs: list[ItemThumb] = []
         self.thumb_renderers: list[ThumbRenderer] = []
         self.filter = FilterState()
@@ -538,14 +532,15 @@ class QtDriver(DriverMixin, QObject):
         search_type_selector.currentIndexChanged.connect(
             lambda: self.set_search_type(SearchMode(search_type_selector.currentIndex()))
         )
+
         # Thumbnail Size ComboBox
         thumb_size_combobox: QComboBox = self.main_window.thumb_size_combobox
-        for size in self.thumb_sizes:
-            thumb_size_combobox.addItem(size[0])
-        thumb_size_combobox.setCurrentIndex(2)  # Default: Medium
-        thumb_size_combobox.currentIndexChanged.connect(
-            lambda: self.thumb_size_callback(thumb_size_combobox.currentIndex())
-        )
+        for idx, size in enumerate(ThumbSize):
+            thumb_size_combobox.addItem(size.name, size)
+            if size == self.thumb_size:
+                thumb_size_combobox.setCurrentIndex(idx)
+
+        thumb_size_combobox.currentIndexChanged.connect(self.thumb_size_callback)
         self._init_thumb_grid()
 
         back_button: QPushButton = self.main_window.backButton
@@ -844,21 +839,23 @@ class QtDriver(DriverMixin, QObject):
         spacing_divisor: int = 10
         min_spacing: int = 12
         # Index 2 is the default (Medium)
-        if 0 <= index < len(self.thumb_sizes):
-            self.thumb_size = self.thumb_sizes[index][1]
-        else:
-            logger.error(f"ERROR: Invalid thumbnail size index ({index}). Defaulting to 128px.")
-            self.thumb_size = 128
+        logger.info("Thumbnail Size Changed", index=index)
+        thumb_size = self.main_window.thumb_size_combobox.itemData(index, Qt.ItemDataRole.UserRole)
+        if self.thumb_size == thumb_size:
+            # nothing has changed
+            return
 
+        self.thumb_size = thumb_size
         self.update_thumbs()
         blank_icon: QIcon = QIcon()
         for it in self.item_thumbs:
             it.thumb_button.setIcon(blank_icon)
-            it.resize(self.thumb_size, self.thumb_size)
-            it.thumb_size = (self.thumb_size, self.thumb_size)
-            it.setMinimumSize(self.thumb_size, self.thumb_size)
-            it.setMaximumSize(self.thumb_size, self.thumb_size)
-            it.thumb_button.thumb_size = (self.thumb_size, self.thumb_size)
+            it.resize(self.thumb_size.value, self.thumb_size.value)
+            it.thumb_size = self.thumb_size
+            it.setMinimumSize(self.thumb_size.value, self.thumb_size.value)
+            it.setMaximumSize(self.thumb_size.value, self.thumb_size.value)
+            it.thumb_button.thumb_size = self.thumb_size
+
         self.flow_container.layout().setSpacing(
             min(self.thumb_size // spacing_divisor, min_spacing)
         )
@@ -905,9 +902,7 @@ class QtDriver(DriverMixin, QObject):
 
         # TODO - init after library is loaded, it can have different page_size
         for grid_idx in range(self.filter.page_size):
-            item_thumb = ItemThumb(
-                ItemType.NONE, self.lib, self, (self.thumb_size, self.thumb_size), grid_idx
-            )
+            item_thumb = ItemThumb(ItemType.NONE, self.lib, self, self.thumb_size, grid_idx)
 
             layout.addWidget(item_thumb)
             self.item_thumbs.append(item_thumb)

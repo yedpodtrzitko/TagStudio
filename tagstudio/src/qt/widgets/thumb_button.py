@@ -15,13 +15,14 @@ from PySide6.QtGui import (
     QPen,
 )
 from PySide6.QtWidgets import QWidget
+from src.qt.enums import ThumbSize
 from src.qt.helpers.qbutton_wrapper import QPushButtonWrapper
 
 
 class ThumbButton(QPushButtonWrapper):
-    def __init__(self, parent: QWidget, thumb_size: tuple[int, int]) -> None:  # noqa: N802
+    def __init__(self, parent: QWidget, thumb_size: ThumbSize) -> None:  # noqa: N802
         super().__init__(parent)
-        self.thumb_size: tuple[int, int] = thumb_size
+        self.thumb_size = thumb_size
         self.hovered = False
         self.selected = False
 
@@ -64,8 +65,8 @@ class ThumbButton(QPushButtonWrapper):
                 QtCore.QRectF(
                     width / 2,
                     width / 2,
-                    self.thumb_size[0] - width,
-                    self.thumb_size[1] - width,
+                    self.thumb_size.value - width,
+                    self.thumb_size.value - width,
                 ),
                 radius,
                 radius,
