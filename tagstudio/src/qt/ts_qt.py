@@ -76,7 +76,7 @@ from src.core.library.alchemy.enums import (
 )
 from src.core.library.alchemy.fields import _FieldID
 from src.core.library.alchemy.library import LibraryStatus
-from src.core.library.alchemy.models import Folder
+from src.core.library.alchemy.models import Entry, Folder
 from src.core.ts_core import TagStudioCore
 from src.core.utils.refresh_dir import RefreshDirTracker
 from src.core.utils.web import strip_web_protocol
@@ -146,7 +146,7 @@ class QtDriver(DriverMixin, QObject):
         self.lib = backend.Library()
         self.rm: ResourceManager = ResourceManager()
         self.args = args
-        self.frame_content = []
+        self.frame_content: list[Entry] = []
         self.filter = FilterState()
         self.pages_count = 0
 
@@ -823,7 +823,7 @@ class QtDriver(DriverMixin, QObject):
                 )
 
         elif name == MacroID.BUILD_URL:
-            url = TagStudioCore.build_url(entry.id, source)
+            url = TagStudioCore.build_url(entry, source)
             self.lib.add_entry_field_type(entry.id, field_id=_FieldID.SOURCE, value=url)
         elif name == MacroID.MATCH:
             TagStudioCore.match_conditions(self.lib, entry.id)

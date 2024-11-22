@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import structlog
-from sqlalchemy import Dialect, Engine, String, TypeDecorator, create_engine
+from sqlalchemy import Dialect, Engine, String, TypeDecorator
 from sqlalchemy.orm import DeclarativeBase
 
 logger = structlog.getLogger(__name__)
@@ -26,14 +26,5 @@ class Base(DeclarativeBase):
     type_annotation_map = {Path: PathType}
 
 
-def make_engine(connection_string: str) -> Engine:
-    return create_engine(connection_string)
-
-
 def make_tables(engine: Engine) -> None:
     Base.metadata.create_all(engine)
-
-
-def drop_tables(engine: Engine) -> None:
-    logger.info("dropping db tables")
-    Base.metadata.drop_all(engine)

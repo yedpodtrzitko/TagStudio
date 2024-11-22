@@ -859,7 +859,7 @@ class ThumbRenderer(QObject):
 
         Args:
             timestamp (float): The timestamp for which this job was dispatched.
-            entry (Path | None): The path of the file to render a thumbnail for.
+            entry (Entry | None): The path of the file to render a thumbnail for.
             base_size (tuple[int,int]): The unmodified base size of the thumbnail.
             pixel_ratio (float): The screen pixel ratio.
             is_loading (bool): Is this a loading graphic?

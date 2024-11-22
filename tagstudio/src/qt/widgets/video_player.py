@@ -1,9 +1,10 @@
 # Licensed under the GPL-3.0 License.
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
-import logging
 import typing
+from pathlib import Path
 
+import structlog
 from PIL import Image, ImageDraw
 from PySide6.QtCore import (
     QEvent,
@@ -35,6 +36,8 @@ from src.qt.platform_strings import PlatformStrings
 if typing.TYPE_CHECKING:
     from src.qt.ts_qt import QtDriver
 
+logger = structlog.get_logger(__name__)
+
 
 class VideoPlayer(QGraphicsView):
     """A basic video player."""
@@ -42,7 +45,7 @@ class VideoPlayer(QGraphicsView):
     video_preview = None
     play_pause = None
     mute_button = None
-    filepath: str | None
+    filepath: Path | None
 
     def __init__(self, driver: "QtDriver") -> None:
         super().__init__()
@@ -262,12 +265,12 @@ class VideoPlayer(QGraphicsView):
             self.player.audioOutput().setMuted(True)
             self.mute_button.load(self.driver.rm.volume_mute_icon)
 
-    def play(self, filepath: str, resolution: QSize) -> None:
+    def play(self, filepath: Path, resolution: QSize) -> None:
         """Set the filepath and send the current player position to the very end.
 
         This is used so that the new video can be played.
         """
-        logging.info(f"Playing {filepath}")
+        logger.info("Playing video", filepath=filepath)
         self.resolution = resolution
         self.filepath = filepath
         if self.player.isPlaying():

@@ -81,9 +81,9 @@ class Ui_MainWindow(QMainWindow):
 
         self.scrollArea = QScrollArea()
         self.scrollArea.setObjectName(u"scrollArea")
-        self.scrollArea.setFocusPolicy(Qt.WheelFocus)
-        self.scrollArea.setFrameShape(QFrame.NoFrame)
-        self.scrollArea.setFrameShadow(QFrame.Plain)
+        self.scrollArea.setFocusPolicy(Qt.FocusPolicy.WheelFocus)
+        self.scrollArea.setFrameShape(QFrame.Shape.NoFrame)
+        self.scrollArea.setFrameShadow(QFrame.Shadow.Plain)
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(
