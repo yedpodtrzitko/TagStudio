@@ -98,6 +98,7 @@ class TagWidget(QWidget):
     edit_icon_128.load()
     on_remove = Signal()
     on_click = Signal()
+    on_double_click = Signal()
     on_edit = Signal()
 
     def __init__(

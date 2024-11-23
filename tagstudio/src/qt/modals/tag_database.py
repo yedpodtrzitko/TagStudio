@@ -1,8 +1,13 @@
 # Copyright (C) 2024 Travis Abendshien (CyanVoxel).
 # Licensed under the GPL-3.0 License.
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
+from __future__ import annotations
+
+import math
+from typing import TYPE_CHECKING
+
 import structlog
-from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -14,17 +19,19 @@ from PySide6.QtWidgets import (
 )
 from src.core.library import Library, Tag
 from src.core.library.alchemy.enums import FilterState
+from src.core.palette import ColorType, get_tag_color
 from src.qt.modals.build_tag import BuildTagPanel
 from src.qt.widgets.panel import PanelModal, PanelWidget
 from src.qt.widgets.tag import TagWidget
+
+if TYPE_CHECKING:
+    from src.qt.ts_qt import QtDriver
 
 logger = structlog.get_logger()
 
 
 class TagDatabasePanel(PanelWidget):
-    tag_chosen = Signal(int)
-
-    def __init__(self, library: Library, driver=None, is_popup: bool = True):
+    def __init__(self, library: Library, driver: QtDriver = None, is_popup: bool = True):
         super().__init__()
         self.lib = library
         self.tag_limit = 30
@@ -86,26 +93,67 @@ class TagDatabasePanel(PanelWidget):
         tags = self.lib.search_tags(FilterState(tag=query, page_size=self.tag_limit))
 
         for tag in tags:
-            container = QWidget()
-            row = QHBoxLayout(container)
-            row.setContentsMargins(0, 0, 0, 0)
-            row.setSpacing(3)
             tag_widget = TagWidget(tag, has_edit=True, has_remove=False)
             tag_widget.on_edit.connect(lambda checked=False, t=tag: self.edit_tag(t))
             tag_widget.on_click.connect(self.set_main_filter(tag))
-            row.addWidget(tag_widget)
-            self.scroll_layout.addWidget(container)
+            tag_widget.on_double_click.connect(self.set_main_filter(tag, search=True))
+
+            button_plus = QPushButton()
+            button_plus.setMinimumSize(23, 23)
+            button_plus.setMaximumSize(23, 23)
+            button_plus.setText("+")
+            button_plus.setStyleSheet(
+                f"QPushButton{{"
+                f"background: {get_tag_color(ColorType.PRIMARY, tag.color)};"
+                f"color: {get_tag_color(ColorType.TEXT, tag.color)};"
+                f"font-weight: 600;"
+                f"border-color:{get_tag_color(ColorType.BORDER, tag.color)};"
+                f"border-radius: 6px;"
+                f"border-style:solid;"
+                f"border-width: {math.ceil(self.devicePixelRatio())}px;"
+                f"padding-bottom: 5px;"
+                f"font-size: 20px;"
+                f"}}"
+                f"QPushButton::hover"
+                f"{{"
+                f"border-color:{get_tag_color(ColorType.LIGHT_ACCENT, tag.color)};"
+                f"color: {get_tag_color(ColorType.DARK_ACCENT, tag.color)};"
+                f"background: {get_tag_color(ColorType.LIGHT_ACCENT, tag.color)};"
+                f"}}"
+            )
+
+            button_plus.clicked.connect(self.add_entries_tag(tag))
+
+            row_widget = QWidget()
+            row_layout = QHBoxLayout(row_widget)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            row_layout.setSpacing(3)
+            row_layout.addWidget(tag_widget)
+            row_layout.addWidget(button_plus)
+            self.scroll_layout.addWidget(row_widget)
 
         self.search_field.setFocus()
 
-    def set_main_filter(self, tag: Tag):
+    def add_entries_tag(self, tag: Tag):
+        def inner():
+            if not self.driver:
+                logger.warning("add_entries_tag called without driver")
+                return
+
+            self.driver.add_selected_tag(tag)
+
+        return inner
+
+    def set_main_filter(self, tag: Tag, search: bool = False):
         def inner():
             if not self.driver:
                 return
 
-            # TODO - make filter use the search field value automatically
             self.driver.main_window.searchField.setText(f"tag_id:{tag.id}")
-            self.driver.filter_items(FilterState(tag_id=tag.id))
+
+            if search:
+                # happens on double click
+                self.driver.filter_items(FilterState(tag_id=tag.id))
 
         return inner
 

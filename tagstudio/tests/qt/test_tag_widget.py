@@ -23,18 +23,17 @@ def test_tag_widget(qtbot, library, qt_driver):
     assert tag_widget.add_modal.isVisible()
 
 
-def test_tag_widget_add_existing_raises(library, qt_driver, entry_full):
+def test_tag_widget_add_existing_pass(library, qt_driver, entry_full):
     # Given
     tag_field = [f for f in entry_full.tag_box_fields if f.type_key == _FieldID.TAGS.name][0]
     assert len(entry_full.tags) == 1
     tag = next(iter(entry_full.tags))
 
-    # When
     tag_widget = TagBoxWidget(tag_field, "title", qt_driver)
     tag_widget.driver.frame_content = [entry_full]
     tag_widget.driver.selected = [0]
 
-    # Then
+    # When/Then
     with patch.object(tag_widget, "error_occurred") as mocked:
         tag_widget.add_modal.widget.tag_chosen.emit(tag.id)
         assert mocked.emit.called

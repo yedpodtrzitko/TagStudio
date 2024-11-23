@@ -579,7 +579,7 @@ class Library:
             query = query.options(
                 selectinload(Tag.subtags),
                 selectinload(Tag.aliases),
-            )
+            ).limit(search.limit)
 
             if search.tag:
                 query = query.where(
@@ -856,10 +856,10 @@ class Library:
         self,
         entry: Entry,
         tag: Tag,
-        field_key: str = _FieldID.TAGS.name,
+        field_key: str | None = None,
         create_field: bool = False,
     ) -> bool:
-        assert isinstance(field_key, str), f"field_key is {type(field_key)}"
+        field_key = field_key or _FieldID.TAGS.name
 
         with Session(self.engine) as session:
             # find field matching entry and field_type
