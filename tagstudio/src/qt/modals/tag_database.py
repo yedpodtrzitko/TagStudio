@@ -68,7 +68,7 @@ class TagDatabasePanel(PanelWidget):
 
         if self.driver:
             self.add_tag_btn = QPushButton()
-            self.add_tag_btn.setText("Add Tag")
+            self.add_tag_btn.setText("Create New Tag")
             self.add_tag_btn.clicked.connect(self.driver.add_tag_action_callback)
             self.root_layout.addWidget(self.add_tag_btn)
 
