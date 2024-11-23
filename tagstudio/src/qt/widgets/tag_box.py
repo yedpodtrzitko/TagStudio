@@ -73,12 +73,12 @@ class TagBoxWidget(FieldWidget):
             f"background: #555555;"
             f"}}"
         )
-        tsp = TagSearchPanel(self.driver.lib)
-        tsp.tag_chosen.connect(lambda x: self.add_tag_callback(x))
-        self.add_modal = PanelModal(tsp, title, "Add Tags")
+        tag_search_panel = TagSearchPanel(self.driver.lib)
+        tag_search_panel.tag_chosen.connect(lambda x: self.add_tag_callback(x))
+        self.add_modal = PanelModal(tag_search_panel, title, "Add Tags")
         self.add_button.clicked.connect(
             lambda: (
-                tsp.update_tags(),
+                tag_search_panel.update_tags(),
                 self.add_modal.show(),
             )
         )
@@ -144,6 +144,7 @@ class TagBoxWidget(FieldWidget):
         self.edit_modal.show()
 
     def add_tag_callback(self, tag_id: int):
+        # TODO - merge with driver.add_selected_tag
         logger.info("add_tag_callback", tag_id=tag_id, selected=self.driver.selected)
 
         tag = self.driver.lib.get_tag(tag_id=tag_id)

@@ -13,6 +13,7 @@ import math
 import os
 import sys
 import time
+import typing
 import webbrowser
 from collections.abc import Sequence
 from itertools import zip_longest
@@ -76,7 +77,7 @@ from src.core.library.alchemy.enums import (
 )
 from src.core.library.alchemy.fields import _FieldID
 from src.core.library.alchemy.library import LibraryStatus
-from src.core.library.alchemy.models import Entry, Folder
+from src.core.library.alchemy.models import Entry, Folder, Tag
 from src.core.ts_core import TagStudioCore
 from src.core.utils.refresh_dir import RefreshDirTracker
 from src.core.utils.web import strip_web_protocol
@@ -212,6 +213,20 @@ class QtDriver(DriverMixin, QObject):
 
         if dir:
             self.open_library(Path(dir))
+
+    def add_selected_tag(self, tag: Tag, field_type: typing.Any = None):
+        logger.info("add_selected_tag", tag=tag, selected=self.selected, field_type=field_type)
+
+        for idx in self.selected:
+            entry: Entry = self.frame_content[idx]
+
+            if not self.lib.add_field_tag(entry, tag, field_type):
+                logger.error("Failed to add tag to entry", entry=entry, tag=tag)
+
+        self.preview_panel.update_widgets()
+
+        if tag.id in (TAG_FAVORITE, TAG_ARCHIVED):
+            self.update_badges(self.selected)
 
     def signal_handler(self, sig, frame):
         if sig in (SIGINT, SIGTERM, SIGQUIT):
