@@ -6,12 +6,15 @@ from typing import TYPE_CHECKING
 import structlog
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QCheckBox,
     QFileDialog,
     QHBoxLayout,
     QLabel,
+    QListView,
     QPushButton,
     QSizePolicy,
+    QTreeView,
     QVBoxLayout,
     QWidget,
 )
@@ -84,21 +87,39 @@ class LibraryDirsWidget(QWidget):
         # add a button which will open a library folder dialog
         button = QPushButton("Add Folder")
         button.setCursor(Qt.CursorShape.PointingHandCursor)
-        button.clicked.connect(self.add_folder)
+        button.clicked.connect(self.add_folders)
         self.root_layout.addWidget(button)
 
-    def add_folder(self):
+    def add_folders(self):
         """Open QT dialog to select a folder to add into library."""
         if not self.library.storage_path:
             logger.info("add_folder: no library open")
             # no library open, dont do anything
             return
 
-        directory = QFileDialog.getExistingDirectory(self, "Select Directory")
-        if directory and (folder := self.library.add_folder(Path(directory))):
-            self.driver.add_new_files_callback([folder])
-            self.driver.filter_items()
-            self.refresh()
+        dialog = QFileDialog(self)
+        dialog.setFileMode(QFileDialog.FileMode.Directory)
+        dialog.setOption(QFileDialog.Option.DontUseNativeDialog)
+        dialog.setOption(QFileDialog.Option.ShowDirsOnly)
+        # Enable multiple selection
+        selection_mode = QAbstractItemView.SelectionMode.ExtendedSelection
+        dialog.findChildren(QListView)[0].setSelectionMode(selection_mode)  # type: ignore
+        dialog.findChildren(QTreeView)[0].setSelectionMode(selection_mode)  # type: ignore
+
+        if dialog.exec() == QFileDialog.DialogCode.Accepted:
+            selected_dirs = dialog.selectedFiles()
+            added_folders = []
+
+            logger.info("add_folders", selected_dirs=selected_dirs)
+
+            for dir_path in selected_dirs:
+                if folder := self.library.add_folder(Path(dir_path)):
+                    added_folders.append(folder)
+
+            if added_folders:
+                self.driver.add_new_files_callback(added_folders)
+                self.driver.filter_items()
+                self.refresh()
 
     def fill_dirs(self, folders: dict[str, Folder]) -> None:
         def clear_layout(layout_item: QVBoxLayout):
@@ -128,7 +149,9 @@ class LibraryDirsWidget(QWidget):
 
         button_toggle.clicked.connect(toggle_folder)
 
-        folder_label = QLabel(folder.path.name)
+        folder_label = QLabel()
+        folder_label.setText(folder.path.name)
+        folder_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
 
         row_layout = QHBoxLayout()
         row_layout.addWidget(button_toggle)

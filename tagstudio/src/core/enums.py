@@ -57,6 +57,6 @@ class LibraryPrefs(DefaultEnum):
     """Library preferences with default value accessible via .default property."""
 
     IS_EXCLUDE_LIST = True
-    EXTENSION_LIST: list[str] = [".json", ".xmp", ".aae"]
+    EXTENSION_LIST: list[str] = [".json", ".xmp", ".aae", ".import"]
     PAGE_SIZE: int = 500
     LIBRARY_NAME: str = "TS Library"
