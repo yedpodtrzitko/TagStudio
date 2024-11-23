@@ -88,8 +88,8 @@ class CollageIconRenderer(QObject):
                                 pic = pic.convert(mode="RGB")
                                 pic = ImageChops.hard_light(pic, Image.new("RGB", size, color))
                             self.rendered.emit(pic)
-                    except DecompressionBombError as e:
-                        logger.info(f"[ERROR] One of the images was too big ({e})")
+                    except DecompressionBombError:
+                        logger.error("One of the images was too big", entry=entry)
                 elif MediaCategories.is_ext_in_category(
                     ext, MediaCategories.VIDEO_TYPES
                 ) and is_readable_video(filepath):

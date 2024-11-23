@@ -21,7 +21,7 @@
 # <pep8 compliant>
 
 
-## This file is a modified script that gets the thumbnail data stored in a blend file
+# This file is a modified script that gets the thumbnail data stored in a blend file
 
 
 import gzip

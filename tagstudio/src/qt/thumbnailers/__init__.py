@@ -1,10 +1,9 @@
 from pathlib import Path
-from typing import Type
 
 from src.qt.thumbnailers._base import ThumbnailBase
 
 
-def fill_registry() -> dict[str, Type[ThumbnailBase]]:
+def fill_registry() -> dict[str, type[ThumbnailBase]]:
     from . import dummy, image, pdf
 
     registry = {}
@@ -16,7 +15,7 @@ def fill_registry() -> dict[str, Type[ThumbnailBase]]:
     return registry
 
 
-def get_thumbnailer(filepath: Path) -> Type[ThumbnailBase]:
+def get_thumbnailer(filepath: Path) -> type[ThumbnailBase]:
     ext_lower = filepath.suffix.lstrip(".").lower()
     thumbnailer = REGISTRY.get(ext_lower)
     if not thumbnailer:
@@ -24,4 +23,4 @@ def get_thumbnailer(filepath: Path) -> Type[ThumbnailBase]:
     return thumbnailer
 
 
-REGISTRY: dict[str, Type[ThumbnailBase]] = fill_registry()
+REGISTRY: dict[str, type[ThumbnailBase]] = fill_registry()
