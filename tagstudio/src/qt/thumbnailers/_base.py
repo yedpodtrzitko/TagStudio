@@ -9,5 +9,5 @@ class ThumbnailBase(ABC):
 
     @classmethod
     @abstractmethod
-    def render(cls, filepath: Path, size) -> Image:
+    def render(cls, filepath: Path, size: int) -> Image:
         raise NotImplementedError

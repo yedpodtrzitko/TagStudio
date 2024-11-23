@@ -13,3 +13,8 @@ class ThumbSize(enum.IntEnum):
     MEDIUM = 128
     LARGE = 192
     X_LARGE = 256
+    XX_LARGE = 512
+
+    @property
+    def tuple(self):
+        return self.value, self.value

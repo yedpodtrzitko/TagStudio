@@ -988,7 +988,6 @@ class QtDriver(DriverMixin, QObject):
             ItemThumb.update_cutoff = time.time()
 
         ratio: float = self.main_window.devicePixelRatio()
-        base_size: tuple[int, int] = (self.thumb_size, self.thumb_size)
 
         # scrollbar: QScrollArea = self.main_window.scrollArea
         # scrollbar.verticalScrollBar().setValue(scrollbar_pos)
@@ -1012,7 +1011,7 @@ class QtDriver(DriverMixin, QObject):
             self.thumb_job_queue.put(
                 (
                     item_thumb.renderer.render,
-                    (sys.float_info.max, None, base_size, ratio, True, True),
+                    (sys.float_info.max, None, self.thumb_size, ratio, True, True),
                 )
             )
 
@@ -1041,7 +1040,7 @@ class QtDriver(DriverMixin, QObject):
             self.thumb_job_queue.put(
                 (
                     item_thumb.renderer.render,
-                    (time.time(), entry, base_size, ratio, False, True),
+                    (time.time(), entry, self.thumb_size, ratio, False, True),
                 )
             )
 

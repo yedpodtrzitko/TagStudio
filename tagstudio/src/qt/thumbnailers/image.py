@@ -12,7 +12,7 @@ class ImageThumbnail(ThumbnailBase):
     EXTENSIONS = ("jpg", "jpeg", "png", "gif", "bmp", "tiff", "webp")
 
     @classmethod
-    def render(cls, filepath: Path, size):
+    def render(cls, filepath: Path, size: int) -> Image.Image:
         im = Image.open(filepath)
         if im.mode not in ("RGB", "RGBA"):
             im = im.convert(mode="RGBA")

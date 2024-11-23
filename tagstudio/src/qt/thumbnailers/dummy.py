@@ -9,7 +9,7 @@ class DummyThumbnailer(ThumbnailBase):
     EXTENSIONS = ("__DUMMY__",)
 
     @classmethod
-    def render(cls, filepath: Path, size):
+    def render(cls, filepath: Path, size: int) -> Image.Image:
         # return dummy image
         return Image.new("RGB", (size, size), color="#1e1e1e")
 

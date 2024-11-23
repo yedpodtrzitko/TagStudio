@@ -42,6 +42,7 @@ from src.core.library.alchemy.fields import (
 )
 from src.core.library.alchemy.library import Library
 from src.core.media_types import MediaCategories
+from src.qt.enums import ThumbSize
 from src.qt.helpers.file_opener import FileOpenerHelper, FileOpenerLabel, open_file
 from src.qt.helpers.file_tester import is_readable_video
 from src.qt.helpers.qbutton_wrapper import QPushButtonWrapper
@@ -409,7 +410,7 @@ class PreviewPanel(QWidget):
                 self.thumb_renderer.render(
                     time.time(),
                     None,
-                    (512, 512),
+                    ThumbSize.XX_LARGE,
                     ratio,
                     is_loading=True,
                     update_on_ratio_change=True,
@@ -463,7 +464,7 @@ class PreviewPanel(QWidget):
                 self.thumb_renderer.render(
                     time.time(),
                     item,
-                    (512, 512),
+                    ThumbSize.XX_LARGE,
                     ratio,
                     update_on_ratio_change=True,
                 )
@@ -655,7 +656,7 @@ class PreviewPanel(QWidget):
                 self.thumb_renderer.render(
                     time.time(),
                     None,
-                    (512, 512),
+                    ThumbSize.XX_LARGE,
                     ratio,
                     is_loading=True,
                     update_on_ratio_change=True,

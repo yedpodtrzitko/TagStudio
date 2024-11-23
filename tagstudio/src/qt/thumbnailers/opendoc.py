@@ -13,7 +13,7 @@ class OpendocThumbnail(ThumbnailBase):
     EXTENSIONS = ("odt", "ods")
 
     @classmethod
-    def render(cls, filepath: Path, size) -> Image.Image:
+    def render(cls, filepath: Path, size: int) -> Image.Image:
         file_path_within_zip = "Thumbnails/thumbnail.png"
         with zipfile.ZipFile(filepath, "r") as zip_file:
             if file_path_within_zip in zip_file.namelist():

@@ -849,7 +849,7 @@ class ThumbRenderer(QObject):
         self,
         timestamp: float,
         entry: Entry | None,
-        base_size: tuple[int, int],
+        base_size: ThumbSize,
         pixel_ratio: float,
         is_loading: bool = False,
         is_grid_thumb: bool = False,
@@ -860,7 +860,7 @@ class ThumbRenderer(QObject):
         Args:
             timestamp (float): The timestamp for which this job was dispatched.
             entry (Entry | None): The path of the file to render a thumbnail for.
-            base_size (tuple[int,int]): The unmodified base size of the thumbnail.
+            base_size (ThumbSize): The unmodified base size of the thumbnail.
             pixel_ratio (float): The screen pixel ratio.
             is_loading (bool): Is this a loading graphic?
             is_grid_thumb (bool): Is this a thumbnail for the thumbnail grid?
@@ -868,7 +868,7 @@ class ThumbRenderer(QObject):
             update_on_ratio_change (bool): Should an updated ratio signal be sent?
 
         """
-        adj_size = math.ceil(max(base_size[0], base_size[1]) * pixel_ratio)
+        adj_size = math.ceil(base_size.value * pixel_ratio)
         pixmap: QPixmap = None
         image = None
 
@@ -876,6 +876,7 @@ class ThumbRenderer(QObject):
 
         ext = _filepath.suffix.lower() if _filepath else None
 
+        # TODO - use proper thumbnail size
         has_thumbnail, final = self.library.get_thumbnail(entry, size=ThumbSize.MEDIUM)
         if has_thumbnail:
             qim = ImageQt.ImageQt(final)
@@ -963,7 +964,7 @@ class ThumbRenderer(QObject):
 
                 resampling_method = (
                     Image.Resampling.NEAREST
-                    if max(image.size[0], image.size[1]) < max(base_size[0], base_size[1])
+                    if max(image.size[0], image.size[1]) < base_size.value
                     else Image.Resampling.BILINEAR
                 )
                 image = image.resize((new_x, new_y), resample=resampling_method)
