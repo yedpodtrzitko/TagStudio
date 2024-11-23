@@ -16,6 +16,8 @@ structlog.configure(
     wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
 )
 
+logger = structlog.get_logger(__name__)
+
 
 def main():
     # appid = "cyanvoxel.tagstudio.9"
@@ -65,7 +67,7 @@ def main():
         driver.start()
     except BaseException:
         traceback.print_exc()
-        logging.info(f"\nTagStudio Frontend ({ui_name}) Crashed! Press Enter to Continue...")
+        logger.info("TagStudio Frontend Crashed! Press Enter to Continue...", frontend=ui_name)
         input()
 
 

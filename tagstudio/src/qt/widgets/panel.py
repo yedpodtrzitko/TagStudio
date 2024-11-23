@@ -1,11 +1,13 @@
 # Copyright (C) 2024 Travis Abendshien (CyanVoxel).
 # Licensed under the GPL-3.0 License.
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
-import logging
 from typing import Callable
 
+import structlog
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+
+logger = structlog.get_logger(__name__)
 
 
 class PanelModal(QWidget):
@@ -110,4 +112,4 @@ class PanelWidget(QWidget):
         pass
 
     def add_callback(self, callback: Callable, event: str = "returnPressed"):
-        logging.warning(f"add_callback not implemented for {self.__class__.__name__}")
+        logger.warning("add_callback not implemented", class_name=self.__class__.__name__)

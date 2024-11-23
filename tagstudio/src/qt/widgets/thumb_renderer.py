@@ -586,9 +586,9 @@ class ThumbRenderer(QObject):
             TypeError,
         ) as e:
             if str(e) == "expected string or buffer":
-                logger.info(
-                    f"[ThumbRenderer][BLENDER][INFO] {filepath.name} "
-                    f"Doesn't have an embedded thumbnail. ({type(e).__name__})"
+                logger.exception(
+                    "Blender file doesn't have an embedded thumbnail.",
+                    filepath=filepath,
                 )
 
             else:

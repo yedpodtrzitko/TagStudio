@@ -588,9 +588,7 @@ class PreviewPanel(QWidget):
                             self.dimensions_label.setText(
                                 f"{ext.upper()[1:]}  •  {format_size(filepath.stat().st_size)}"
                             )
-                            logger.info(
-                                f"[PreviewPanel][ERROR] Couldn't read font file: {filepath}"
-                            )
+                            logger.info("update_widget couldn't read font file", filepath=filepath)
                     else:
                         self.dimensions_label.setText(f"{ext.upper()[1:]}")
                         self.dimensions_label.setText(

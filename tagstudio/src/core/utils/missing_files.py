@@ -53,7 +53,7 @@ class MissingRegistry:
     def fix_missing_files(self) -> Iterator[int]:
         """Attempt to fix missing files by finding a match in the library directory."""
         self.files_fixed_count = 0
-        for i, entry in enumerate(self.missing_files, start=1):
+        for i, entry in enumerate(self.missing_files[:], start=1):
             item_matches = self.match_missing_file(entry)
             if len(item_matches) == 1:
                 logger.info("fix_missing_files", entry=entry, item_matches=item_matches)
