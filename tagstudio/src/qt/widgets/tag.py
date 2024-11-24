@@ -126,6 +126,9 @@ class TagWidget(QWidget):
         self.bg_button = QPushButton(self)
         self.bg_button.setFlat(True)
         self.bg_button.setText(tag.name)
+        self.bg_button.clicked.connect(self.on_click.emit)
+        self.bg_button.mouseDoubleClickEvent = lambda event: self.on_double_click.emit()  # type: ignore
+
         if has_edit:
             edit_action = QAction("Edit", self)
             edit_action.triggered.connect(on_edit_callback)
@@ -137,8 +140,6 @@ class TagWidget(QWidget):
         search_for_tag_action = QAction("Search for Tag", self)
         search_for_tag_action.triggered.connect(self.on_click.emit)
         self.bg_button.addAction(search_for_tag_action)
-        add_to_search_action = QAction("Add to Search", self)
-        self.bg_button.addAction(add_to_search_action)
 
         self.inner_layout = QHBoxLayout()
         self.inner_layout.setObjectName("innerLayout")
@@ -189,11 +190,6 @@ class TagWidget(QWidget):
         if has_remove:
             self.inner_layout.addWidget(self.remove_button)
         self.inner_layout.addStretch(1)
-
-        # NOTE: Do this if you don't want the tag to stretch, like in a search.
-        # self.bg_button.setMaximumWidth(self.bg_button.sizeHint().width())
-
-        self.bg_button.clicked.connect(self.on_click.emit)
 
     def enterEvent(self, event: QEnterEvent) -> None:  # noqa: N802
         if self.has_remove:
