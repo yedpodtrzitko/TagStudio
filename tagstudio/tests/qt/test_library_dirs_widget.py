@@ -28,7 +28,7 @@ def test_widget_select_folders(qt_driver):
         mock_files.return_value = return_items
 
         # When
-        widget.add_folders()
+        widget.add_folders_callback()
 
     # Then
     assert set(return_items).issubset({x.path for x in qt_driver.lib.get_folders()})

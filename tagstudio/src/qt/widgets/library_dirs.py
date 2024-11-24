@@ -7,6 +7,7 @@ import structlog
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QApplication,
     QCheckBox,
     QFileDialog,
     QHBoxLayout,
@@ -87,24 +88,28 @@ class LibraryDirsWidget(QWidget):
         # add a button which will open a library folder dialog
         button = QPushButton("Add Folder")
         button.setCursor(Qt.CursorShape.PointingHandCursor)
-        button.clicked.connect(self.add_folders)
+        button.clicked.connect(self.add_folders_callback)
         self.root_layout.addWidget(button)
 
-    def add_folders(self):
-        """Open QT dialog to select a folder to add into library."""
+    def add_folders_callback(self):
+        """Open QT dialog to select a folder to add into library.
+
+        Allow multiple folders selection when holding Shift
+        """
         if not self.library.storage_path:
             logger.info("add_folder: no library open")
-            # no library open, dont do anything
             return
 
         dialog = QFileDialog(self)
         dialog.setFileMode(QFileDialog.FileMode.Directory)
-        dialog.setOption(QFileDialog.Option.DontUseNativeDialog)
         dialog.setOption(QFileDialog.Option.ShowDirsOnly)
-        # Enable multiple selection
-        selection_mode = QAbstractItemView.SelectionMode.ExtendedSelection
-        dialog.findChildren(QListView)[0].setSelectionMode(selection_mode)  # type: ignore
-        dialog.findChildren(QTreeView)[0].setSelectionMode(selection_mode)  # type: ignore
+
+        mods = QApplication.keyboardModifiers()
+        if mods & Qt.KeyboardModifier.ShiftModifier:
+            dialog.setOption(QFileDialog.Option.DontUseNativeDialog)
+            selection_mode = QAbstractItemView.SelectionMode.ExtendedSelection
+            dialog.findChildren(QListView)[0].setSelectionMode(selection_mode)  # type: ignore
+            dialog.findChildren(QTreeView)[0].setSelectionMode(selection_mode)  # type: ignore
 
         if dialog.exec() == QFileDialog.DialogCode.Accepted:
             selected_dirs = dialog.selectedFiles()
