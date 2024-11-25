@@ -7,7 +7,6 @@ import os
 import sys
 import time
 import typing
-from collections.abc import Callable
 from datetime import datetime as dt
 from pathlib import Path
 
@@ -23,7 +22,6 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
-    QMessageBox,
     QScrollArea,
     QSizePolicy,
     QSplitter,
@@ -51,6 +49,7 @@ from src.qt.modals.add_field import AddFieldModal
 from src.qt.platform_strings import PlatformStrings
 from src.qt.widgets.fields import FieldContainer
 from src.qt.widgets.panel import PanelModal
+from src.qt.widgets.remove_button import remove_message_box
 from src.qt.widgets.tag_box import TagBoxWidget
 from src.qt.widgets.text import TextWidget
 from src.qt.widgets.text_box_edit import EditTextBox
@@ -780,8 +779,9 @@ class PreviewPanel(QWidget):
                 )
                 # NOTE: Tag Boxes have no Edit Button (But will when you can convert field types)
                 container.set_remove_callback(
-                    lambda: self.remove_message_box(
+                    lambda: remove_message_box(
                         prompt=self.remove_field_prompt(field.type.name),
+                        title="Remove Field",
                         callback=lambda: (
                             self.remove_field(field),
                             self.update_selected_entry(self.driver),
@@ -830,8 +830,9 @@ class PreviewPanel(QWidget):
 
                 container.set_edit_callback(modal.show)
                 container.set_remove_callback(
-                    lambda: self.remove_message_box(
+                    lambda: remove_message_box(
                         prompt=self.remove_field_prompt(field.type.type.value),
+                        title="Remove Field",
                         callback=lambda: (
                             self.remove_field(field),
                             self.update_widgets(),
@@ -866,8 +867,9 @@ class PreviewPanel(QWidget):
                 )
                 container.set_edit_callback(modal.show)
                 container.set_remove_callback(
-                    lambda: self.remove_message_box(
+                    lambda: remove_message_box(
                         prompt=self.remove_field_prompt(field.type.name),
+                        title="Remove Field",
                         callback=lambda: (
                             self.remove_field(field),
                             self.update_widgets(),
@@ -895,8 +897,9 @@ class PreviewPanel(QWidget):
                     container.set_inner_widget(inner_container)
 
                 container.set_remove_callback(
-                    lambda: self.remove_message_box(
+                    lambda: remove_message_box(
                         prompt=self.remove_field_prompt(field.type.name),
+                        title="Remove Field",
                         callback=lambda: (
                             self.remove_field(field),
                             self.update_widgets(),
@@ -916,8 +919,9 @@ class PreviewPanel(QWidget):
             inner_container = TextWidget(title, field.type.name)
             container.set_inner_widget(inner_container)
             container.set_remove_callback(
-                lambda: self.remove_message_box(
+                lambda: remove_message_box(
                     prompt=self.remove_field_prompt(field.type.name),
+                    title="Remove Field",
                     callback=lambda: (
                         self.remove_field(field),
                         self.update_widgets(),
@@ -961,18 +965,3 @@ class PreviewPanel(QWidget):
             field,
             content,
         )
-
-    def remove_message_box(self, prompt: str, callback: Callable) -> None:
-        remove_mb = QMessageBox()
-        remove_mb.setText(prompt)
-        remove_mb.setWindowTitle("Remove Field")
-        remove_mb.setIcon(QMessageBox.Icon.Warning)
-        cancel_button = remove_mb.addButton("&Cancel", QMessageBox.ButtonRole.DestructiveRole)
-        remove_mb.addButton("&Remove", QMessageBox.ButtonRole.RejectRole)
-        # remove_mb.setStandardButtons(QMessageBox.StandardButton.Cancel)
-        remove_mb.setDefaultButton(cancel_button)
-        remove_mb.setEscapeButton(cancel_button)
-        result = remove_mb.exec_()
-        # logging.info(result)
-        if result == 3:  # TODO - what is this magic number?
-            callback()

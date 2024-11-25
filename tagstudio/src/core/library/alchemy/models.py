@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from sqlalchemy import JSON, ForeignKey, Integer, event
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, backref, mapped_column, relationship
 
 from ...constants import TAG_ARCHIVED, TAG_FAVORITE
 from .db import Base, PathType
@@ -119,8 +119,11 @@ class Entry(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
-    folder_id: Mapped[int] = mapped_column(ForeignKey("folders.id"))
-    folder: Mapped[Folder] = relationship("Folder", lazy=False)
+    # TODO - make the ondelete actually work
+    folder_id: Mapped[int] = mapped_column(ForeignKey("folders.id", ondelete="CASCADE"))
+    folder: Mapped[Folder] = relationship(
+        "Folder", lazy=False, backref=backref("entries", passive_deletes=True)
+    )
 
     path: Mapped[Path] = mapped_column(PathType, unique=True)
     suffix: Mapped[str] = mapped_column()

@@ -388,8 +388,19 @@ class Library:
         with Session(self.engine) as session:
             folders = list(session.scalars(select(Folder)))
             session.expunge_all()
-
             return folders
+
+    def remove_folder(self, folder: Folder) -> bool:
+        with Session(self.engine) as session:
+            session.query(Entry).where(Entry.folder_id == folder.id).delete()
+            session.delete(folder)
+            try:
+                session.commit()
+                return True
+            except IntegrityError as e:
+                logger.exception(e)
+                session.rollback()
+                return False
 
     @property
     def entries_count(self) -> int:

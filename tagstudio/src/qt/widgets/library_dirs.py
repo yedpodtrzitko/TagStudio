@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 from src.core.library import Library
 from src.core.library.alchemy.models import Folder
 from src.qt.enums import WindowContent
+from src.qt.widgets.remove_button import remove_message_box
 
 if TYPE_CHECKING:
     from src.qt.ts_qt import QtDriver
@@ -75,7 +76,7 @@ class LibraryDirsWidget(QWidget):
             return
 
         self.library_dirs = library_dirs
-        self.fill_dirs(self.library_dirs)
+        self.fill_folders_widget(self.library_dirs)
 
     def create_panel(self):
         label = QLabel("Library Folders")
@@ -126,7 +127,7 @@ class LibraryDirsWidget(QWidget):
                 self.driver.filter_items()
                 self.refresh()
 
-    def fill_dirs(self, folders: dict[str, Folder]) -> None:
+    def fill_folders_widget(self, folders: dict[str, Folder]) -> None:
         def clear_layout(layout_item: QVBoxLayout):
             for i in reversed(range(layout_item.count())):
                 child = layout_item.itemAt(i)
@@ -139,9 +140,9 @@ class LibraryDirsWidget(QWidget):
         clear_layout(self.items_layout)
 
         for folder in folders.values():
-            self.create_item(folder)
+            self.create_folder_widget(folder)
 
-    def create_item(self, folder: Folder):
+    def create_folder_widget(self, folder: Folder):
         def toggle_folder():
             self.driver.filter.toggle_folder(folder.id)
             self.driver.filter_items()
@@ -158,8 +159,25 @@ class LibraryDirsWidget(QWidget):
         folder_label.setText(folder.path.name)
         folder_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
 
+        btn_delete_folder = QPushButton()
+        btn_delete_folder.setText("🗑")
+        btn_delete_folder.setFixedWidth(30)
+        btn_delete_folder.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_delete_folder.clicked.connect(self.remove_folder_callback(folder))
+
         row_layout = QHBoxLayout()
         row_layout.addWidget(button_toggle)
         row_layout.addWidget(folder_label)
+        row_layout.addWidget(btn_delete_folder)
 
         self.items_layout.addLayout(row_layout)
+
+    def remove_folder_callback(self, folder: Folder):
+        def remove_exec():
+            self.library.remove_folder(folder)
+            self.refresh()
+
+        def remove_folder():
+            remove_message_box("Remove Folder?", "Remove Folder", remove_exec)
+
+        return remove_folder
