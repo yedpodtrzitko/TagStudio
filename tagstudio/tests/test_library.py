@@ -479,3 +479,15 @@ def test_library_prefs_multiple_identical_vals():
     # accessing .value should raise exception
     with pytest.raises(AttributeError):
         assert TestPrefs.BAR.value
+
+
+def test_remove_folder(library):
+    # Given
+    folder = library.get_folders()[0]
+    folder_id = folder.id
+
+    # When
+    assert library.remove_folder(folder)
+
+    # Then
+    assert not list(library.get_entries(FilterState(include_folders={folder_id})))
