@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from sqlalchemy import JSON, ForeignKey, Integer, event
-from sqlalchemy.orm import Mapped, backref, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ...constants import TAG_ARCHIVED, TAG_FAVORITE
 from .db import Base, PathType
@@ -113,6 +113,11 @@ class Folder(Base):
     path: Mapped[Path] = mapped_column(PathType, unique=True)
     uuid: Mapped[str] = mapped_column(unique=True)
 
+    # Define the relationship on the parent side
+    entries = relationship(
+        "Entry", back_populates="folder", cascade="all, delete-orphan", passive_deletes=True
+    )
+
 
 class Entry(Base):
     __tablename__ = "entries"
@@ -122,23 +127,27 @@ class Entry(Base):
     # TODO - make the ondelete actually work
     folder_id: Mapped[int] = mapped_column(ForeignKey("folders.id", ondelete="CASCADE"))
     folder: Mapped[Folder] = relationship(
-        "Folder", lazy=False, backref=backref("entries", passive_deletes=True)
+        "Folder",
+        lazy=False,
+        back_populates="entries",
     )
 
     path: Mapped[Path] = mapped_column(PathType, unique=True)
     suffix: Mapped[str] = mapped_column()
 
     text_fields: Mapped[list[TextField]] = relationship(
-        back_populates="entry",
-        cascade="all, delete",
+        back_populates="entry", cascade="all, delete", passive_deletes=True
     )
     datetime_fields: Mapped[list[DatetimeField]] = relationship(
-        back_populates="entry",
-        cascade="all, delete",
+        back_populates="entry", cascade="all, delete", passive_deletes=True
     )
     tag_box_fields: Mapped[list[TagBoxField]] = relationship(
         back_populates="entry",
         cascade="all, delete",
+        passive_deletes=True,
+    )
+    boolean_fields: Mapped[list[BooleanField]] = relationship(
+        back_populates="entry", cascade="all, delete", passive_deletes=True
     )
 
     @property
@@ -151,6 +160,7 @@ class Entry(Base):
         fields.extend(self.tag_box_fields)
         fields.extend(self.text_fields)
         fields.extend(self.datetime_fields)
+        fields.extend(self.boolean_fields)
         fields = sorted(fields, key=lambda field: field.type.position)
         return fields
 
@@ -187,24 +197,18 @@ class Entry(Base):
     ) -> None:
         self.path = path
         self.folder = folder
-
         self.suffix = path.suffix.lstrip(".").lower()
 
         for field in fields:
-            if isinstance(field, TextField):
-                self.text_fields.append(field)
-            elif isinstance(field, DatetimeField):
-                self.datetime_fields.append(field)
-            elif isinstance(field, TagBoxField):
-                self.tag_box_fields.append(field)
-            else:
-                raise ValueError(f"Invalid field type: {field}")
+            field.entry = self
+
+        super().__init__()
 
     def has_tag(self, tag: Tag) -> bool:
         return tag in self.tags
 
     def remove_tag(self, tag: Tag, field: TagBoxField | None = None) -> None:
-        """Removes a Tag from the Entry.
+        """Remove a Tag from the Entry.
 
         If given a field index, the given Tag will
         only be removed from that index. If left blank, all instances of that

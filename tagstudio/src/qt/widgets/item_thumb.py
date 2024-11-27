@@ -27,6 +27,7 @@ from src.core.constants import (
 from src.core.library import Entry, ItemType, Library
 from src.core.library.alchemy.enums import FilterState
 from src.core.library.alchemy.fields import _FieldID
+from src.core.library.alchemy.library import MissingFieldAction
 from src.core.media_types import MediaCategories, MediaType
 from src.qt.enums import ThumbSize
 from src.qt.flowlayout import FlowWidget
@@ -451,7 +452,7 @@ class ItemThumb(FlowWidget):
         for idx in update_items:
             entry = self.driver.frame_content[idx]
             self.toggle_item_tag(
-                entry, toggle_value, tag_id, _FieldID.TAGS_META.name, create_field=True
+                entry, toggle_value, tag_id, _FieldID.TAGS_META.name, MissingFieldAction.CREATE
             )
             # update the entry
             self.driver.frame_content[idx] = self.lib.search_library(
@@ -466,7 +467,7 @@ class ItemThumb(FlowWidget):
         toggle_value: bool,
         tag_id: int,
         field_key: str,
-        create_field: bool = False,
+        missing_field: MissingFieldAction = MissingFieldAction.SKIP,
     ):
         logger.info(
             "toggle_item_tag",
@@ -478,7 +479,7 @@ class ItemThumb(FlowWidget):
 
         tag = self.lib.get_tag(tag_id)
         if toggle_value:
-            self.lib.add_field_tag(entry, tag, field_key, create_field)
+            self.lib.add_field_tag(entry, tag, field_key, missing_field=missing_field)
         else:
             self.lib.remove_field_tag(entry, tag.id, field_key)
 

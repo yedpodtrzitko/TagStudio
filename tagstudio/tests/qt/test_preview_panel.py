@@ -55,7 +55,6 @@ def test_update_widgets_multiple_selected(qt_driver, library):
 
     assert {f.type_key for f in panel.mixed_fields} == {
         _FieldID.TAGS.name,
-        _FieldID.TAGS_META.name,
     }
 
 

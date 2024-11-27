@@ -31,11 +31,15 @@ class BaseField(Base):
 
     @declared_attr
     def entry_id(self) -> Mapped[int]:
-        return mapped_column(ForeignKey("entries.id"))
+        return mapped_column(ForeignKey("entries.id", ondelete="CASCADE"))
 
     @declared_attr
     def entry(self) -> Mapped[Entry]:
-        return relationship(foreign_keys=[self.entry_id])  # type: ignore
+        return relationship(
+            "Entry",
+            foreign_keys=[self.entry_id],  # type: ignore
+            back_populates=self.__tablename__,
+        )
 
     @declared_attr
     def position(self) -> Mapped[int]:
@@ -83,7 +87,10 @@ class TextField(BaseField):
 class TagBoxField(BaseField):
     __tablename__ = "tag_box_fields"
 
-    tags: Mapped[set[Tag]] = relationship(secondary="tag_fields")
+    tags: Mapped[set[Tag]] = relationship(
+        secondary="tag_fields",
+        cascade="all, delete",
+    )
 
     def __key(self):
         return (

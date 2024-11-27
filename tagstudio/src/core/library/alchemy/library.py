@@ -4,6 +4,7 @@ import unicodedata
 from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from enum import Enum
 from os import makedirs
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,7 @@ from sqlalchemy import (
     and_,
     create_engine,
     delete,
+    event,
     func,
     or_,
     select,
@@ -57,6 +59,12 @@ from .joins import TagField, TagSubtag
 from .models import Entry, Folder, Preferences, Tag, TagAlias, ValueType
 
 logger = structlog.get_logger(__name__)
+
+
+class MissingFieldAction(Enum):
+    SKIP = 0
+    CREATE = 1
+    RAISE = 2
 
 
 def slugify(input_string: str) -> str:
@@ -245,16 +253,25 @@ class Library:
         )
 
         self.engine = create_engine(connection_string, poolclass=poolclass)
+
+        def _fk_pragma_on_connect(dbapi_con, con_record):
+            dbapi_con.execute("pragma foreign_keys=ON")
+
+        event.listen(self.engine, "connect", _fk_pragma_on_connect)
+
         with Session(self.engine) as session:
             self.init_db(use_migrations, connection_string, is_new)
 
             tags = get_default_tags()
-            try:
-                session.add_all(tags)
-                session.commit()
-            except IntegrityError:
-                # default tags may exist already
-                session.rollback()
+
+            if is_new:
+                try:
+                    session.add_all(tags)
+                    session.commit()
+                except IntegrityError:
+                    # default tags may exist already
+                    logger.exception("default tags already exist")
+                    session.rollback()
 
             for pref in LibraryPrefs:
                 try:
@@ -392,7 +409,6 @@ class Library:
 
     def remove_folder(self, folder: Folder) -> bool:
         with Session(self.engine) as session:
-            session.query(Entry).where(Entry.folder_id == folder.id).delete()
             session.delete(folder)
             try:
                 session.commit()
@@ -416,12 +432,14 @@ class Library:
                 stmt = (
                     stmt.outerjoin(Entry.text_fields)
                     .outerjoin(Entry.datetime_fields)
+                    .outerjoin(Entry.boolean_fields)
                     .outerjoin(Entry.tag_box_fields)
                     .outerjoin(Entry.folder)
                 )
                 stmt = stmt.options(
                     contains_eager(Entry.text_fields),
                     contains_eager(Entry.datetime_fields),
+                    contains_eager(Entry.boolean_fields),
                     contains_eager(Entry.tag_box_fields).selectinload(TagBoxField.tags),
                 )
 
@@ -555,6 +573,7 @@ class Library:
                 selectinload(Entry.folder),
                 selectinload(Entry.text_fields),
                 selectinload(Entry.datetime_fields),
+                selectinload(Entry.boolean_fields),
                 selectinload(Entry.tag_box_fields)
                 .joinedload(TagBoxField.tags)
                 .options(selectinload(Tag.aliases), selectinload(Tag.subtags)),
@@ -868,7 +887,7 @@ class Library:
         entry: Entry,
         tag: Tag,
         field_key: str | None = None,
-        create_field: bool = False,
+        missing_field: MissingFieldAction = MissingFieldAction.SKIP,
     ) -> bool:
         field_key = field_key or _FieldID.TAGS.name
 
@@ -883,9 +902,12 @@ class Library:
                 )
             ).first()
 
-            if not field and not create_field:
-                logger.error("no field found", entry=entry, field_key=field_key)
-                return False
+            if not field:
+                if missing_field == MissingFieldAction.SKIP:
+                    logger.error("no field found", entry=entry, field_key=field_key)
+                    return False
+                elif missing_field == MissingFieldAction.RAISE:
+                    raise ValueError(f"Field not found for entry {entry.id} and key {field_key}")
 
             try:
                 if not field:

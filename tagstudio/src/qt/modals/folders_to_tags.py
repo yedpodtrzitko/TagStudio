@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 from src.core.constants import TAG_ARCHIVED, TAG_FAVORITE
 from src.core.library import Library, Tag
 from src.core.library.alchemy.fields import _FieldID
+from src.core.library.alchemy.library import MissingFieldAction
 from src.core.palette import ColorType, get_tag_color
 from src.qt.flowlayout import FlowLayout
 
@@ -51,7 +52,7 @@ def add_folders_to_tree(library: Library, tree: BranchData, items: tuple[str, ..
 
 
 def folders_to_tags(library: Library):
-    logger.info("Converting folders to Tags")
+    logger.info("folders_to_tags start")
     tree = BranchData()
 
     def add_tag_to_tree(items: list[Tag]):
@@ -66,15 +67,18 @@ def folders_to_tags(library: Library):
         add_tag_to_tree(reversed_tag)
 
     for entry in library.get_entries():
-        folders = entry.path.parts[1:-1]
+        entry_folders = entry.path.parts[:-1]
+        folders = entry_folders
         if not folders:
             continue
 
         tag = add_folders_to_tree(library, tree, folders).tag
         if tag and not entry.has_tag(tag):
-            library.add_field_tag(entry, tag, _FieldID.TAGS.name, create_field=True)
+            library.add_field_tag(
+                entry, tag, _FieldID.TAGS.name, missing_field=MissingFieldAction.CREATE
+            )
 
-    logger.info("Done")
+    logger.info("folders_to_tags complete")
 
 
 def reverse_tag(library: Library, tag: Tag, items: list[Tag] | None) -> list[Tag]:
