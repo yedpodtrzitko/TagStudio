@@ -13,6 +13,7 @@ from src.core.library import Entry, Library, Tag
 from src.core.library import alchemy as backend
 from src.core.library.alchemy.enums import TagColor
 from src.core.library.alchemy.fields import TagBoxField, _FieldID
+from src.core.library.alchemy.library import MissingFieldAction
 from src.qt.ts_qt import QtDriver
 
 
@@ -51,6 +52,7 @@ def library(request):
         color=TagColor.BLUE,
         subtags={subtag},
     )
+    lib.add_tag(tag2)
 
     folder = lib.add_folder(folder_path)
 
@@ -74,7 +76,11 @@ def library(request):
     )
 
     entry.tag_box_fields = [
-        TagBoxField(type_key=_FieldID.TAGS.name, tags={tag}, position=0),
+        TagBoxField(
+            type_key=_FieldID.TAGS.name,
+            tags={tag},
+            position=0,
+        ),
         TagBoxField(
             type_key=_FieldID.TAGS_META.name,
             position=0,
@@ -98,16 +104,12 @@ def library(request):
         path=pathlib.Path("one/two/bar.md"),
         fields=default_fields,
     )
-    entry2.tag_box_fields = [
-        TagBoxField(
-            tags={tag2},
-            type_key=_FieldID.TAGS_META.name,
-            position=0,
-        ),
-    ]
 
     assert lib.add_entries([entry, entry2])
-    assert len(lib.tags) == 5
+    assert lib.add_field_tag(
+        entry2, tag2, _FieldID.TAGS_META.name, missing_field=MissingFieldAction.RAISE
+    )
+    assert len(lib.tags) == 5, lib.tags
 
     yield lib
 

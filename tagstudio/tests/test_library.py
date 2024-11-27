@@ -6,6 +6,7 @@ from src.core.enums import DefaultEnum, LibraryPrefs
 from src.core.library.alchemy import Entry
 from src.core.library.alchemy.enums import FilterState
 from src.core.library.alchemy.fields import TextField, _FieldID
+from src.core.library.alchemy.library import MissingFieldAction
 from src.core.library.alchemy.models import Tag
 
 
@@ -291,7 +292,7 @@ def test_save_windows_path(library, generate_tag):
 
     library.add_entries([entry])
     # library.add_tag(tag)
-    library.add_field_tag(entry, tag, create_field=True)
+    library.add_field_tag(entry, tag, missing_field=MissingFieldAction.CREATE)
 
     results = library.search_library(FilterState(tag=tag_name))
     assert results
@@ -382,11 +383,9 @@ def test_mirror_entry_fields(library, entry_full):
     results = library.search_library(FilterState(id=entry_id))
     entry = results[0]
 
-    assert len(entry.fields) == 4
     assert {x.type_key for x in entry.fields} == {
         _FieldID.TITLE.name,
         _FieldID.NOTES.name,
-        _FieldID.TAGS_META.name,
         _FieldID.TAGS.name,
     }
 
