@@ -4,6 +4,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import Mock, patch
 
 import pytest
+import structlog
 
 CWD = pathlib.Path(__file__).parent
 # this needs to be above `src` imports
@@ -16,6 +17,8 @@ from src.core.library.alchemy.fields import TagBoxField, _FieldID
 from src.core.library.alchemy.library import MissingFieldAction
 from src.qt.ts_qt import QtDriver
 
+logger = structlog.get_logger()
+
 
 @pytest.fixture
 def cwd():
@@ -24,16 +27,24 @@ def cwd():
 
 @pytest.fixture
 def library(request):
+    """WARNING: the library content is removed on end of the test"""
     # when no param is passed, use the default
     folder_path = "/dev/null/"
+    storage_path = ":memory:"
+    temp_dir = None
     if hasattr(request, "param"):
-        if isinstance(request.param, TemporaryDirectory):
-            folder_path = request.param.name
-        else:
-            folder_path = request.param
+        assert isinstance(request.param, TemporaryDirectory)
+        temp_dir = request.param
+        storage_path = folder_path = pathlib.Path(temp_dir.name)
+        # check the folder is empty
+        if storage_path.exists() and list(storage_path.iterdir()):
+            raise ValueError(
+                f"Temporary directory {storage_path} is not empty. "
+                "Please use a clean temporary directory for the test."
+            )
 
     lib = Library()
-    status = lib.open_library(":memory:", folder_path, use_migrations=False)
+    status = lib.open_library(storage_path, use_migrations=False)
     assert status.success
 
     tag = Tag(
@@ -112,6 +123,9 @@ def library(request):
     assert len(lib.tags) == 5, lib.tags
 
     yield lib
+
+    if isinstance(temp_dir, TemporaryDirectory):
+        temp_dir.cleanup()
 
 
 @pytest.fixture

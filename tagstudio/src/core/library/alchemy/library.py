@@ -174,17 +174,14 @@ class Library:
 
         return False, None
 
+    def get_folder_thumbnail_path(self, folder_id: int) -> Path:
+        """Return path to thumbnail for given folder."""
+        assert isinstance(self.storage_path, Path)
+        return self.storage_path / self.DATADIR / "thumbnails" / str(folder_id)
+
     def get_thumbnail_path(self, entry: Entry, size: ThumbSize) -> Path:
         """Return path to thumbnail for given Entry."""
-        assert isinstance(self.storage_path, Path)
-        return (
-            self.storage_path
-            / self.DATADIR
-            / "thumbnails"
-            / str(entry.folder_id)
-            / size.name
-            / f"{entry.id}.png"
-        )
+        return self.get_folder_thumbnail_path(entry.folder_id) / size.name / f"{entry.id}.png"
 
     def save_thumbnail(self, entry: Entry, size: ThumbSize, image: Image.Image):
         """Save thumbnail for given Entry."""
@@ -219,9 +216,7 @@ class Library:
                 conn.execute(text("DELETE FROM tags WHERE id = 999"))
                 conn.commit()
 
-    def open_library(
-        self, storage_path: Path | str, library_name: str | None = None, use_migrations: bool = True
-    ) -> LibraryStatus:
+    def open_library(self, storage_path: Path | str, use_migrations: bool = True) -> LibraryStatus:
         if storage_path == ":memory:":
             self.storage_path = storage_path
             is_new = True
@@ -281,21 +276,21 @@ class Library:
                     logger.debug("preference already exists", pref=pref)
                     session.rollback()
 
-            for field in _FieldID:
-                try:
-                    session.add(
-                        ValueType(
-                            key=field.name,
-                            name=field.value.name,
-                            type=field.value.type,
-                            position=field.value.id,
-                            is_default=field.value.is_default,
+            if is_new:
+                for field in _FieldID:
+                    try:
+                        session.add(
+                            ValueType(
+                                key=field.name,
+                                name=field.value.name,
+                                type=field.value.type,
+                                position=field.value.id,
+                                is_default=field.value.is_default,
+                            )
                         )
-                    )
-                    session.commit()
-                except IntegrityError:
-                    logger.debug("ValueType already exists", field=field)
-                    session.rollback()
+                        session.commit()
+                    except IntegrityError:
+                        session.rollback()
 
             """
             # check if folder matching current path exists already
@@ -408,15 +403,28 @@ class Library:
             return folders
 
     def remove_folder(self, folder: Folder) -> bool:
+        folder_id = folder.id
+
         with Session(self.engine) as session:
             session.delete(folder)
             try:
                 session.commit()
-                return True
             except IntegrityError as e:
                 logger.exception(e)
                 session.rollback()
                 return False
+
+        try:
+            thumb_path = self.get_folder_thumbnail_path(folder_id)
+            logger.info("removing folder thumbnails", path=thumb_path)
+            assert self.storage_path
+            assert self.DATADIR
+
+            shutil.rmtree(thumb_path)
+        except Exception as e:
+            logger.exception(e)
+
+        return True
 
     @property
     def entries_count(self) -> int:
