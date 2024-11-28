@@ -480,13 +480,21 @@ def test_library_prefs_multiple_identical_vals():
         assert TestPrefs.BAR.value
 
 
+@pytest.mark.parametrize("library", [TemporaryDirectory()], indirect=True)
 def test_remove_folder(library):
     # Given
     folder = library.get_folders()[0]
     folder_id = folder.id
 
+    thumbs_dir = library.get_folder_thumbnail_path(folder_id)
+    thumbs_dir.mkdir(parents=True)
+    assert thumbs_dir.exists()
+
     # When
     assert library.remove_folder(folder)
 
     # Then
+    # check the folder of thumbnails was removed
+    assert not thumbs_dir.exists()
+
     assert not list(library.get_entries(FilterState(include_folders={folder_id})))
