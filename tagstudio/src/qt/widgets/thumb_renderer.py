@@ -1041,7 +1041,8 @@ def get_loading_thumb() -> Image.Image:
     if sys.platform == "darwin":
         pixel_ratio = 2.0
 
-    loading_thumb = renderer._get_icon("thumb_loading", THEME_COLOR, (512, 512), pixel_ratio)
+    # TODO - use correct thumbnail size
+    loading_thumb = renderer._get_icon("thumb_loading", THEME_COLOR, (256, 256), pixel_ratio)
     return loading_thumb
 
 

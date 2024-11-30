@@ -994,27 +994,23 @@ class QtDriver(DriverMixin, QObject):
         self.flow_container.layout().update()
         self.main_window.update()
 
-        for idx, (entry, item_thumb) in enumerate(
-            zip_longest(self.frame_content, self.item_thumbs)
-        ):
+        for entry, item_thumb in zip_longest(self.frame_content, self.item_thumbs):
             if not entry:
                 item_thumb.hide()
                 continue
 
-            item_thumb = self.item_thumbs[idx]
             item_thumb.set_mode(ItemType.ENTRY)
             item_thumb.set_item_id(entry)
-
-            # TODO - show after item is rendered
             item_thumb.show()
 
             self.thumb_job_queue.put(
                 (
                     item_thumb.renderer.render,
-                    (sys.float_info.max, None, self.thumb_size, ratio, True, True),
+                    (time.time(), entry, self.thumb_size, ratio, True, True),
                 )
             )
 
+        for idx, (entry, item_thumb) in enumerate(zip(self.frame_content, self.item_thumbs)):
             entry_tag_ids = {tag.id for tag in entry.tags}
             item_thumb.assign_badge(BadgeType.ARCHIVED, TAG_ARCHIVED in entry_tag_ids)
             item_thumb.assign_badge(BadgeType.FAVORITE, TAG_FAVORITE in entry_tag_ids)
@@ -1037,12 +1033,14 @@ class QtDriver(DriverMixin, QObject):
             is_selected = (item_thumb.mode, item_thumb.item_id) in self.selected
             item_thumb.thumb_button.set_selected(is_selected)
 
-            self.thumb_job_queue.put(
-                (
-                    item_thumb.renderer.render,
-                    (time.time(), entry, self.thumb_size, ratio, False, True),
+            # skip in case cached thumbnail is already rendered
+            if not item_thumb.is_rendered(entry):
+                self.thumb_job_queue.put(
+                    (
+                        item_thumb.renderer.render,
+                        (time.time(), entry, self.thumb_size, ratio, False, True),
+                    )
                 )
-            )
 
     def update_badges(self, grid_item_ids: Sequence[int] = None):
         if not grid_item_ids:
