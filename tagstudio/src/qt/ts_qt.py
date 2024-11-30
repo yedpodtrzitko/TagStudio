@@ -884,23 +884,14 @@ class QtDriver(DriverMixin, QObject):
 
     def page_move(self, delta: int = None, page_id: int = None) -> None:
         """Navigate a step further into the navigation stack."""
-        logger.info(
-            "page_move",
-            delta=delta,
-            page_id=page_id,
-        )
-
-        # Ex. User visits | A ->[B]     |
-        #                 | A    B ->[C]|
-        #                 | A   [B]<- C |
-        #                 |[A]<- B    C |  Previous routes still exist
-        #                 | A ->[D]     |  Stack is cut from [:A] on new route
-
-        # sb: QScrollArea = self.main_window.scrollArea
-        # sb_pos = sb.verticalScrollBar().value()
+        logger.info("ts_qt.page_move", delta=delta, page_id=page_id)
 
         page_index = page_id if page_id is not None else self.filter.page_index + delta
         page_index = max(0, min(page_index, self.pages_count - 1))
+
+        # invalidate preview panel content
+        self.selected = []
+        self.preview_panel.update_widgets()
 
         self.filter.page_index = page_index
         self.filter_items()
