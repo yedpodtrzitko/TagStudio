@@ -76,6 +76,7 @@ class ItemThumb(FlowWidget):
     """The thumbnail widget for a library item (Entry, Collation, Tag Group, etc.)."""
 
     update_cutoff: float = time.time()
+    rendered_id: int
 
     collation_icon_128: Image.Image = Image.open(
         str(Path(__file__).parents[3] / "resources/qt/images/collation_icon_128.png")
@@ -131,6 +132,7 @@ class ItemThumb(FlowWidget):
         self.setMinimumSize(thumb_size.value, thumb_size.value)
         self.setMaximumSize(thumb_size.value, thumb_size.value)
         self.setMouseTracking(True)
+        self.rendered_id = None
         check_size = 24
 
         # +----------+
@@ -290,6 +292,9 @@ class ItemThumb(FlowWidget):
 
         self.set_mode(mode)
 
+    def is_rendered(self, entry: Entry) -> bool:
+        return self.rendered_id == entry.id
+
     @property
     def is_favorite(self) -> bool:
         return self.badge_active[BadgeType.FAVORITE]
@@ -372,7 +377,8 @@ class ItemThumb(FlowWidget):
     def update_thumb(self, timestamp: float, image: QPixmap | None = None):
         """Update attributes of a thumbnail element."""
         if timestamp > ItemThumb.update_cutoff:
-            self.thumb_button.setIcon(image if image else QPixmap())
+            self.rendered_id = self.item_id
+            self.thumb_button.setIcon(image or QPixmap())
 
     def update_size(self, timestamp: float, size: QSize):
         """Updates attributes of a thumbnail element."""
