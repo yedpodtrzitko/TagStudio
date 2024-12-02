@@ -135,7 +135,7 @@ class PreviewPanel(QWidget):
         self.preview_vid = VideoPlayer(driver)
         self.preview_vid.hide()
         self.thumb_renderer = ThumbRenderer(library=library)
-        self.thumb_renderer.updated.connect(lambda ts, i, s: (self.preview_img.setIcon(i)))
+        self.thumb_renderer.updated.connect(lambda ts, i, s, entry: (self.preview_img.setIcon(i)))
         self.thumb_renderer.updated_ratio.connect(
             lambda ratio: (
                 self.set_image_ratio(ratio),

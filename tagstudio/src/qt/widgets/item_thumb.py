@@ -28,7 +28,6 @@ from src.core.library import Entry, ItemType, Library
 from src.core.library.alchemy.enums import FilterState
 from src.core.library.alchemy.fields import _FieldID
 from src.core.library.alchemy.library import MissingFieldAction
-from src.core.media_types import MediaCategories, MediaType
 from src.qt.enums import ThumbSize
 from src.qt.flowlayout import FlowWidget
 from src.qt.helpers.file_opener import FileOpenerHelper
@@ -191,10 +190,10 @@ class ItemThumb(FlowWidget):
         self.thumb_button = ThumbButton(self, thumb_size)
         self.renderer = ThumbRenderer(library=library)
         self.renderer.updated.connect(
-            lambda ts, i, s, ext: (
+            lambda ts, i, s, entry: (
                 self.update_thumb(ts, image=i),
                 self.update_size(ts, size=s),
-                self.set_extension(ext),
+                self.set_filename(entry),
             )
         )
         self.thumb_button.setFlat(True)
@@ -336,34 +335,13 @@ class ItemThumb(FlowWidget):
             self.item_type_badge.setHidden(False)
         self.mode = mode
 
-    def set_extension(self, ext: str) -> None:
-        if ext and ext.startswith(".") is False:
-            ext = "." + ext
-        media_types: set[MediaType] = MediaCategories.get_types(ext)
-        if (
-            ext
-            and not MediaCategories.is_ext_in_category(ext, MediaCategories.IMAGE_TYPES)
-            or MediaCategories.is_ext_in_category(ext, MediaCategories.IMAGE_RAW_TYPES)
-            or MediaCategories.is_ext_in_category(ext, MediaCategories.IMAGE_VECTOR_TYPES)
-            or MediaCategories.is_ext_in_category(ext, MediaCategories.ADOBE_PHOTOSHOP_TYPES)
-            or ext
-            in [
-                ".apng",
-                ".avif",
-                ".exr",
-                ".gif",
-                ".jxl",
-                ".webp",
-            ]
-        ):
+    def set_filename(self, entry: Entry) -> None:
+        # if MediaType.VIDEO in media_types or MediaType.AUDIO in media_types:
+        #    self.count_badge.setHidden(False)
+        self.count_badge.setHidden(True)
+        if self.mode == ItemType.ENTRY:
             self.ext_badge.setHidden(False)
-            self.ext_badge.setText(ext.upper()[1:])
-            if MediaType.VIDEO in media_types or MediaType.AUDIO in media_types:
-                self.count_badge.setHidden(False)
-        else:
-            if self.mode == ItemType.ENTRY:
-                self.ext_badge.setHidden(True)
-                self.count_badge.setHidden(True)
+            self.ext_badge.setText(entry.path.name)
 
     def set_count(self, count: str) -> None:
         if count:
