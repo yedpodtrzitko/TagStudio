@@ -89,3 +89,6 @@ class ResourceManager:
         if attr:
             return attr
         raise AttributeError(f"Attribute {id} not found")
+
+
+RESMAN = ResourceManager()

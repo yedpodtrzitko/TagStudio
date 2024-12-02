@@ -94,7 +94,6 @@ from src.qt.modals.fix_unlinked import FixUnlinkedEntriesModal
 from src.qt.modals.folders_to_tags import FoldersToTagsModal
 from src.qt.modals.library_name import LibraryNameDialog
 from src.qt.modals.tag_database import TagDatabasePanel
-from src.qt.resource_manager import ResourceManager
 from src.qt.widgets.item_thumb import BadgeType, ItemThumb
 from src.qt.widgets.landing import KBShortcut, get_kb_shortcut
 from src.qt.widgets.library_panel import LibraryPanel
@@ -145,7 +144,6 @@ class QtDriver(DriverMixin, QObject):
         # prevent recursive badges update when multiple items selected
         self.badge_update_lock = False
         self.lib = backend.Library()
-        self.rm: ResourceManager = ResourceManager()
         self.args = args
         self.frame_content: list[Entry] = []
         self.filter = FilterState()

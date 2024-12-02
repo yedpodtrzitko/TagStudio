@@ -50,7 +50,7 @@ from src.qt.helpers.text_wrapper import wrap_full_text
 from src.qt.helpers.vendored.pydub.audio_segment import (  # type: ignore
     _AudioSegment as AudioSegment,
 )
-from src.qt.resource_manager import ResourceManager
+from src.qt.resource_manager import RESMAN
 from src.qt.thumbnailers import get_thumbnailer
 from vtf2img import Parser
 
@@ -70,7 +70,6 @@ THEME_COLOR: UiColor = (
 class ThumbRenderer(QObject):
     """A class for rendering image and file thumbnails."""
 
-    rm: ResourceManager = ResourceManager()
     updated = Signal(float, QPixmap, QSize, Entry)
     updated_ratio = Signal(float)
 
@@ -331,9 +330,9 @@ class ThumbRenderer(QObject):
         )
 
         # Get icon by name
-        icon: Image.Image = self.rm.get(name)
+        icon: Image.Image = RESMAN.get(name)
         if not icon:
-            icon = self.rm.get("file_generic")
+            icon = RESMAN.get("file_generic")
             if not icon:
                 icon = Image.new(mode="RGBA", size=(32, 32), color="magenta")
 

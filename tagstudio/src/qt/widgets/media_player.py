@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QSlider,
     QWidget,
 )
+from src.qt.resource_manager import RESMAN
 
 if typing.TYPE_CHECKING:
     from src.qt.ts_qt import QtDriver
@@ -158,11 +159,11 @@ class MediaPlayer(QWidget):
             self.player.setSource(QUrl.fromLocalFile(self.filepath))
 
     def load_play_pause_icon(self, playing: bool) -> None:
-        icon = self.driver.rm.pause_icon if playing else self.driver.rm.play_icon
+        icon = RESMAN.pause_icon if playing else RESMAN.play_icon
         self.set_icon(self.play_pause, icon)
 
     def load_mute_unmute_icon(self, muted: bool) -> None:
-        icon = self.driver.rm.volume_mute_icon if muted else self.driver.rm.volume_icon
+        icon = RESMAN.volume_mute_icon if muted else RESMAN.volume_icon
         self.set_icon(self.mute, icon)
 
     def set_icon(self, btn: QPushButton, icon: Any) -> None:
