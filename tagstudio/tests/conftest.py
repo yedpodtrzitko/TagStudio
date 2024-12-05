@@ -153,8 +153,8 @@ def qt_driver(qtbot, library):
             driver.main_window = Mock()
             driver.preview_panel = Mock()
             driver.flow_container = Mock()
+            driver.library_panel = Mock()
             driver.item_thumbs = []
-
             driver.lib = library
             # TODO - downsize this method and use it
             # driver.start()

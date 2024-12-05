@@ -670,6 +670,8 @@ class QtDriver(DriverMixin, QObject):
                     panel.build_tag(), panel.subtag_ids, panel.alias_names, panel.alias_ids
                 ),
                 self.modal.hide(),
+                # refresh tags in left sidebar
+                self.library_panel.tag_panel.update_tags(),
             )
         )
         self.modal.show()
